@@ -247,6 +247,7 @@ import org.elasticsearch.rest.action.admin.cluster.RestDeleteRepositoryAction;
 import org.elasticsearch.rest.action.admin.cluster.RestDeleteSnapshotAction;
 import org.elasticsearch.rest.action.admin.cluster.RestDeleteStoredScriptAction;
 import org.elasticsearch.rest.action.admin.cluster.RestGetRepositoriesAction;
+import org.elasticsearch.rest.action.admin.cluster.RestGetScriptContextAction;
 import org.elasticsearch.rest.action.admin.cluster.RestGetSnapshotsAction;
 import org.elasticsearch.rest.action.admin.cluster.RestGetStoredScriptAction;
 import org.elasticsearch.rest.action.admin.cluster.RestGetTaskAction;
@@ -660,6 +661,7 @@ public class ActionModule extends AbstractModule {
         registerHandler.accept(new RestGetStoredScriptAction(restController));
         registerHandler.accept(new RestPutStoredScriptAction(restController));
         registerHandler.accept(new RestDeleteStoredScriptAction(restController));
+        registerHandler.accept(new RestGetScriptContextAction(restController));
 
         registerHandler.accept(new RestFieldCapabilitiesAction(restController));
 
