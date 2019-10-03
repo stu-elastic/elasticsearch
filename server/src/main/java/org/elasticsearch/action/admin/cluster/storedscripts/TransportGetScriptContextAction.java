@@ -43,7 +43,7 @@ public class TransportGetScriptContextAction extends TransportMasterNodeReadActi
     @Override
     protected void masterOperation(Task task, GetScriptContextRequest request, ClusterState state,
         ActionListener<GetScriptContextResponse> listener) throws Exception {
-        listener.onResponse(new GetScriptContextResponse(scriptService.getContexts()));
+        listener.onResponse(new GetScriptContextResponse(scriptService.getContextNames()));
     }
 
     @Override

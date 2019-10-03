@@ -11,7 +11,7 @@ public class GetScriptContextRequest extends MasterNodeReadRequest<GetScriptCont
         super();
     }
 
-    public GetScriptContextRequest(StreamInput in) throws IOException { super(in); }
+    GetScriptContextRequest(StreamInput in) throws IOException { super(in); }
 
     @Override
     public ActionRequestValidationException validate() { return null; }

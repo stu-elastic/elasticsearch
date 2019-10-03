@@ -33,12 +33,12 @@ public class GetScriptContextResponse extends ActionResponse implements StatusTo
 
     private List<String> contexts;
 
-    public GetScriptContextResponse(StreamInput in) throws IOException {
+    GetScriptContextResponse(StreamInput in) throws IOException {
         super(in);
         // TODO(stu): read in list?
     }
 
-    public GetScriptContextResponse(List<String> contexts) throws IOException {
+    GetScriptContextResponse(List<String> contexts) {
         this.contexts = contexts;
     }
 
@@ -54,11 +54,9 @@ public class GetScriptContextResponse extends ActionResponse implements StatusTo
 
     @Override public XContentBuilder toXContent(XContentBuilder builder, Params params) throws IOException {
         builder.startObject();
-        builder.startArray("contexts");
         for (String context: this.contexts) {
-            builder.value(context);
+            builder.startObject(context).endObject();
         }
-        builder.endArray();
         builder.endObject();
         return builder;
     }

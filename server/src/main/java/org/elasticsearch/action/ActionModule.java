@@ -79,9 +79,11 @@ import org.elasticsearch.action.admin.cluster.state.TransportClusterStateAction;
 import org.elasticsearch.action.admin.cluster.stats.ClusterStatsAction;
 import org.elasticsearch.action.admin.cluster.stats.TransportClusterStatsAction;
 import org.elasticsearch.action.admin.cluster.storedscripts.DeleteStoredScriptAction;
+import org.elasticsearch.action.admin.cluster.storedscripts.GetScriptContextAction;
 import org.elasticsearch.action.admin.cluster.storedscripts.GetStoredScriptAction;
 import org.elasticsearch.action.admin.cluster.storedscripts.PutStoredScriptAction;
 import org.elasticsearch.action.admin.cluster.storedscripts.TransportDeleteStoredScriptAction;
+import org.elasticsearch.action.admin.cluster.storedscripts.TransportGetScriptContextAction;
 import org.elasticsearch.action.admin.cluster.storedscripts.TransportGetStoredScriptAction;
 import org.elasticsearch.action.admin.cluster.storedscripts.TransportPutStoredScriptAction;
 import org.elasticsearch.action.admin.cluster.tasks.PendingClusterTasksAction;
@@ -520,6 +522,7 @@ public class ActionModule extends AbstractModule {
         actions.register(PutStoredScriptAction.INSTANCE, TransportPutStoredScriptAction.class);
         actions.register(GetStoredScriptAction.INSTANCE, TransportGetStoredScriptAction.class);
         actions.register(DeleteStoredScriptAction.INSTANCE, TransportDeleteStoredScriptAction.class);
+        actions.register(GetScriptContextAction.INSTANCE, TransportGetScriptContextAction.class);
 
         actions.register(FieldCapabilitiesAction.INSTANCE, TransportFieldCapabilitiesAction.class);
         actions.register(TransportFieldCapabilitiesIndexAction.TYPE, TransportFieldCapabilitiesIndexAction.class);

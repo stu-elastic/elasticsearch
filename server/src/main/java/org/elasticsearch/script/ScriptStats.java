@@ -35,8 +35,7 @@ public class ScriptStats implements Writeable, ToXContentFragment {
     public ScriptStats(long compilations, long cacheEvictions, long compilationLimitTriggered) {
         this.compilations = compilations;
         this.cacheEvictions = cacheEvictions;
-        this.compilationLimitTriggered = compilationLimitTriggered;
-    }
+        this.compilationLimitTriggered = compilationLimitTriggered; }
 
     public ScriptStats(StreamInput in) throws IOException {
         compilations = in.readVLong();
