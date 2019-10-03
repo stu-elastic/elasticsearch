@@ -25,26 +25,27 @@ import org.elasticsearch.common.io.stream.StreamOutput;
 import org.elasticsearch.common.xcontent.StatusToXContentObject;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.rest.RestStatus;
+import org.elasticsearch.script.ScriptService;
 
 import java.io.IOException;
 import java.util.List;
 
 public class GetScriptContextResponse extends ActionResponse implements StatusToXContentObject {
 
-    private List<String> contexts;
+    private List<ScriptService.ScriptContextInfo> contexts;
 
     GetScriptContextResponse(StreamInput in) throws IOException {
         super(in);
         // TODO(stu): read in list?
     }
 
-    GetScriptContextResponse(List<String> contexts) {
+    GetScriptContextResponse(List<ScriptService.ScriptContextInfo> contexts) {
         this.contexts = contexts;
     }
 
     @Override public void writeTo(StreamOutput out) throws IOException {
-        for (String context: this.contexts) {
-            out.writeString(context);
+        for (ScriptService.ScriptContextInfo context: this.contexts) {
+            out.writeString(context.name);
         }
     }
 
@@ -54,8 +55,10 @@ public class GetScriptContextResponse extends ActionResponse implements StatusTo
 
     @Override public XContentBuilder toXContent(XContentBuilder builder, Params params) throws IOException {
         builder.startObject();
-        for (String context: this.contexts) {
-            builder.startObject(context).endObject();
+        for (ScriptService.ScriptContextInfo context: this.contexts) {
+            builder.startObject(context.name);
+            builder.field("execute", context.execute.toString());
+            builder.endObject();
         }
         builder.endObject();
         return builder;
