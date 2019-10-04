@@ -19,10 +19,7 @@
 
 package org.elasticsearch.script;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * The information necessary to compile and run a script.
@@ -72,7 +69,7 @@ public final class ScriptContext<FactoryType> {
     public final Class<?> instanceClazz;
 
     /** The execute method of instanceClazz */
-    public final ExecuteInfo execute;
+    public final ScriptExecuteInfo execute;
 
     /** Construct a context with the related instance and compiled classes. */
     public ScriptContext(String name, Class<FactoryType> factoryClazz) {
@@ -96,7 +93,7 @@ public final class ScriptContext<FactoryType> {
                 + factoryClazz.getName() + "] for script context [" + name + "]");
         }
         instanceClazz = newInstanceMethod.getReturnType();
-        execute = new ExecuteInfo(instanceClazz);
+        execute = new ScriptExecuteInfo(instanceClazz, findMethod("Object", instanceClazz, "execute"));
     }
 
     /** Returns a method with the given name, or throws an exception if multiple are found. */
@@ -112,89 +109,5 @@ public final class ScriptContext<FactoryType> {
             }
         }
         return foundMethod;
-    }
-
-    public class ExecuteInfo {
-        public final String name, returnType;
-        public final List<ParameterInfo> parameters;
-
-        ExecuteInfo(Class<?> instanceClazz) {
-            name = "execute";
-            Method method = findMethod("Object", instanceClazz, name);
-            if (method == null) {
-                throw new IllegalArgumentException("Could not find method [" + name + "] on instance class [" + instanceClazz.getName() +"]");
-            }
-            Class<?> returnTypeClazz = method.getReturnType();
-            this.returnType = returnTypeClazz.getTypeName();
-
-            Class<?>[] parameterTypes = method.getParameterTypes();
-            if (parameterTypes.length > 0) {
-                String parametersFieldName = "PARAMETERS";
-
-                // See ScriptClassInfo.readArgumentNamesConstant
-                Field parameterNamesField;
-                try {
-                    parameterNamesField = instanceClazz.getField(parametersFieldName);
-                } catch (NoSuchFieldException e) {
-                    throw new IllegalArgumentException("Could not find field [" + parametersFieldName + "] on instance class [" +
-                        instanceClazz.getName() +"] but method [" + name + "] has [" + parameterTypes.length + "] parameters");
-                }
-                if (!parameterNamesField.getType().equals(String[].class)) {
-                    throw new IllegalArgumentException("Expected needs a constant [String[] PARAMETERS] on instance class [" +
-                        instanceClazz.getName() +"] for method [" + name + "] with [" + parameterTypes.length + "] parameters");
-                }
-
-                String[] argumentNames;
-                try {
-                    argumentNames = (String[]) parameterNamesField.get(null);
-                } catch (IllegalArgumentException | IllegalAccessException e) {
-                    throw new IllegalArgumentException("Error trying to read [" + instanceClazz.getName() + "#ARGUMENTS]", e);
-                }
-
-                if (argumentNames.length != parameterTypes.length) {
-                    throw new IllegalArgumentException("Expected argument names [" + argumentNames.length +
-                        "] to have the same arity as parameters [" + parameterTypes.length + "] for method [" + name +
-                        "] of instance class " + instanceClazz.getName());
-                }
-
-                parameters = new ArrayList<ParameterInfo>(argumentNames.length);
-                for (int i = 0; i < argumentNames.length; i++) {
-                    parameters.add(new ParameterInfo(parameterTypes[i].getTypeName(), argumentNames[i]));
-                }
-            } else {
-                parameters = new ArrayList<ParameterInfo>();
-            }
-        }
-
-        @Override
-        public String toString() {
-            StringBuilder builder = new StringBuilder();
-            builder.append(this.name);
-            builder.append(' ');
-            builder.append(this.returnType);
-            builder.append(' ');
-            builder.append('(');
-            boolean hadParam = false;
-            for (ParameterInfo param: this.parameters) {
-                if (hadParam) {
-                    builder.append(", ");
-                } else {
-                    hadParam = true;
-                }
-                builder.append(param.type);
-                builder.append(' ');
-                builder.append(param.name);
-            }
-            builder.append(')');
-            return builder.toString();
-        }
-
-        public class ParameterInfo {
-            public final String type, name;
-            ParameterInfo(String type, String name) {
-                this.type = type;
-                this.name = name;
-            }
-        }
     }
 }

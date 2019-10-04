@@ -25,6 +25,7 @@ import org.elasticsearch.common.io.stream.StreamOutput;
 import org.elasticsearch.common.xcontent.StatusToXContentObject;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.rest.RestStatus;
+import org.elasticsearch.script.ScriptExecuteInfo;
 import org.elasticsearch.script.ScriptService;
 
 import java.io.IOException;
@@ -54,13 +55,21 @@ public class GetScriptContextResponse extends ActionResponse implements StatusTo
     }
 
     @Override public XContentBuilder toXContent(XContentBuilder builder, Params params) throws IOException {
-        builder.startObject();
+        builder.startObject().startObject("contexts");
         for (ScriptService.ScriptContextInfo context: this.contexts) {
-            builder.startObject(context.name);
-            builder.field("execute", context.execute.toString());
-            builder.endObject();
+            builder.startObject(context.name).startObject("method");
+            builder.field("name", context.execute.name);
+            builder.field("return_type", context.execute.returnType);
+            builder.startArray("params");
+            for (ScriptExecuteInfo.ParameterInfo param: context.execute.parameters) {
+                builder.startObject();
+                builder.field("type", param.type).field("name", param.name);
+                builder.endObject();
+            }
+            builder.endArray(); // params
+            builder.endObject().endObject(); // method, context.name
         }
-        builder.endObject();
+        builder.endObject().endObject(); // contexts
         return builder;
     }
 }

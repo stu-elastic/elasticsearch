@@ -539,10 +539,10 @@ public class ScriptService implements Closeable, ClusterStateApplier {
         }
     }
 
-    public class ScriptContextInfo {
+    public static class ScriptContextInfo {
         public final String name;
-        public final ScriptContext.ExecuteInfo execute;
-        ScriptContextInfo(String name, ScriptContext.ExecuteInfo execute) {
+        public final ScriptExecuteInfo execute;
+        ScriptContextInfo(String name, ScriptExecuteInfo execute) {
             this.name = name;
             this.execute = execute;
         }
