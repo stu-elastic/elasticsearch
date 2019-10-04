@@ -26,6 +26,7 @@ import org.elasticsearch.common.xcontent.StatusToXContentObject;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.rest.RestStatus;
 import org.elasticsearch.script.ScriptExecuteInfo;
+import org.elasticsearch.script.ScriptGetterInfo;
 import org.elasticsearch.script.ScriptService;
 
 import java.io.IOException;
@@ -67,7 +68,17 @@ public class GetScriptContextResponse extends ActionResponse implements StatusTo
                 builder.endObject();
             }
             builder.endArray(); // params
-            builder.endObject().endObject(); // method, context.name
+            builder.endObject(); // method
+
+            builder.startObject("getters");
+            for (ScriptGetterInfo getter: context.getters) {
+                builder.startObject(getter.name);
+                builder.field("return_type", getter.returnType);
+                builder.endObject();
+            }
+            builder.endObject();
+
+            builder.endObject(); // context.name
         }
         builder.endObject().endObject(); // contexts
         return builder;
