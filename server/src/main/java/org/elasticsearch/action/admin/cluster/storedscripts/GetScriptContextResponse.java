@@ -25,28 +25,26 @@ import org.elasticsearch.common.io.stream.StreamOutput;
 import org.elasticsearch.common.xcontent.StatusToXContentObject;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.rest.RestStatus;
-import org.elasticsearch.script.ScriptExecuteInfo;
-import org.elasticsearch.script.ScriptGetterInfo;
-import org.elasticsearch.script.ScriptService;
+import org.elasticsearch.script.ScriptContextInfo;
 
 import java.io.IOException;
 import java.util.List;
 
 public class GetScriptContextResponse extends ActionResponse implements StatusToXContentObject {
 
-    private List<ScriptService.ScriptContextInfo> contexts;
+    private List<ScriptContextInfo> contexts;
 
     GetScriptContextResponse(StreamInput in) throws IOException {
         super(in);
         // TODO(stu): read in list?
     }
 
-    GetScriptContextResponse(List<ScriptService.ScriptContextInfo> contexts) {
+    GetScriptContextResponse(List<ScriptContextInfo> contexts) {
         this.contexts = contexts;
     }
 
     @Override public void writeTo(StreamOutput out) throws IOException {
-        for (ScriptService.ScriptContextInfo context: this.contexts) {
+        for (ScriptContextInfo context: this.contexts) {
             out.writeString(context.name);
         }
     }
@@ -57,27 +55,21 @@ public class GetScriptContextResponse extends ActionResponse implements StatusTo
 
     @Override public XContentBuilder toXContent(XContentBuilder builder, Params params) throws IOException {
         builder.startObject().startObject("contexts");
-        for (ScriptService.ScriptContextInfo context: this.contexts) {
+        for (ScriptContextInfo context: this.contexts) {
             builder.startObject(context.name).startObject("methods");
-            builder.startObject(context.execute.name);
-            builder.field("return_type", context.execute.returnType);
-            builder.startArray("params");
-            for (ScriptExecuteInfo.ParameterInfo param: context.execute.parameters) {
-                builder.startObject();
-                builder.field("type", param.type).field("name", param.name);
-                builder.endObject();
-            }
-            builder.endArray(); // params
-            builder.endObject(); // context.execute.name
-
-            for (ScriptGetterInfo getter: context.getters) {
-                builder.startObject(getter.name);
-                builder.field("return_type", getter.returnType);
-                builder.startArray("params").endArray();
-                builder.endObject();
+            for (ScriptContextInfo.ScriptMethodInfo method: context.methods() ) {
+                builder.startObject(method.name);
+                builder.field("return_type", context.execute.returnType);
+                builder.startArray("params");
+                for (ScriptContextInfo.ScriptMethodInfo.ParameterInfo param: context.execute.parameters) {
+                    builder.startObject();
+                    builder.field("type", param.type).field("name", param.name);
+                    builder.endObject();
+                }
+                builder.endArray(); // params
+                builder.endObject(); // method.name
             }
             builder.endObject(); // methods
-
             builder.endObject(); // context.name
         }
         builder.endObject().endObject(); // contexts
