@@ -68,6 +68,9 @@ public final class ScriptContext<FactoryType> {
     /** A class that is an instance of a script. */
     public final Class<?> instanceClazz;
 
+    /** The execute method of instanceClazz */
+    public final ScriptExecuteInfo execute;
+
     /** Construct a context with the related instance and compiled classes. */
     public ScriptContext(String name, Class<FactoryType> factoryClazz) {
         this.name = name;
@@ -90,6 +93,7 @@ public final class ScriptContext<FactoryType> {
                 + factoryClazz.getName() + "] for script context [" + name + "]");
         }
         instanceClazz = newInstanceMethod.getReturnType();
+        execute = new ScriptExecuteInfo(instanceClazz, findMethod("Object", instanceClazz, "execute"));
     }
 
     /** Returns a method with the given name, or throws an exception if multiple are found. */

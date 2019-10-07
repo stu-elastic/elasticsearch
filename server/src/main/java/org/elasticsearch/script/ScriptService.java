@@ -51,6 +51,7 @@ import org.elasticsearch.core.internal.io.IOUtils;
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -536,6 +537,29 @@ public class ScriptService implements Closeable, ClusterStateApplier {
         } else {
             return null;
         }
+    }
+
+    public static class ScriptContextInfo {
+        public final String name;
+        public final ScriptExecuteInfo execute;
+        public final List<ScriptGetterInfo> getters;
+        ScriptContextInfo(String name, ScriptExecuteInfo execute, List<ScriptGetterInfo> getters) {
+            this.name = name;
+            this.execute = execute;
+            this.getters = getters;
+        }
+    }
+
+    public List<ScriptContextInfo> getContextInfos() {
+        List<ScriptContextInfo> infos = new ArrayList<ScriptContextInfo>(contexts.size());
+        for (ScriptContext<?> context : contexts.values()) {
+            infos.add(new ScriptContextInfo(context.name, context.execute, ScriptGetterInfo.ScriptGetterInfos(context.instanceClazz)));
+        }
+        return infos;
+    }
+
+    public List<String> getContextNames() {
+        return new ArrayList<String>(contexts.keySet());
     }
 
     public ScriptStats stats() {
