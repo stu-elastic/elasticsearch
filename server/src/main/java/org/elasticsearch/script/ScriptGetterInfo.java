@@ -37,7 +37,8 @@ public class ScriptGetterInfo {
             if (!m.isDefault() &&
                 m.getName().startsWith("get") &&
                 !m.getName().equals("getClass") &&
-                !Modifier.isStatic(m.getModifiers())) {
+                !Modifier.isStatic(m.getModifiers()) &&
+                m.getParameters().length == 0) {
                 getters.add(new ScriptGetterInfo(m.getName(), m.getReturnType().getTypeName()));
             }
         }

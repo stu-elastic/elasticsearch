@@ -58,8 +58,8 @@ public class GetScriptContextResponse extends ActionResponse implements StatusTo
     @Override public XContentBuilder toXContent(XContentBuilder builder, Params params) throws IOException {
         builder.startObject().startObject("contexts");
         for (ScriptService.ScriptContextInfo context: this.contexts) {
-            builder.startObject(context.name).startObject("method");
-            builder.field("name", context.execute.name);
+            builder.startObject(context.name).startObject("methods");
+            builder.startObject(context.execute.name);
             builder.field("return_type", context.execute.returnType);
             builder.startArray("params");
             for (ScriptExecuteInfo.ParameterInfo param: context.execute.parameters) {
@@ -68,15 +68,15 @@ public class GetScriptContextResponse extends ActionResponse implements StatusTo
                 builder.endObject();
             }
             builder.endArray(); // params
-            builder.endObject(); // method
+            builder.endObject(); // context.execute.name
 
-            builder.startObject("getters");
             for (ScriptGetterInfo getter: context.getters) {
                 builder.startObject(getter.name);
                 builder.field("return_type", getter.returnType);
+                builder.startArray("params").endArray();
                 builder.endObject();
             }
-            builder.endObject();
+            builder.endObject(); // methods
 
             builder.endObject(); // context.name
         }
