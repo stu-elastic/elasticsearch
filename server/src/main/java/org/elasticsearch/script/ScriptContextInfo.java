@@ -81,7 +81,7 @@ public class ScriptContextInfo {
                 }
             }
             if (execute == null) {
-                throw new IllegalArgumentException("Could not find method [" + name + "] on instance class [" + clazz.getName() + "]");
+                throw new IllegalArgumentException("Could not find method [" + name + "] on class [" + clazz.getName() + "]");
             }
 
             Class<?> returnTypeClazz = execute.getReturnType();
@@ -90,6 +90,7 @@ public class ScriptContextInfo {
             Class<?>[] parameterTypes = execute.getParameterTypes();
             List<ParameterInfo> parameters = new ArrayList<>();
             if (parameterTypes.length > 0) {
+                // TODO(stu): ensure empty/no PARAMETERS if parameterTypes.length == 0?
                 String parametersFieldName = "PARAMETERS";
 
                 // See ScriptClassInfo.readArgumentNamesConstant
@@ -101,8 +102,9 @@ public class ScriptContextInfo {
                         clazz.getName() + "] but method [" + name + "] has [" + parameterTypes.length + "] parameters");
                 }
                 if (!parameterNamesField.getType().equals(String[].class)) {
-                    throw new IllegalArgumentException("Expected needs a constant [String[] PARAMETERS] on instance class [" +
-                        clazz.getName() + "] for method [" + name + "] with [" + parameterTypes.length + "] parameters");
+                    throw new IllegalArgumentException("Expected a constant [String[] PARAMETERS] on instance class [" +
+                        clazz.getName() + "] for method [" + name + "] with [" + parameterTypes.length + "] parameters, found [" +
+                        parameterNamesField.getType().getTypeName() + "]");
                 }
 
                 String[] argumentNames;
@@ -114,8 +116,8 @@ public class ScriptContextInfo {
 
                 if (argumentNames.length != parameterTypes.length) {
                     throw new IllegalArgumentException("Expected argument names [" + argumentNames.length +
-                        "] to have the same arity as clazz [" + parameterTypes.length + "] for method [" + name +
-                        "] of instance class " + clazz.getName());
+                        "] to have the same arity [" + parameterTypes.length + "] for method [" + name +
+                        "] of class [" + clazz.getName() + "]");
                 }
 
                 for (int i = 0; i < argumentNames.length; i++) {

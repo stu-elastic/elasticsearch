@@ -115,6 +115,94 @@ public class ScriptContextInfoTests extends ESTestCase {
             assertEquals(returnType, getter.returnType);
         }
         assertEquals(0, getters.size());
+
+        HashMap<String,String> methods = new HashMap(Map.of("getCustom1",ct1, "getCustom2",ct2, "execute",ct0));
+        for (ScriptContextInfo.ScriptMethodInfo method: info.methods()) {
+            String returnType = methods.remove(method.name);
+            assertNotNull(returnType);
+            assertEquals(returnType, method.returnType);
+        }
+        assertEquals(0, methods.size());
     }
 
+    public static class TwoExecute {
+        public void execute(int foo) {}
+        public boolean execute(boolean foo) {return foo;}
+        public static final String[] PARAMETERS = {"foo"};
+    }
+
+    public void testTwoExecute() {
+        IllegalArgumentException e = expectThrows(IllegalArgumentException.class, () ->
+            ScriptContextInfo.fromContext("two_execute", TwoExecute.class));
+        assertEquals("Cannot have multiple [execute] methods on class [" + TwoExecute.class.getName() + "]", e.getMessage());
+    }
+
+    public static class NoExecute {}
+
+    public void testNoExecute() {
+        IllegalArgumentException e = expectThrows(IllegalArgumentException.class, () ->
+            ScriptContextInfo.fromContext("no_execute", NoExecute.class));
+        assertEquals("Could not find method [execute] on class [" + NoExecute.class.getName() + "]", e.getMessage());
+    }
+
+    public static class NoParametersField {
+        public void execute(int foo) {}
+    }
+
+    public void testNoParametersField() {
+        IllegalArgumentException e = expectThrows(IllegalArgumentException.class, () ->
+            ScriptContextInfo.fromContext("no_parameters_field", NoParametersField.class));
+        assertEquals("Could not find field [PARAMETERS] on instance class [" + NoParametersField.class.getName() +
+            "] but method [execute] has [1] parameters", e.getMessage());
+    }
+
+    public static class BadParametersFieldType {
+        public void execute(int foo) {}
+        public static final int[] PARAMETERS = {1};
+    }
+
+    public void testBadParametersFieldType() {
+        IllegalArgumentException e = expectThrows(IllegalArgumentException.class, () ->
+            ScriptContextInfo.fromContext("bad_parameters_field_type", BadParametersFieldType.class));
+        assertEquals("Expected a constant [String[] PARAMETERS] on instance class [" + BadParametersFieldType.class.getName() +
+            "] for method [execute] with [1] parameters, found [int[]]", e.getMessage());
+    }
+
+    public static class WrongNumberOfParameters {
+        public void execute(int foo) {}
+        public static final String[] PARAMETERS = {"foo", "bar"};
+    }
+
+    public void testWrongNumberOfParameters() {
+        IllegalArgumentException e = expectThrows(IllegalArgumentException.class, () ->
+            ScriptContextInfo.fromContext("wrong_number_of_parameters", WrongNumberOfParameters.class));
+        assertEquals("Expected argument names [2] to have the same arity [1] for method [execute] of class ["
+            + WrongNumberOfParameters.class.getName() + "]", e.getMessage());
+    }
+
+    public interface Default {
+        public default int getDefault() {return 1;}
+        public boolean getNonDefault1();
+    }
+
+    public static class GetterConditional implements Default {
+        public void execute() {}
+        public boolean getNonDefault1() {return true;}
+        public float getNonDefault2() {return 0.1f;}
+        public static long getStatic() {return 2L;}
+        public char getChar(char ch) { return ch;}
+    }
+
+    public void testGetterConditional() {
+        List<ScriptContextInfo.ScriptMethodInfo> getters =
+            ScriptContextInfo.fromContext("getter_conditional", GetterConditional.class).getters;
+        assertEquals(2, getters.size());
+        HashMap<String,String> methods = new HashMap(Map.of("getNonDefault1","boolean", "getNonDefault2","float"));
+        for (ScriptContextInfo.ScriptMethodInfo method: getters) {
+            String returnType = methods.remove(method.name);
+            assertNotNull(returnType);
+            assertEquals(returnType, method.returnType);
+        }
+        assertEquals(0, methods.size());
+    }
 }
