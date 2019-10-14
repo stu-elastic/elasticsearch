@@ -34,8 +34,6 @@ import org.elasticsearch.threadpool.ThreadPool;
 import org.elasticsearch.transport.TransportService;
 
 import java.io.IOException;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 public class TransportGetScriptContextAction extends TransportMasterNodeReadAction<GetScriptContextRequest, GetScriptContextResponse> {
 
@@ -63,10 +61,7 @@ public class TransportGetScriptContextAction extends TransportMasterNodeReadActi
     @Override
     protected void masterOperation(Task task, GetScriptContextRequest request, ClusterState state,
         ActionListener<GetScriptContextResponse> listener) throws Exception {
-        Map<String,Object> contexts = scriptService.getContextNames().stream().collect(
-            Collectors.toMap(name -> name, name -> new Object())
-        );
-        listener.onResponse(new GetScriptContextResponse(contexts));
+        listener.onResponse(new GetScriptContextResponse(scriptService.getContextInfos()));
     }
 
     @Override
