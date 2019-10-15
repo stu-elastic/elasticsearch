@@ -30,6 +30,7 @@ import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 public class ScriptContextInfo {
     public final String name;
@@ -73,6 +74,21 @@ public class ScriptContextInfo {
         return new ScriptContextInfo(name, ScriptMethodInfo.executeFromContext(clazz), ScriptMethodInfo.gettersFromContext(clazz));
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        ScriptContextInfo that = (ScriptContextInfo) o;
+        return Objects.equals(name, that.name) &&
+            Objects.equals(execute, that.execute) &&
+            Objects.equals(getters, that.getters);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(name, execute, getters);
+    }
+
     public static class ScriptMethodInfo {
         public final String name, returnType;
         public final List<ParameterInfo> parameters;
@@ -103,6 +119,21 @@ public class ScriptContextInfo {
             }
         }
 
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            ScriptMethodInfo that = (ScriptMethodInfo) o;
+            return Objects.equals(name, that.name) &&
+                Objects.equals(returnType, that.returnType) &&
+                Objects.equals(parameters, that.parameters);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(name, returnType, parameters);
+        }
+
         public static class ParameterInfo {
             public final String type, name;
 
@@ -120,6 +151,20 @@ public class ScriptContextInfo {
             void writeTo(StreamOutput out) throws IOException {
                 out.writeString(type);
                 out.writeString(name);
+            }
+
+            @Override
+            public boolean equals(Object o) {
+                if (this == o) return true;
+                if (o == null || getClass() != o.getClass()) return false;
+                ParameterInfo that = (ParameterInfo) o;
+                return Objects.equals(type, that.type) &&
+                    Objects.equals(name, that.name);
+            }
+
+            @Override
+            public int hashCode() {
+                return Objects.hash(type, name);
             }
         }
 

@@ -117,11 +117,11 @@ public class GetScriptContextResponse extends ActionResponse implements StatusTo
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         GetScriptContextResponse that = (GetScriptContextResponse) o;
-        return new HashSet<>(contextNames).equals(new HashSet<>(that.contextNames));
+        return new HashSet<>(contexts).equals(new HashSet<>(that.contexts));
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(new HashSet<>(contextNames));
+        return Objects.hash(new HashSet<>(contexts));
     }
 }
