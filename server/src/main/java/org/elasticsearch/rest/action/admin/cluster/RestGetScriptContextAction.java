@@ -19,6 +19,7 @@
 
 package org.elasticsearch.rest.action.admin.cluster;
 
+import org.elasticsearch.action.admin.cluster.storedscripts.GetScriptContextAction;
 import org.elasticsearch.action.admin.cluster.storedscripts.GetScriptContextRequest;
 import org.elasticsearch.client.node.NodeClient;
 import org.elasticsearch.common.inject.Inject;
@@ -42,7 +43,8 @@ public class RestGetScriptContextAction extends BaseRestHandler {
     }
 
     @Override protected RestChannelConsumer prepareRequest(RestRequest request, NodeClient client) throws IOException {
-        GetScriptContextRequest getRequest = new GetScriptContextRequest();
-        return channel -> client.admin().cluster().getScriptContext(getRequest, new RestToXContentListener<>(channel));
+        return channel -> client.execute(GetScriptContextAction.INSTANCE,
+            new GetScriptContextRequest(),
+            new RestToXContentListener<>(channel));
     }
 }
