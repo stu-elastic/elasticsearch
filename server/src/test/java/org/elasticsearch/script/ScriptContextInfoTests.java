@@ -19,10 +19,19 @@
 
 package org.elasticsearch.script;
 
+import org.elasticsearch.common.bytes.BytesArray;
 import org.elasticsearch.common.collect.Tuple;
+import org.elasticsearch.common.xcontent.DeprecationHandler;
+import org.elasticsearch.common.xcontent.NamedXContentRegistry;
+import org.elasticsearch.common.xcontent.XContentBuilder;
+import org.elasticsearch.common.xcontent.XContentFactory;
+import org.elasticsearch.common.xcontent.XContentParser;
+import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.test.ESTestCase;
 
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,7 +43,7 @@ public class ScriptContextInfoTests extends ESTestCase {
 
     public void testMinimalContext() {
         String name = "minimal_context";
-        ScriptContextInfo info = ScriptContextInfo.fromContext(name, MinimalContext.class);
+        ScriptContextInfo info = new ScriptContextInfo(name, MinimalContext.class);
         assertEquals(name, info.name);
         assertEquals("execute", info.execute.name);
         assertEquals("void", info.execute.returnType);
@@ -51,7 +60,7 @@ public class ScriptContextInfoTests extends ESTestCase {
 
     public void testPrimitiveContext() {
         String name = "primitive_context";
-        ScriptContextInfo info = ScriptContextInfo.fromContext(name, PrimitiveContext.class);
+        ScriptContextInfo info = new ScriptContextInfo(name, PrimitiveContext.class);
         assertEquals(name, info.name);
         assertEquals("execute", info.execute.name);
         assertEquals("int", info.execute.returnType);
@@ -94,7 +103,7 @@ public class ScriptContextInfoTests extends ESTestCase {
         String ct1 = ct + 1;
         String ct2 = ct + 2;
         String name = "custom_type_context";
-        ScriptContextInfo info = ScriptContextInfo.fromContext(name, CustomTypeContext.class);
+        ScriptContextInfo info = new ScriptContextInfo(name, CustomTypeContext.class);
         assertEquals(name, info.name);
         assertEquals("execute", info.execute.name);
         assertEquals(ct0, info.execute.returnType);
@@ -133,7 +142,7 @@ public class ScriptContextInfoTests extends ESTestCase {
 
     public void testTwoExecute() {
         IllegalArgumentException e = expectThrows(IllegalArgumentException.class, () ->
-            ScriptContextInfo.fromContext("two_execute", TwoExecute.class));
+            new ScriptContextInfo("two_execute", TwoExecute.class));
         assertEquals("Cannot have multiple [execute] methods on class [" + TwoExecute.class.getName() + "]", e.getMessage());
     }
 
@@ -141,7 +150,7 @@ public class ScriptContextInfoTests extends ESTestCase {
 
     public void testNoExecute() {
         IllegalArgumentException e = expectThrows(IllegalArgumentException.class, () ->
-            ScriptContextInfo.fromContext("no_execute", NoExecute.class));
+            new ScriptContextInfo("no_execute", NoExecute.class));
         assertEquals("Could not find method [execute] on class [" + NoExecute.class.getName() + "]", e.getMessage());
     }
 
@@ -151,7 +160,7 @@ public class ScriptContextInfoTests extends ESTestCase {
 
     public void testNoParametersField() {
         IllegalArgumentException e = expectThrows(IllegalArgumentException.class, () ->
-            ScriptContextInfo.fromContext("no_parameters_field", NoParametersField.class));
+            new ScriptContextInfo("no_parameters_field", NoParametersField.class));
         assertEquals("Could not find field [PARAMETERS] on instance class [" + NoParametersField.class.getName() +
             "] but method [execute] has [1] parameters", e.getMessage());
     }
@@ -163,7 +172,7 @@ public class ScriptContextInfoTests extends ESTestCase {
 
     public void testBadParametersFieldType() {
         IllegalArgumentException e = expectThrows(IllegalArgumentException.class, () ->
-            ScriptContextInfo.fromContext("bad_parameters_field_type", BadParametersFieldType.class));
+            new ScriptContextInfo("bad_parameters_field_type", BadParametersFieldType.class));
         assertEquals("Expected a constant [String[] PARAMETERS] on instance class [" + BadParametersFieldType.class.getName() +
             "] for method [execute] with [1] parameters, found [int[]]", e.getMessage());
     }
@@ -175,7 +184,7 @@ public class ScriptContextInfoTests extends ESTestCase {
 
     public void testWrongNumberOfParameters() {
         IllegalArgumentException e = expectThrows(IllegalArgumentException.class, () ->
-            ScriptContextInfo.fromContext("wrong_number_of_parameters", WrongNumberOfParameters.class));
+            new ScriptContextInfo("wrong_number_of_parameters", WrongNumberOfParameters.class));
         assertEquals("Expected argument names [2] to have the same arity [1] for method [execute] of class ["
             + WrongNumberOfParameters.class.getName() + "]", e.getMessage());
     }
@@ -195,7 +204,7 @@ public class ScriptContextInfoTests extends ESTestCase {
 
     public void testGetterConditional() {
         List<ScriptContextInfo.ScriptMethodInfo> getters =
-            ScriptContextInfo.fromContext("getter_conditional", GetterConditional.class).getters;
+            new ScriptContextInfo("getter_conditional", GetterConditional.class).getters;
         assertEquals(2, getters.size());
         HashMap<String,String> methods = new HashMap(Map.of("getNonDefault1","boolean", "getNonDefault2","float"));
         for (ScriptContextInfo.ScriptMethodInfo method: getters) {
@@ -204,5 +213,55 @@ public class ScriptContextInfoTests extends ESTestCase {
             assertEquals(returnType, method.returnType);
         }
         assertEquals(0, methods.size());
+    }
+
+    public void testParseParameters() throws IOException {
+        XContentBuilder builder = XContentFactory.jsonBuilder();
+
+        XContentParser parser = XContentType.JSON.xContent()
+            .createParser(
+                NamedXContentRegistry.EMPTY, DeprecationHandler.THROW_UNSUPPORTED_OPERATION,
+                new BytesArray("{\"type\":\"foo\", \"name\": \"bar\"}").streamInput());
+        ScriptContextInfo.ScriptMethodInfo.ParameterInfo info = ScriptContextInfo.ScriptMethodInfo.ParameterInfo.fromXContent(parser);
+        assertEquals(new ScriptContextInfo.ScriptMethodInfo.ParameterInfo("foo", "bar"), info);
+    }
+
+    public void testParserMethods() throws IOException {
+        String executeJson = "{" +
+            "  \"execute\": {" +
+            "    \"return_type\": \"boolean\"," +
+            "    \"params\": [" +
+            "      {" +
+            "        \"type\": \"java.util.Map\"," +
+            "        \"name\": \"ctx\"" +
+            "      }," +
+            "      {" +
+            "        \"type\": \"java.util.List\"," +
+            "        \"name\": \"other\"" +
+            "      }" +
+            "    ]" +
+            "  }" + "}";
+        /*+
+            "  \"getParams\": {" +
+            "    \"return_type\": \"java.util.Map\"," +
+            "    \"params\": []" +
+            "  }," +
+            "  \"getFoo\": {" +
+            "    \"return_type\": \"bool\"," +
+            "    \"params\": []" +
+            "  }" +
+            "}";*/
+
+        String json = "{\"name\": \"fooFunc\", \"return_type\": \"int\", \"params\": [{\"type\": \"int\", \"name\": \"fooParam\"}, " +
+            "{\"type\": \"java.util.Map\", \"name\": \"barParam\"}]}";
+        XContentParser parser = XContentType.JSON.xContent()
+            .createParser(
+                NamedXContentRegistry.EMPTY, DeprecationHandler.THROW_UNSUPPORTED_OPERATION,
+                new BytesArray(json).streamInput());
+        ScriptContextInfo.ScriptMethodInfo info = ScriptContextInfo.ScriptMethodInfo.fromXContent(parser);
+        assertEquals(new ScriptContextInfo.ScriptMethodInfo("fooFunc", "int", new ArrayList<>(
+            Arrays.asList(new ScriptContextInfo.ScriptMethodInfo.ParameterInfo("int", "fooPara"),
+                new ScriptContextInfo.ScriptMethodInfo.ParameterInfo("java.util.Map", "bazParam"))
+        )), info);
     }
 }

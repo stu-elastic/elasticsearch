@@ -18,8 +18,15 @@
  */
 package org.elasticsearch.action.admin.cluster.storedscripts;
 
+import org.elasticsearch.common.bytes.BytesArray;
 import org.elasticsearch.common.io.stream.Writeable;
+import org.elasticsearch.common.xcontent.DeprecationHandler;
+import org.elasticsearch.common.xcontent.NamedXContentRegistry;
+import org.elasticsearch.common.xcontent.XContentBuilder;
+import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.common.xcontent.XContentParser;
+import org.elasticsearch.common.xcontent.XContentType;
+import org.elasticsearch.script.ScriptContextInfo;
 import org.elasticsearch.test.AbstractSerializingTestCase;
 
 import java.io.IOException;
@@ -33,6 +40,7 @@ public class GetScriptContextResponseTests extends AbstractSerializingTestCase<G
 
     @Override
     protected GetScriptContextResponse createTestInstance() {
+        /*
         if (randomBoolean()) {
             return new GetScriptContextResponse(Collections.emptyMap());
         }
@@ -41,7 +49,8 @@ public class GetScriptContextResponseTests extends AbstractSerializingTestCase<G
             items.put(randomAsciiLettersOfLengthBetween(1, 16), new Object());
         }
         return new GetScriptContextResponse(items);
-
+        */
+        return null;
     }
 
     @Override
@@ -56,10 +65,13 @@ public class GetScriptContextResponseTests extends AbstractSerializingTestCase<G
 
     @Override
     protected GetScriptContextResponse mutateInstance(GetScriptContextResponse instance) throws IOException {
+        /*
         Map<String,Object> items = new HashMap<>();
         for (int i = randomIntBetween(1, 10); i > 0; i--) {
             items.put(randomAsciiLettersOfLengthBetween(1, 16), new Object());
         }
         return new GetScriptContextResponse(items);
+         */
+        return null;
     }
 }

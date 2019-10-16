@@ -19,8 +19,13 @@
 
 package org.elasticsearch.script;
 
+import org.elasticsearch.common.ParseField;
 import org.elasticsearch.common.io.stream.StreamInput;
 import org.elasticsearch.common.io.stream.StreamOutput;
+import org.elasticsearch.common.xcontent.ConstructingObjectParser;
+import org.elasticsearch.common.xcontent.ToXContentObject;
+import org.elasticsearch.common.xcontent.XContentBuilder;
+import org.elasticsearch.common.xcontent.XContentParser;
 
 import java.io.IOException;
 import java.lang.reflect.Array;
@@ -32,22 +37,29 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
+import static org.elasticsearch.common.xcontent.ConstructingObjectParser.constructorArg;
+import static org.elasticsearch.common.xcontent.XContentParserUtils.ensureExpectedToken;
+
 public class ScriptContextInfo {
     public final String name;
     public final ScriptMethodInfo execute;
     public final List<ScriptMethodInfo> getters;
 
-    private ScriptContextInfo(String name, ScriptMethodInfo execute,  List<ScriptMethodInfo> getters) {
-        this.name = name;
-        this.execute = execute;
-        this.getters = getters;
+    public ScriptContextInfo(String name, ScriptMethodInfo execute,  List<ScriptMethodInfo> getters) {
+        this.name = Objects.requireNonNull(name);
+        this.execute = Objects.requireNonNull(execute);
+        this.getters = Objects.requireNonNull(getters);
     }
 
-    public List<ScriptMethodInfo> methods() {
-        ArrayList<ScriptMethodInfo> methods = new ArrayList<>();
-        methods.add(this.execute);
-        methods.addAll(this.getters);
-        return Collections.unmodifiableList(methods);
+    public ScriptContextInfo(StreamInput in) throws IOException {
+        this.name = in.readString();
+        this.execute = new ScriptMethodInfo(in);
+        int numGetters = in.readInt();
+        List<ScriptMethodInfo> getters = new ArrayList<>(numGetters);
+        for (int i = 0; i < numGetters; i++) {
+            getters.add(new ScriptMethodInfo(in));
+        }
+        this.getters = Collections.unmodifiableList(getters);
     }
 
     public void writeTo(StreamOutput out) throws IOException {
@@ -59,19 +71,17 @@ public class ScriptContextInfo {
         }
     }
 
-    public static ScriptContextInfo readFrom(StreamInput in) throws IOException {
-        String name = in.readString();
-        ScriptMethodInfo execute = ScriptMethodInfo.readFrom(in);
-        int numGetters = in.readInt();
-        List<ScriptMethodInfo> getters = new ArrayList<>(numGetters);
-        for (int i = 0; i < numGetters; i++) {
-            getters.add(ScriptMethodInfo.readFrom(in));
-        }
-        return new ScriptContextInfo(name, execute, getters);
+    public List<ScriptMethodInfo> methods() {
+        ArrayList<ScriptMethodInfo> methods = new ArrayList<>();
+        methods.add(this.execute);
+        methods.addAll(this.getters);
+        return Collections.unmodifiableList(methods);
     }
 
-    static ScriptContextInfo fromContext(String name, Class<?> clazz) {
-        return new ScriptContextInfo(name, ScriptMethodInfo.executeFromContext(clazz), ScriptMethodInfo.gettersFromContext(clazz));
+    ScriptContextInfo(String name, Class<?> clazz) {
+        this.name = name;
+        this.execute = ScriptMethodInfo.executeFromContext(clazz);
+        this.getters = ScriptMethodInfo.gettersFromContext(clazz);
     }
 
     @Override
@@ -93,21 +103,25 @@ public class ScriptContextInfo {
         public final String name, returnType;
         public final List<ParameterInfo> parameters;
 
-        private ScriptMethodInfo(String name, String returnType, List<ParameterInfo> parameters) {
+        public static String NAME_FIELD = "name";
+        public static String RETURN_TYPE_FIELD = "return_type";
+        public static String PARAMETERS_FIELD = "params";
+
+        ScriptMethodInfo(String name, String returnType, List<ParameterInfo> parameters) {
             this.name = name;
             this.returnType = returnType;
             this.parameters = Collections.unmodifiableList(parameters);
         }
 
-        private static ScriptMethodInfo readFrom(StreamInput in) throws IOException {
-            String name = in.readString();
-            String returnType = in.readString();
+        private ScriptMethodInfo(StreamInput in) throws IOException {
+            this.name = in.readString();
+            this.returnType = in.readString();
             int numParameters = in.readInt();
             ArrayList<ParameterInfo> parameters = new ArrayList<>(numParameters);
             for (int i = 0; i < numParameters; i++) {
-                parameters.add(ParameterInfo.readFrom(in));
+                parameters.add(new ParameterInfo(in));
             }
-            return new ScriptMethodInfo(name, returnType, parameters);
+            this.parameters = Collections.unmodifiableList(parameters);
         }
 
         void writeTo(StreamOutput out) throws IOException {
@@ -117,6 +131,23 @@ public class ScriptContextInfo {
             for (ParameterInfo parameter: parameters) {
                 parameter.writeTo(out);
             }
+        }
+
+        @SuppressWarnings("unchecked")
+        private static ConstructingObjectParser<ScriptMethodInfo,Void> PARSER =
+            new ConstructingObjectParser<>("method", true,
+                (m, name) -> new ScriptMethodInfo((String) m[0], (String) m[1], (ArrayList<ParameterInfo>) m[2])
+            );
+
+        static {
+            PARSER.declareString(constructorArg(), new ParseField(NAME_FIELD));
+            PARSER.declareString(constructorArg(), new ParseField(RETURN_TYPE_FIELD));
+            PARSER.declareNamedObjects();
+            PARSER.declareObjectArray(constructorArg(), (parser, ctx) -> ParameterInfo.PARSER, new ParseField(PARAMETERS_FIELD));
+        }
+
+        public static ScriptMethodInfo fromXContent(XContentParser parser) throws IOException {
+            return PARSER.parse(parser, null);
         }
 
         @Override
@@ -134,23 +165,44 @@ public class ScriptContextInfo {
             return Objects.hash(name, returnType, parameters);
         }
 
-        public static class ParameterInfo {
+        public static class ParameterInfo implements ToXContentObject {
             public final String type, name;
+
+            public static String TYPE_FIELD = "type";
+            public static String NAME_FIELD = "name";
 
             ParameterInfo(String type, String name) {
                 this.type = type;
                 this.name = name;
             }
 
-            static ParameterInfo readFrom(StreamInput in) throws IOException {
-                String type = in.readString();
-                String name = in.readString();
-                return new ParameterInfo(type, name);
+            ParameterInfo(StreamInput in) throws IOException {
+                this.type = in.readString();
+                this.name = in.readString();
             }
 
             void writeTo(StreamOutput out) throws IOException {
                 out.writeString(type);
                 out.writeString(name);
+            }
+
+            private static ConstructingObjectParser<ParameterInfo,Void> PARSER =
+                new ConstructingObjectParser<>("parameters", true,
+                    (p) -> new ParameterInfo((String)p[0], (String)p[1])
+            );
+
+            static {
+                PARSER.declareString(constructorArg(), new ParseField(TYPE_FIELD));
+                PARSER.declareString(constructorArg(), new ParseField(NAME_FIELD));
+            }
+
+            public static ParameterInfo fromXContent(XContentParser parser) throws IOException {
+                return PARSER.parse(parser, null);
+            }
+
+            @Override
+            public XContentBuilder toXContent(XContentBuilder builder, Params params) throws IOException {
+                return builder.startObject().field(TYPE_FIELD, this.type).field(NAME_FIELD, this.name).endObject();
             }
 
             @Override

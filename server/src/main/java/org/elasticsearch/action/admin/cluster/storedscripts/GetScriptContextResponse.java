@@ -31,7 +31,10 @@ import org.elasticsearch.rest.RestStatus;
 import org.elasticsearch.script.ScriptContextInfo;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -50,10 +53,7 @@ public class GetScriptContextResponse extends ActionResponse implements StatusTo
     public static final ConstructingObjectParser<GetScriptContextResponse,Void> PARSER =
         new ConstructingObjectParser<>("get_script_context", true,
             (a) -> {
-                Map<String, ScriptContextInfo> contexts = ((List<String>) a[0]).stream().collect(Collectors.toMap(
-                    name -> name, name -> new Object()
-                ));
-                return new GetScriptContextResponse(contexts);
+                return new GetScriptContextResponse(new HashSet<>());
             }
         );
 
@@ -71,12 +71,22 @@ public class GetScriptContextResponse extends ActionResponse implements StatusTo
         );
     }
 
+    private static class ParsedScriptContextInfos {
+        Map<String, Object> infos = new HashMap();
+        void setInfo(String key, Object value) { infos.put(key, value); }
+    }
+    private static class HeadlessScriptContextInfo {
+        ScriptContextInfo.ScriptMethodInfo execute;
+        List<ScriptContextInfo.ScriptMethodInfo> methods = new ArrayList<>();
+    }
+
+
     GetScriptContextResponse(StreamInput in) throws IOException {
         super(in);
         int size = in.readInt();
         HashSet<ScriptContextInfo> contexts = new HashSet<>(size);
         for (int i = 0; i < size; i++) {
-            contexts.add(ScriptContextInfo.readFrom(in));
+            contexts.add(new ScriptContextInfo(in));
         }
         this.contexts = Collections.unmodifiableSet(contexts);
     }
