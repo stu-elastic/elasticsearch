@@ -260,8 +260,8 @@ public class ScriptContextInfoTests extends ESTestCase {
                 new BytesArray(json).streamInput());
         ScriptContextInfo.ScriptMethodInfo info = ScriptContextInfo.ScriptMethodInfo.fromXContent(parser);
         assertEquals(new ScriptContextInfo.ScriptMethodInfo("fooFunc", "int", new ArrayList<>(
-            Arrays.asList(new ScriptContextInfo.ScriptMethodInfo.ParameterInfo("int", "fooPara"),
-                new ScriptContextInfo.ScriptMethodInfo.ParameterInfo("java.util.Map", "bazParam"))
+            Arrays.asList(new ScriptContextInfo.ScriptMethodInfo.ParameterInfo("int", "fooParam"),
+                new ScriptContextInfo.ScriptMethodInfo.ParameterInfo("java.util.Map", "barParam"))
         )), info);
     }
 }

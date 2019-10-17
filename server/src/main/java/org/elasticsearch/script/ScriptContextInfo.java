@@ -142,8 +142,9 @@ public class ScriptContextInfo {
         static {
             PARSER.declareString(constructorArg(), new ParseField(NAME_FIELD));
             PARSER.declareString(constructorArg(), new ParseField(RETURN_TYPE_FIELD));
-            PARSER.declareNamedObjects();
-            PARSER.declareObjectArray(constructorArg(), (parser, ctx) -> ParameterInfo.PARSER, new ParseField(PARAMETERS_FIELD));
+            PARSER.declareObjectArray(constructorArg(),
+                (parser, ctx) -> ParameterInfo.PARSER.apply(parser, ctx),
+                new ParseField(PARAMETERS_FIELD));
         }
 
         public static ScriptMethodInfo fromXContent(XContentParser parser) throws IOException {
