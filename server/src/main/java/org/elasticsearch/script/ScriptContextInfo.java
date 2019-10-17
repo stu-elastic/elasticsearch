@@ -22,6 +22,7 @@ package org.elasticsearch.script;
 import org.elasticsearch.common.ParseField;
 import org.elasticsearch.common.io.stream.StreamInput;
 import org.elasticsearch.common.io.stream.StreamOutput;
+import org.elasticsearch.common.io.stream.Writeable;
 import org.elasticsearch.common.xcontent.ConstructingObjectParser;
 import org.elasticsearch.common.xcontent.ToXContentObject;
 import org.elasticsearch.common.xcontent.XContentBuilder;
@@ -41,7 +42,7 @@ import java.util.stream.Collectors;
 
 import static org.elasticsearch.common.xcontent.ConstructingObjectParser.constructorArg;
 
-public class ScriptContextInfo implements ToXContentObject {
+public class ScriptContextInfo implements ToXContentObject, Writeable {
     public final String name;
     public final ScriptMethodInfo execute;
     public final List<ScriptMethodInfo> getters;
@@ -55,6 +56,7 @@ public class ScriptContextInfo implements ToXContentObject {
         this.getters = Objects.requireNonNull(getters);
     }
 
+    // TODO(stu): test specifically
     private ScriptContextInfo(String name, List<ScriptMethodInfo> methods) {
         this.name = Objects.requireNonNull(name);
         Objects.requireNonNull(methods);
@@ -167,20 +169,20 @@ public class ScriptContextInfo implements ToXContentObject {
         return builder.endArray().endObject();
     }
 
-    public static class ScriptMethodInfo implements ToXContentObject {
+    public static class ScriptMethodInfo implements ToXContentObject, Writeable {
         public final String name, returnType;
         public final List<ParameterInfo> parameters;
 
-        public static String RETURN_TYPE_FIELD = "return_type";
-        public static String PARAMETERS_FIELD = "params";
+        static String RETURN_TYPE_FIELD = "return_type";
+        static String PARAMETERS_FIELD = "params";
 
-        ScriptMethodInfo(String name, String returnType, List<ParameterInfo> parameters) {
-            this.name = name;
-            this.returnType = returnType;
-            this.parameters = Collections.unmodifiableList(parameters);
+        public ScriptMethodInfo(String name, String returnType, List<ParameterInfo> parameters) {
+            this.name = Objects.requireNonNull(name);
+            this.returnType = Objects.requireNonNull(returnType);
+            this.parameters = Collections.unmodifiableList(Objects.requireNonNull(parameters));
         }
 
-        private ScriptMethodInfo(StreamInput in) throws IOException {
+        public ScriptMethodInfo(StreamInput in) throws IOException {
             this.name = in.readString();
             this.returnType = in.readString();
             int numParameters = in.readInt();
@@ -191,7 +193,7 @@ public class ScriptContextInfo implements ToXContentObject {
             this.parameters = Collections.unmodifiableList(parameters);
         }
 
-        void writeTo(StreamOutput out) throws IOException {
+        public void writeTo(StreamOutput out) throws IOException {
             out.writeString(name);
             out.writeString(returnType);
             out.writeInt(parameters.size());
@@ -242,22 +244,22 @@ public class ScriptContextInfo implements ToXContentObject {
             return builder.endArray().endObject();
         }
 
-        public static class ParameterInfo implements ToXContentObject {
+        public static class ParameterInfo implements ToXContentObject, Writeable {
             public final String type, name;
 
             public static String TYPE_FIELD = "type";
 
-            ParameterInfo(String type, String name) {
-                this.type = type;
-                this.name = name;
+            public ParameterInfo(String type, String name) {
+                this.type = Objects.requireNonNull(type);
+                this.name = Objects.requireNonNull(name);
             }
 
-            ParameterInfo(StreamInput in) throws IOException {
+            public ParameterInfo(StreamInput in) throws IOException {
                 this.type = in.readString();
                 this.name = in.readString();
             }
 
-            void writeTo(StreamOutput out) throws IOException {
+            public void writeTo(StreamOutput out) throws IOException {
                 out.writeString(type);
                 out.writeString(name);
             }
@@ -304,7 +306,8 @@ public class ScriptContextInfo implements ToXContentObject {
             for (Method method : clazz.getMethods()) {
                 if (method.getName().equals(name)) {
                     if (execute != null) {
-                        throw new IllegalArgumentException("Cannot have multiple [" + name + "] methods on class [" + clazz.getName() + "]");
+                        throw new IllegalArgumentException("Cannot have multiple [" + name + "] methods on class [" +
+                            clazz.getName() + "]");
                     }
                     execute = method;
                 }
@@ -357,6 +360,7 @@ public class ScriptContextInfo implements ToXContentObject {
         }
 
         static List<ScriptMethodInfo> gettersFromContext(Class<?> clazz) {
+            // See ScriptClassInfo(PainlessLookup painlessLookup, Class<?> baseClass)
             ArrayList<ScriptMethodInfo> getters = new ArrayList<>();
             for (java.lang.reflect.Method m : clazz.getMethods()) {
                 if (!m.isDefault() &&

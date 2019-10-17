@@ -67,6 +67,7 @@ public class GetScriptContextResponseTests extends AbstractSerializingTestCase<G
 
     @Override
     protected GetScriptContextResponse mutateInstance(GetScriptContextResponse instance) throws IOException {
+        // TODO(stu): flaky make sure we don't generate the same thing
         /*
         Map<String,Object> items = new HashMap<>();
         for (int i = randomIntBetween(1, 10); i > 0; i--) {
