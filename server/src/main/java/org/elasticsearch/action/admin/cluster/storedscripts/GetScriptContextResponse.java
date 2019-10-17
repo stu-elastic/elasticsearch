@@ -62,28 +62,8 @@ public class GetScriptContextResponse extends ActionResponse implements StatusTo
         );
 
     static {
-        PARSER.declareNamedObjects(
-            ConstructingObjectParser.constructorArg(),
-            (p, c, n) ->
-            {
-                // advance empty object
-                assert(p.nextToken() == START_OBJECT);
-                assert(p.nextToken() == END_OBJECT);
-                return n;
-            },
-            CONTEXTS
-        );
+        PARSER.declareNamedObjects(ConstructingObjectParser.constructorArg(), (p, c, n) -> ScriptContextInfo.fromXContent(p), CONTEXTS);
     }
-
-    private static class ParsedScriptContextInfos {
-        Map<String, Object> infos = new HashMap();
-        void setInfo(String key, Object value) { infos.put(key, value); }
-    }
-    private static class HeadlessScriptContextInfo {
-        ScriptContextInfo.ScriptMethodInfo execute;
-        List<ScriptContextInfo.ScriptMethodInfo> methods = new ArrayList<>();
-    }
-
 
     GetScriptContextResponse(StreamInput in) throws IOException {
         super(in);

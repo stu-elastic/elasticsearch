@@ -27,11 +27,14 @@ import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.common.xcontent.XContentParser;
 import org.elasticsearch.common.xcontent.XContentType;
+import org.elasticsearch.script.ScriptContextInfo.ScriptMethodInfo;
+import org.elasticsearch.script.ScriptContextInfo.ScriptMethodInfo.ParameterInfo;
 import org.elasticsearch.test.ESTestCase;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -215,7 +218,7 @@ public class ScriptContextInfoTests extends ESTestCase {
         assertEquals(0, methods.size());
     }
 
-    public void testParseParameters() throws IOException {
+    public void testParameterInfoParser() throws IOException {
         XContentBuilder builder = XContentFactory.jsonBuilder();
 
         XContentParser parser = XContentType.JSON.xContent()
@@ -226,7 +229,7 @@ public class ScriptContextInfoTests extends ESTestCase {
         assertEquals(new ScriptContextInfo.ScriptMethodInfo.ParameterInfo("foo", "bar"), info);
     }
 
-    public void testParserMethods() throws IOException {
+    public void testScriptMethodInfoParser() throws IOException {
         String json = "{\"name\": \"fooFunc\", \"return_type\": \"int\", \"params\": [{\"type\": \"int\", \"name\": \"fooParam\"}, " +
             "{\"type\": \"java.util.Map\", \"name\": \"barParam\"}]}";
         XContentParser parser = XContentType.JSON.xContent()
@@ -240,7 +243,77 @@ public class ScriptContextInfoTests extends ESTestCase {
         )), info);
     }
 
-    public void testScriptMethodInfoParser() throws IOException {
-
+    public void testScriptContextInfoParser() throws IOException {
+        String json = "{" +
+            "  \"name\": \"similarity\"," +
+            "  \"methods\": [" +
+            "    {" +
+            "      \"name\": \"execute\"," +
+            "      \"return_type\": \"double\"," +
+            "      \"params\": [" +
+            "        {" +
+            "          \"type\": \"double\"," +
+            "          \"name\": \"weight\"" +
+            "        }," +
+            "        {" +
+            "          \"type\": \"org.elasticsearch.index.similarity.ScriptedSimilarity$Query\"," +
+            "          \"name\": \"query\"" +
+            "        }," +
+            "        {" +
+            "          \"type\": \"org.elasticsearch.index.similarity.ScriptedSimilarity$Field\"," +
+            "          \"name\": \"field\"" +
+            "        }," +
+            "        {" +
+            "          \"type\": \"org.elasticsearch.index.similarity.ScriptedSimilarity$Term\"," +
+            "          \"name\": \"term\"" +
+            "        }," +
+            "        {" +
+            "          \"type\": \"org.elasticsearch.index.similarity.ScriptedSimilarity$Doc\"," +
+            "          \"name\": \"doc\"" +
+            "        }" +
+            "      ]" +
+            "    }," +
+            "    {" +
+            "      \"name\": \"getParams\"," +
+            "      \"return_type\": \"java.util.Map\"," +
+            "      \"params\": []" +
+            "    }," +
+            "    {" +
+            "      \"name\": \"getDoc\"," +
+            "      \"return_type\": \"java.util.Map\"," +
+            "      \"params\": []" +
+            "    }," +
+            "    {" +
+            "      \"name\": \"get_score\"," +
+            "      \"return_type\": \"double\"," +
+            "      \"params\": []" +
+            "    }" +
+            "  ]" +
+            "}";
+        XContentParser parser = XContentType.JSON.xContent()
+            .createParser(
+                NamedXContentRegistry.EMPTY, DeprecationHandler.THROW_UNSUPPORTED_OPERATION,
+                new BytesArray(json).streamInput());
+        ScriptContextInfo parsed = ScriptContextInfo.fromXContent(parser);
+        ScriptContextInfo expected = new ScriptContextInfo(
+            "similarity",
+            new ScriptMethodInfo(
+                "execute",
+                "double",
+                Collections.unmodifiableList(Arrays.asList(
+                    new ParameterInfo("double", "weight"),
+                    new ParameterInfo("org.elasticsearch.index.similarity.ScriptedSimilarity$Query", "query"),
+                    new ParameterInfo("org.elasticsearch.index.similarity.ScriptedSimilarity$Field", "field"),
+                    new ParameterInfo("org.elasticsearch.index.similarity.ScriptedSimilarity$Term", "term"),
+                    new ParameterInfo("org.elasticsearch.index.similarity.ScriptedSimilarity$Doc", "doc")
+                ))
+            ),
+            Collections.unmodifiableList(Arrays.asList(
+                new ScriptMethodInfo("getParams", "java.util.Map", new ArrayList<>()),
+                new ScriptMethodInfo("getDoc", "java.util.Map", new ArrayList<>()),
+                new ScriptMethodInfo("get_score", "double", new ArrayList<>())
+            ))
+        );
+        assertEquals(expected, parsed);
     }
 }
