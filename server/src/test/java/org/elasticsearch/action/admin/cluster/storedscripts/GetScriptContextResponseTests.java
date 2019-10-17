@@ -18,6 +18,8 @@
  */
 package org.elasticsearch.action.admin.cluster.storedscripts;
 
+import org.elasticsearch.common.io.stream.Writeable;
+import org.elasticsearch.common.xcontent.XContentParser;
 import org.elasticsearch.common.bytes.BytesArray;
 import org.elasticsearch.common.io.stream.Writeable;
 import org.elasticsearch.common.xcontent.DeprecationHandler;

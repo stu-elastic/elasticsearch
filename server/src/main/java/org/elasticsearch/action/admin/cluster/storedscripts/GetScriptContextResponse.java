@@ -33,6 +33,9 @@ import org.elasticsearch.script.ScriptContextInfo;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -53,7 +56,7 @@ public class GetScriptContextResponse extends ActionResponse implements StatusTo
     public static final ConstructingObjectParser<GetScriptContextResponse,Void> PARSER =
         new ConstructingObjectParser<>("get_script_context", true,
             (a) -> {
-                return new GetScriptContextResponse(new HashSet<>());
+                    return new GetScriptContextResponse(new HashSet<>());
             }
         );
 
