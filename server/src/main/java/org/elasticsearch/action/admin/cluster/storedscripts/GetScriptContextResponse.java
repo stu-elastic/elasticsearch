@@ -33,6 +33,7 @@ import org.elasticsearch.script.ScriptContextInfo;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -56,7 +57,7 @@ public class GetScriptContextResponse extends ActionResponse implements StatusTo
     public static final ConstructingObjectParser<GetScriptContextResponse,Void> PARSER =
         new ConstructingObjectParser<>("get_script_context", true,
             (a) -> {
-                    return new GetScriptContextResponse(new HashSet<>());
+                    return new GetScriptContextResponse((Set<ScriptContextInfo>)a[0]);
             }
         );
 
@@ -113,12 +114,11 @@ public class GetScriptContextResponse extends ActionResponse implements StatusTo
 
     @Override
     public XContentBuilder toXContent(XContentBuilder builder, Params params) throws IOException {
-        builder.startObject().startObject(CONTEXTS.getPreferredName());
-        // TODO(stu): sort by name
-        for (ScriptContextInfo context: contexts) {
-            builder.startObject(context.name).endObject();
+        builder.startObject().startArray(CONTEXTS.getPreferredName());
+        for (ScriptContextInfo context: contexts.stream().sorted(Comparator.comparing(s -> s.name)).collect(Collectors.toList())) {
+            context.toXContent(builder, params);
         }
-        builder.endObject().endObject(); // CONTEXTS
+        builder.endArray().endObject(); // CONTEXTS
         return builder;
     }
 

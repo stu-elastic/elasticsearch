@@ -22,33 +22,75 @@ package org.elasticsearch.script;
 import org.elasticsearch.common.ParseField;
 import org.elasticsearch.common.io.stream.StreamInput;
 import org.elasticsearch.common.io.stream.StreamOutput;
+import org.elasticsearch.common.recycler.Recycler;
 import org.elasticsearch.common.xcontent.ConstructingObjectParser;
 import org.elasticsearch.common.xcontent.ToXContentObject;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentParser;
 
 import java.io.IOException;
-import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 import static org.elasticsearch.common.xcontent.ConstructingObjectParser.constructorArg;
-import static org.elasticsearch.common.xcontent.XContentParserUtils.ensureExpectedToken;
 
-public class ScriptContextInfo {
+public class ScriptContextInfo implements ToXContentObject {
     public final String name;
     public final ScriptMethodInfo execute;
     public final List<ScriptMethodInfo> getters;
+
+    private static String NAME_FIELD = "name";
+    private static String METHODS_FIELD = "methods";
 
     public ScriptContextInfo(String name, ScriptMethodInfo execute,  List<ScriptMethodInfo> getters) {
         this.name = Objects.requireNonNull(name);
         this.execute = Objects.requireNonNull(execute);
         this.getters = Objects.requireNonNull(getters);
+    }
+
+    private ScriptContextInfo(String name, List<ScriptMethodInfo> methods) {
+        this.name = Objects.requireNonNull(name);
+        Objects.requireNonNull(methods);
+
+        String executeName = "execute";
+        String getName = "get";
+        String otherName = "other";
+        Map<String, List<ScriptMethodInfo>> methodTypes = methods.stream().collect(Collectors.groupingBy(
+            m -> {
+                if (m.name.equals(executeName)) {
+                    return executeName;
+                } else if (m.name.startsWith(getName) && m.parameters.size() == 0) {
+                    return getName;
+                }
+                return otherName;
+            }
+        ));
+
+        if (methodTypes.containsKey(otherName)) {
+            throw new IllegalArgumentException("unexpected methods, expected 'execute' and getters, not " +
+                methodTypes.get(otherName).stream().map(m -> m.name).collect(Collectors.joining(", ", "[", "]")));
+        }
+
+        if (!methodTypes.containsKey(executeName)) {
+            throw new IllegalArgumentException("execute method required");
+        } else if (!(methodTypes.get(executeName).size() == 1)) {
+            throw new IllegalArgumentException("Only one execute method expected");
+        }
+        this.execute = methodTypes.get(executeName).get(0);
+
+        if (methodTypes.containsKey(getName)) {
+            this.getters = Collections.unmodifiableList(methodTypes.get(getName));
+        } else {
+            this.getters = Collections.unmodifiableList(new ArrayList<>());
+        }
     }
 
     public ScriptContextInfo(StreamInput in) throws IOException {
@@ -81,7 +123,24 @@ public class ScriptContextInfo {
     ScriptContextInfo(String name, Class<?> clazz) {
         this.name = name;
         this.execute = ScriptMethodInfo.executeFromContext(clazz);
-        this.getters = ScriptMethodInfo.gettersFromContext(clazz);
+        this.getters = Collections.unmodifiableList(ScriptMethodInfo.gettersFromContext(clazz));
+    }
+
+    @SuppressWarnings("unchecked")
+    private static ConstructingObjectParser<ScriptContextInfo,Void> PARSER =
+        new ConstructingObjectParser<>("script_context_info", true,
+            (m, name) -> new ScriptContextInfo((String) m[0], (List<ScriptMethodInfo>) m[1])
+        );
+
+    static {
+        PARSER.declareString(constructorArg(), new ParseField(NAME_FIELD));
+        PARSER.declareObjectArray(constructorArg(),
+            (parser, ctx) -> ScriptMethodInfo.PARSER.apply(parser, ctx),
+            new ParseField(METHODS_FIELD));
+    }
+
+    public static ScriptContextInfo fromXContent(XContentParser parser) throws IOException {
+        return PARSER.parse(parser, null);
     }
 
     @Override
@@ -99,11 +158,20 @@ public class ScriptContextInfo {
         return Objects.hash(name, execute, getters);
     }
 
-    public static class ScriptMethodInfo {
+    @Override
+    public XContentBuilder toXContent(XContentBuilder builder, Params params) throws IOException {
+        builder.startObject().field(NAME_FIELD, name).startArray(METHODS_FIELD);
+        execute.toXContent(builder, params);
+        for (ScriptMethodInfo method: getters.stream().sorted(Comparator.comparing(g -> g.name)).collect(Collectors.toList())) {
+            method.toXContent(builder, params);
+        }
+        return builder.endArray().endObject();
+    }
+
+    public static class ScriptMethodInfo implements ToXContentObject {
         public final String name, returnType;
         public final List<ParameterInfo> parameters;
 
-        public static String NAME_FIELD = "name";
         public static String RETURN_TYPE_FIELD = "return_type";
         public static String PARAMETERS_FIELD = "params";
 
@@ -136,7 +204,7 @@ public class ScriptContextInfo {
         @SuppressWarnings("unchecked")
         private static ConstructingObjectParser<ScriptMethodInfo,Void> PARSER =
             new ConstructingObjectParser<>("method", true,
-                (m, name) -> new ScriptMethodInfo((String) m[0], (String) m[1], (ArrayList<ParameterInfo>) m[2])
+                (m, name) -> new ScriptMethodInfo((String) m[0], (String) m[1], (List<ParameterInfo>) m[2])
             );
 
         static {
@@ -166,11 +234,19 @@ public class ScriptContextInfo {
             return Objects.hash(name, returnType, parameters);
         }
 
+        @Override
+        public XContentBuilder toXContent(XContentBuilder builder, Params params) throws IOException {
+            builder.startObject().field(NAME_FIELD, name).field(RETURN_TYPE_FIELD, returnType).startArray(PARAMETERS_FIELD);
+            for (ParameterInfo parameter: parameters) {
+                parameter.toXContent(builder, params);
+            }
+            return builder.endArray().endObject();
+        }
+
         public static class ParameterInfo implements ToXContentObject {
             public final String type, name;
 
             public static String TYPE_FIELD = "type";
-            public static String NAME_FIELD = "name";
 
             ParameterInfo(String type, String name) {
                 this.type = type;

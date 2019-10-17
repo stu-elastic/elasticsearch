@@ -227,31 +227,6 @@ public class ScriptContextInfoTests extends ESTestCase {
     }
 
     public void testParserMethods() throws IOException {
-        String executeJson = "{" +
-            "  \"execute\": {" +
-            "    \"return_type\": \"boolean\"," +
-            "    \"params\": [" +
-            "      {" +
-            "        \"type\": \"java.util.Map\"," +
-            "        \"name\": \"ctx\"" +
-            "      }," +
-            "      {" +
-            "        \"type\": \"java.util.List\"," +
-            "        \"name\": \"other\"" +
-            "      }" +
-            "    ]" +
-            "  }" + "}";
-        /*+
-            "  \"getParams\": {" +
-            "    \"return_type\": \"java.util.Map\"," +
-            "    \"params\": []" +
-            "  }," +
-            "  \"getFoo\": {" +
-            "    \"return_type\": \"bool\"," +
-            "    \"params\": []" +
-            "  }" +
-            "}";*/
-
         String json = "{\"name\": \"fooFunc\", \"return_type\": \"int\", \"params\": [{\"type\": \"int\", \"name\": \"fooParam\"}, " +
             "{\"type\": \"java.util.Map\", \"name\": \"barParam\"}]}";
         XContentParser parser = XContentType.JSON.xContent()
@@ -263,5 +238,9 @@ public class ScriptContextInfoTests extends ESTestCase {
             Arrays.asList(new ScriptContextInfo.ScriptMethodInfo.ParameterInfo("int", "fooParam"),
                 new ScriptContextInfo.ScriptMethodInfo.ParameterInfo("java.util.Map", "barParam"))
         )), info);
+    }
+
+    public void testScriptMethodInfoParser() throws IOException {
+
     }
 }
