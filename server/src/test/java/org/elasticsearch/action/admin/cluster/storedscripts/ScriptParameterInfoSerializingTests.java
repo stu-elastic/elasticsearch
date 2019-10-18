@@ -27,13 +27,15 @@ import org.elasticsearch.test.AbstractSerializingTestCase;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 public class ScriptParameterInfoSerializingTests extends AbstractSerializingTestCase<ParameterInfo> {
     private static int minLength = 1;
-    private static int maxLength = 16;
+    private static int maxLength = 8;
+    private static String baseType = "type-";
+    private static String baseName = "name-";
 
     @Override
     protected ParameterInfo doParseInstance(XContentParser parser) throws IOException {
@@ -42,7 +44,7 @@ public class ScriptParameterInfoSerializingTests extends AbstractSerializingTest
 
     @Override
     protected ParameterInfo createTestInstance() {
-        return createRandomTestInstance();
+        return randomInstance();
     }
 
     @Override
@@ -52,46 +54,43 @@ public class ScriptParameterInfoSerializingTests extends AbstractSerializingTest
 
     @Override
     protected ParameterInfo mutateInstance(ParameterInfo instance) throws IOException {
-        // TODO(stu): keep some stuff
-        switch (randomIntBetween(0, 2)) {
-            case 0:
-                return createRandomTestInstanceExcept("", instance.name);
-            case 1:
-                return createRandomTestInstanceExcept(instance.type, "");
-            default:
-                return createRandomTestInstanceExcept(instance.type, instance.name);
+        return mutate(instance);
+    }
+
+    private static ParameterInfo mutate(ParameterInfo instance) {
+        if (randomBoolean()) {
+            return new ParameterInfo(instance.type + randomAlphaOfLengthBetween(minLength, maxLength), instance.name);
         }
+        return new ParameterInfo(instance.type, instance.name + randomAlphaOfLengthBetween(minLength, maxLength));
     }
 
-    static ParameterInfo createRandomTestInstance() {
-        return new ParameterInfo(randomAlphaOfLengthBetween(minLength, maxLength), randomAlphaOfLengthBetween(minLength, maxLength));
+    static List<ParameterInfo> mutateOne(List<ParameterInfo> instances) {
+        if (instances.size() == 0) {
+            return Collections.unmodifiableList(List.of(randomInstance()));
+        }
+        ArrayList<ParameterInfo> mutated = new ArrayList<>(instances);
+        int mutateIndex = randomIntBetween(0, instances.size() - 1);
+        mutated.set(mutateIndex, mutate(instances.get(mutateIndex)));
+        return Collections.unmodifiableList(mutated);
     }
 
-    static ParameterInfo createRandomTestInstanceExcept(String exceptType, String exceptName) {
+    static ParameterInfo randomInstance() {
         return new ParameterInfo(
-            randomValueOtherThan(exceptType, () -> randomAlphaOfLengthBetween(minLength, maxLength)),
-            randomValueOtherThan(exceptName, () -> randomAlphaOfLengthBetween(minLength, maxLength))
+            baseType + randomAlphaOfLengthBetween(minLength, maxLength),
+            baseName + randomAlphaOfLengthBetween(minLength, maxLength)
         );
     }
 
-    static List<ParameterInfo> createRandomTestInstances(int maxLength) {
-        int numInstances = randomIntBetween(0, maxLength);
-        List<ParameterInfo> instances = new ArrayList<>(numInstances);
-        for (int i = 0; i < numInstances; i++) {
-            instances.add(createRandomTestInstance());
-        }
-        return Collections.unmodifiableList(instances);
-    }
-
-    static List<ParameterInfo> createRandomTestInstancesExcept(Set<ParameterInfo> except) {
-        int numInstances = randomValueOtherThan(except.size(), () -> randomIntBetween(0, maxLength));
-        Set<String> exceptTypes = except.stream().map(e -> e.type).collect(Collectors.toSet());
-        Set<String> exceptNames = except.stream().map(e -> e.name).collect(Collectors.toSet());
-        List<ParameterInfo> instances = new ArrayList<>(numInstances);
-        for (int i = 0; i < numInstances; i++) {
+    static List<ParameterInfo> randomInstances() {
+        Set<String> suffixes = new HashSet<>();
+        int size = randomIntBetween(0, maxLength);
+        ArrayList<ParameterInfo> instances = new ArrayList<>(size);
+        for (int i = 0; i < size; i++) {
+            String suffix = randomValueOtherThanMany(suffixes::contains, () -> randomAlphaOfLengthBetween(minLength, maxLength));
+            suffixes.add(suffix);
             instances.add(new ParameterInfo(
-                randomValueOtherThanMany(exceptTypes::contains, () -> randomAlphaOfLengthBetween(minLength, maxLength)),
-                randomValueOtherThanMany(exceptNames::contains, () -> randomAlphaOfLengthBetween(minLength, maxLength))
+                baseType + randomAlphaOfLengthBetween(minLength, maxLength),
+                baseName + suffix
             ));
         }
         return Collections.unmodifiableList(instances);

@@ -31,8 +31,10 @@ import org.elasticsearch.rest.RestStatus;
 import org.elasticsearch.script.ScriptContextInfo;
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Objects;
 import java.util.HashSet;
 import java.util.Set;
@@ -41,18 +43,19 @@ import java.util.stream.Collectors;
 public class GetScriptContextResponse extends ActionResponse implements StatusToXContentObject {
 
     private static final ParseField CONTEXTS = new ParseField("contexts");
-    private final Set<ScriptContextInfo> contexts;
+    final Set<ScriptContextInfo> contexts;
 
     @SuppressWarnings("unchecked")
     public static final ConstructingObjectParser<GetScriptContextResponse,Void> PARSER =
         new ConstructingObjectParser<>("get_script_context", true,
             (a) -> {
-                    return new GetScriptContextResponse((Set<ScriptContextInfo>)a[0]);
+                    return new GetScriptContextResponse((List<ScriptContextInfo>)a[0]);
             }
         );
 
     static {
-        PARSER.declareNamedObjects(ConstructingObjectParser.constructorArg(), (p, c, n) -> ScriptContextInfo.fromXContent(p), CONTEXTS);
+        PARSER.declareObjectArray(ConstructingObjectParser.constructorArg(),
+            (parser, ctx) -> ScriptContextInfo.PARSER.apply(parser, ctx), CONTEXTS);
     }
 
     GetScriptContextResponse(StreamInput in) throws IOException {
@@ -65,8 +68,8 @@ public class GetScriptContextResponse extends ActionResponse implements StatusTo
         this.contexts = Collections.unmodifiableSet(contexts);
     }
 
-    GetScriptContextResponse(Set<ScriptContextInfo> contexts) {
-        this.contexts = Collections.unmodifiableSet(contexts);
+    GetScriptContextResponse(Collection<ScriptContextInfo> contexts) {
+        this.contexts = Set.copyOf(contexts);
     }
 
     @Override

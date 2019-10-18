@@ -38,6 +38,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class ScriptContextInfoTests extends ESTestCase {
     public interface MinimalContext {
@@ -154,7 +155,7 @@ public class ScriptContextInfoTests extends ESTestCase {
     public void testNoExecute() {
         IllegalArgumentException e = expectThrows(IllegalArgumentException.class, () ->
             new ScriptContextInfo("no_execute", NoExecute.class));
-        assertEquals("Could not find method [execute] on class [" + NoExecute.class.getName() + "]", e.getMessage());
+        assertEquals("Could not find required method [execute] on class [" + NoExecute.class.getName() + "]", e.getMessage());
     }
 
     public static class NoParametersField {
@@ -206,7 +207,7 @@ public class ScriptContextInfoTests extends ESTestCase {
     }
 
     public void testGetterConditional() {
-        List<ScriptContextInfo.ScriptMethodInfo> getters =
+        Set<ScriptMethodInfo> getters =
             new ScriptContextInfo("getter_conditional", GetterConditional.class).getters;
         assertEquals(2, getters.size());
         HashMap<String,String> methods = new HashMap(Map.of("getNonDefault1","boolean", "getNonDefault2","float"));
@@ -300,20 +301,51 @@ public class ScriptContextInfoTests extends ESTestCase {
             new ScriptMethodInfo(
                 "execute",
                 "double",
-                Collections.unmodifiableList(Arrays.asList(
+                List.of(
                     new ParameterInfo("double", "weight"),
                     new ParameterInfo("org.elasticsearch.index.similarity.ScriptedSimilarity$Query", "query"),
                     new ParameterInfo("org.elasticsearch.index.similarity.ScriptedSimilarity$Field", "field"),
                     new ParameterInfo("org.elasticsearch.index.similarity.ScriptedSimilarity$Term", "term"),
                     new ParameterInfo("org.elasticsearch.index.similarity.ScriptedSimilarity$Doc", "doc")
-                ))
+                )
             ),
-            Collections.unmodifiableList(Arrays.asList(
+            Set.of(
                 new ScriptMethodInfo("getParams", "java.util.Map", new ArrayList<>()),
                 new ScriptMethodInfo("getDoc", "java.util.Map", new ArrayList<>()),
                 new ScriptMethodInfo("get_score", "double", new ArrayList<>())
-            ))
+            )
         );
         assertEquals(expected, parsed);
+    }
+
+    public void testIgnoreOtherMethodsInListConstructor() {
+        ScriptContextInfo constructed = new ScriptContextInfo("otherNames", List.of(
+            new ScriptMethodInfo("execute", "double", Collections.emptyList()),
+            new ScriptMethodInfo("otherName", "bool", Collections.emptyList())
+        ));
+        ScriptContextInfo expected = new ScriptContextInfo("otherNames",
+            new ScriptMethodInfo("execute", "double", Collections.emptyList()),
+            Collections.emptySet()
+        );
+        assertEquals(expected, constructed);
+    }
+
+    public void testNoExecuteInListConstructor() {
+        IllegalArgumentException e = expectThrows(IllegalArgumentException.class, () ->
+            new ScriptContextInfo("noExecute", List.of(
+                new ScriptMethodInfo("getSomeOther", "int", Collections.emptyList()),
+                new ScriptMethodInfo("getSome", "bool", Collections.emptyList())
+            )));
+        assertEquals("Could not find required method [execute] in [noExecute], found [getSome, getSomeOther]", e.getMessage());
+    }
+
+    public void testMultipleExecuteInListConstructor() {
+        IllegalArgumentException e = expectThrows(IllegalArgumentException.class, () ->
+            new ScriptContextInfo("multiexecute", List.of(
+                new ScriptMethodInfo("execute", "double", Collections.emptyList()),
+                new ScriptMethodInfo("execute", "double", List.of(
+                    new ParameterInfo("double", "weight")
+            )))));
+        assertEquals("Cannot have multiple [execute] methods in [multiexecute], found [2]", e.getMessage());
     }
 }

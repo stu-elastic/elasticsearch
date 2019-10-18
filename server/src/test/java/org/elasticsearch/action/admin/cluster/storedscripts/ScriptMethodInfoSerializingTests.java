@@ -22,21 +22,33 @@ package org.elasticsearch.action.admin.cluster.storedscripts;
 import org.elasticsearch.common.io.stream.Writeable;
 import org.elasticsearch.common.xcontent.XContentParser;
 import org.elasticsearch.script.ScriptContextInfo.ScriptMethodInfo;
-import org.elasticsearch.script.ScriptContextInfo.ScriptMethodInfo.ParameterInfo;
 import org.elasticsearch.test.AbstractSerializingTestCase;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 public class ScriptMethodInfoSerializingTests extends AbstractSerializingTestCase<ScriptMethodInfo> {
+    private static String execute = "execute";
+    private static String getPrefix = "get";
     private static int minLength = 1;
     private static int maxLength = 16;
+
+    enum NameType {
+        EXECUTE,
+        GETTER,
+        OTHER;
+        static NameType fromName(String name) {
+            if (name.equals(execute)) {
+                return EXECUTE;
+            } else if (name.startsWith(getPrefix)) {
+                return GETTER;
+            }
+            return OTHER;
+        }
+    }
 
     @Override
     protected ScriptMethodInfo doParseInstance(XContentParser parser) throws IOException {
@@ -45,7 +57,7 @@ public class ScriptMethodInfoSerializingTests extends AbstractSerializingTestCas
 
     @Override
     protected ScriptMethodInfo createTestInstance() {
-        return createRandomTestInstance(maxLength);
+        return randomInstance(NameType.OTHER);
     }
 
     @Override
@@ -53,66 +65,100 @@ public class ScriptMethodInfoSerializingTests extends AbstractSerializingTestCas
 
     @Override
     protected ScriptMethodInfo mutateInstance(ScriptMethodInfo instance) throws IOException {
-        // TODO(stu): keep some stuff
-        switch (randomIntBetween(0, 3)) {
-            case 0:
-                return createRandomTestInstanceExcept("", instance.returnType, new ArrayList<>());
-            case 1:
-                return createRandomTestInstanceExcept(instance.name, "", new ArrayList<>());
-            case 2:
-                return createRandomTestInstanceExcept(instance.name, instance.returnType, new ArrayList<>());
+        return mutate(instance);
+    }
+
+    static ScriptMethodInfo randomInstance(NameType type) {
+        switch (type) {
+            case EXECUTE:
+                return new ScriptMethodInfo(
+                    execute,
+                    randomAlphaOfLengthBetween(minLength, maxLength),
+                    ScriptParameterInfoSerializingTests.randomInstances()
+                );
+            case GETTER:
+                return new ScriptMethodInfo(
+                    getPrefix + randomAlphaOfLengthBetween(minLength, maxLength),
+                    randomAlphaOfLengthBetween(minLength, maxLength),
+                    Collections.unmodifiableList(new ArrayList<>())
+                );
             default:
-                return createRandomTestInstanceExcept(instance.name, instance.returnType, instance.parameters);
+                return new ScriptMethodInfo(
+                    randomAlphaOfLengthBetween(minLength, maxLength),
+                    randomAlphaOfLengthBetween(minLength, maxLength),
+                    ScriptParameterInfoSerializingTests.randomInstances()
+                );
         }
     }
 
-    static ScriptMethodInfo withName(String name, ScriptMethodInfo instance) {
-        return new ScriptMethodInfo(name, instance.returnType, instance.parameters);
+    static ScriptMethodInfo mutate(ScriptMethodInfo instance) {
+        switch (NameType.fromName(instance.name)) {
+            case EXECUTE:
+                if (randomBoolean()) {
+                    return new ScriptMethodInfo(
+                        instance.name,
+                        instance.returnType + randomAlphaOfLengthBetween(minLength, maxLength),
+                        instance.parameters
+                    );
+                }
+                return new ScriptMethodInfo(
+                    instance.name,
+                    instance.returnType,
+                    ScriptParameterInfoSerializingTests.mutateOne(instance.parameters)
+                );
+            case GETTER:
+                return new ScriptMethodInfo(
+                    instance.name,
+                    instance.returnType + randomAlphaOfLengthBetween(minLength, maxLength),
+                    instance.parameters
+                );
+            default:
+                switch (randomIntBetween(0, 2)) {
+                    case 0:
+                        return new ScriptMethodInfo(
+                            instance.name + randomAlphaOfLengthBetween(minLength, maxLength),
+                            instance.returnType,
+                            instance.parameters
+                        );
+                    case 1:
+                        return new ScriptMethodInfo(
+                            instance.name,
+                            instance.returnType + randomAlphaOfLengthBetween(minLength, maxLength),
+                            instance.parameters
+                        );
+                    default:
+                        return new ScriptMethodInfo(
+                            instance.name,
+                            instance.returnType,
+                            ScriptParameterInfoSerializingTests.mutateOne(instance.parameters)
+                        );
+                }
+        }
     }
 
-    static ScriptMethodInfo createRandomTestInstance(int maxParameterLength) {
-        return new ScriptMethodInfo(
-            randomAlphaOfLengthBetween(minLength, maxLength),
-            randomAlphaOfLengthBetween(minLength, maxLength),
-            ScriptParameterInfoSerializingTests.createRandomTestInstances(maxParameterLength)
-        );
+    static Set<ScriptMethodInfo> mutateOneGetter(Set<ScriptMethodInfo> instances) {
+        if (instances.size() == 0) {
+            return Set.of(randomInstance(NameType.GETTER));
+        }
+        ArrayList<ScriptMethodInfo> mutated = new ArrayList<>(instances);
+        int mutateIndex = randomIntBetween(0, instances.size() - 1);
+        mutated.set(mutateIndex, mutate(mutated.get(mutateIndex)));
+        return Set.copyOf(mutated);
     }
 
-    static ScriptMethodInfo createRandomTestInstance(String prefix, int minSuffix, int maxSuffix, int maxParameterLength) {
-        return new ScriptMethodInfo(
-            prefix + randomAlphaOfLengthBetween(minSuffix, maxSuffix),
-            randomAlphaOfLengthBetween(minLength, maxLength),
-            ScriptParameterInfoSerializingTests.createRandomTestInstances(maxParameterLength)
-        );
-    }
-
-    static ScriptMethodInfo createRandomTestInstanceExcept(String exceptName, String exceptReturnType, List<ParameterInfo> parameters) {
-        return createRandomTestInstanceExcept(exceptName, exceptReturnType, parameters,
-            () -> randomAlphaOfLengthBetween(minLength, maxLength));
-    }
-
-    static ScriptMethodInfo createRandomTestInstanceExcept(String exceptName, String exceptReturnType, List<ParameterInfo> parameters,
-        Supplier<String> nameGenerator) {
-        return new ScriptMethodInfo(
-            randomValueOtherThan(exceptName, nameGenerator),
-            randomValueOtherThan(exceptReturnType, () -> randomAlphaOfLengthBetween(minLength, maxLength)),
-            ScriptParameterInfoSerializingTests.createRandomTestInstancesExcept(new HashSet<>(parameters))
-        );
-    }
-
-    static List<ScriptMethodInfo> createRandomTestInstancesExcept(List<ScriptMethodInfo> except, Supplier<String> nameGenerator) {
-        int numInstances = randomValueOtherThan(except.size(), () -> randomIntBetween(0, maxLength));
-        Set<String> exceptNames = except.stream().map(e -> e.name).collect(Collectors.toSet());
-        Set<String> exceptReturnTypes = except.stream().map(e -> e.returnType).collect(Collectors.toSet());
-        Set<ParameterInfo> exceptParams = except.stream().flatMap(e -> e.parameters.stream()).collect(Collectors.toSet());
-        List<ScriptMethodInfo> instances = new ArrayList<>(numInstances);
-        for (int i = 0; i < numInstances; i++) {
-            instances.add(new ScriptMethodInfo(
-                randomValueOtherThanMany(exceptNames::contains, nameGenerator),
-                randomValueOtherThanMany(exceptReturnTypes::contains, () -> randomAlphaOfLengthBetween(minLength, maxLength)),
-                ScriptParameterInfoSerializingTests.createRandomTestInstancesExcept(exceptParams)
+    static Set<ScriptMethodInfo> randomGetterInstances() {
+        Set<String> suffixes = new HashSet<>();
+        int numGetters = randomIntBetween(0, maxLength);
+        Set<ScriptMethodInfo> getters = new HashSet<>(numGetters);
+        for (int i = 0; i < numGetters; i++) {
+            String suffix = randomValueOtherThanMany(suffixes::contains, () -> randomAlphaOfLengthBetween(minLength, maxLength));
+            suffixes.add(suffix);
+            getters.add(new ScriptMethodInfo(
+                getPrefix + suffix,
+                randomAlphaOfLengthBetween(minLength, maxLength),
+                Collections.unmodifiableList(new ArrayList<>())
             ));
         }
-        return Collections.unmodifiableList(instances);
+        return Collections.unmodifiableSet(getters);
     }
 }

@@ -35,9 +35,11 @@ import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.elasticsearch.common.xcontent.ConstructingObjectParser.constructorArg;
@@ -45,24 +47,26 @@ import static org.elasticsearch.common.xcontent.ConstructingObjectParser.constru
 public class ScriptContextInfo implements ToXContentObject, Writeable {
     public final String name;
     public final ScriptMethodInfo execute;
-    public final List<ScriptMethodInfo> getters;
+    public final Set<ScriptMethodInfo> getters;
 
     private static String NAME_FIELD = "name";
     private static String METHODS_FIELD = "methods";
 
-    public ScriptContextInfo(String name, ScriptMethodInfo execute,  List<ScriptMethodInfo> getters) {
-        this.name = Objects.requireNonNull(name);
-        this.execute = Objects.requireNonNull(execute);
-        this.getters = Objects.requireNonNull(getters);
+    // ScriptService constructor
+    ScriptContextInfo(String name, Class<?> clazz) {
+        this.name = name;
+        this.execute = ScriptMethodInfo.executeFromContext(clazz);
+        this.getters = Collections.unmodifiableSet(ScriptMethodInfo.gettersFromContext(clazz));
     }
 
-    // TODO(stu): test specifically
-    private ScriptContextInfo(String name, List<ScriptMethodInfo> methods) {
+    // Deserialization constructor
+    ScriptContextInfo(String name, List<ScriptMethodInfo> methods) {
         this.name = Objects.requireNonNull(name);
         Objects.requireNonNull(methods);
 
         String executeName = "execute";
         String getName = "get";
+        // ignored instead of error, so future implementations can add methods.  Same as ScriptContextInfo(String, Class).
         String otherName = "other";
         Map<String, List<ScriptMethodInfo>> methodTypes = methods.stream().collect(Collectors.groupingBy(
             m -> {
@@ -75,34 +79,39 @@ public class ScriptContextInfo implements ToXContentObject, Writeable {
             }
         ));
 
-        if (methodTypes.containsKey(otherName)) {
-            throw new IllegalArgumentException("unexpected methods, expected 'execute' and getters, not " +
-                methodTypes.get(otherName).stream().map(m -> m.name).collect(Collectors.joining(", ", "[", "]")));
-        }
-
         if (!methodTypes.containsKey(executeName)) {
-            throw new IllegalArgumentException("execute method required");
+            throw new IllegalArgumentException("Could not find required method [" + executeName + "] in [" + name + "], found " +
+                methods.stream().map(m -> m.name).sorted().collect(Collectors.joining(", ", "[", "]")));
         } else if (!(methodTypes.get(executeName).size() == 1)) {
-            throw new IllegalArgumentException("Only one execute method expected");
+            throw new IllegalArgumentException("Cannot have multiple [execute] methods in [" + name + "], found [" +
+                methodTypes.get(executeName).size() + "]"
+            );
         }
         this.execute = methodTypes.get(executeName).get(0);
 
         if (methodTypes.containsKey(getName)) {
-            this.getters = Collections.unmodifiableList(methodTypes.get(getName));
+            this.getters = Set.copyOf(methodTypes.get(getName));
         } else {
-            this.getters = Collections.unmodifiableList(new ArrayList<>());
+            this.getters = Collections.emptySet();
         }
+    }
+
+    // Test constructor
+    public ScriptContextInfo(String name, ScriptMethodInfo execute,  Set<ScriptMethodInfo> getters) {
+        this.name = Objects.requireNonNull(name);
+        this.execute = Objects.requireNonNull(execute);
+        this.getters = Objects.requireNonNull(getters);
     }
 
     public ScriptContextInfo(StreamInput in) throws IOException {
         this.name = in.readString();
         this.execute = new ScriptMethodInfo(in);
         int numGetters = in.readInt();
-        List<ScriptMethodInfo> getters = new ArrayList<>(numGetters);
+        Set<ScriptMethodInfo> getters = new HashSet<>(numGetters);
         for (int i = 0; i < numGetters; i++) {
             getters.add(new ScriptMethodInfo(in));
         }
-        this.getters = Collections.unmodifiableList(getters);
+        this.getters = Collections.unmodifiableSet(getters);
     }
 
     public void writeTo(StreamOutput out) throws IOException {
@@ -121,14 +130,8 @@ public class ScriptContextInfo implements ToXContentObject, Writeable {
         return Collections.unmodifiableList(methods);
     }
 
-    ScriptContextInfo(String name, Class<?> clazz) {
-        this.name = name;
-        this.execute = ScriptMethodInfo.executeFromContext(clazz);
-        this.getters = Collections.unmodifiableList(ScriptMethodInfo.gettersFromContext(clazz));
-    }
-
     @SuppressWarnings("unchecked")
-    private static ConstructingObjectParser<ScriptContextInfo,Void> PARSER =
+    public static ConstructingObjectParser<ScriptContextInfo,Void> PARSER =
         new ConstructingObjectParser<>("script_context_info", true,
             (m, name) -> new ScriptContextInfo((String) m[0], (List<ScriptMethodInfo>) m[1])
         );
@@ -313,7 +316,7 @@ public class ScriptContextInfo implements ToXContentObject, Writeable {
                 }
             }
             if (execute == null) {
-                throw new IllegalArgumentException("Could not find method [" + name + "] on class [" + clazz.getName() + "]");
+                throw new IllegalArgumentException("Could not find required method [" + name + "] on class [" + clazz.getName() + "]");
             }
 
             Class<?> returnTypeClazz = execute.getReturnType();
@@ -359,9 +362,9 @@ public class ScriptContextInfo implements ToXContentObject, Writeable {
             return new ScriptMethodInfo(name, returnType, parameters);
         }
 
-        static List<ScriptMethodInfo> gettersFromContext(Class<?> clazz) {
+        static Set<ScriptMethodInfo> gettersFromContext(Class<?> clazz) {
             // See ScriptClassInfo(PainlessLookup painlessLookup, Class<?> baseClass)
-            ArrayList<ScriptMethodInfo> getters = new ArrayList<>();
+            HashSet<ScriptMethodInfo> getters = new HashSet<>();
             for (java.lang.reflect.Method m : clazz.getMethods()) {
                 if (!m.isDefault() &&
                     m.getName().startsWith("get") &&
