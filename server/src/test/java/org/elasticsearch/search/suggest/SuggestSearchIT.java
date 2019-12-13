@@ -1138,7 +1138,7 @@ public class SuggestSearchIT extends ESIntegTestCase {
         }
 
         @Override
-        public <T extends ScriptFactory> T compile(
+        public <T> T compile(
             String scriptName,
             String scriptSource,
             ScriptContext<T> context,

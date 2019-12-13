@@ -21,7 +21,6 @@ package org.elasticsearch.painless;
 
 import org.elasticsearch.painless.spi.Whitelist;
 import org.elasticsearch.script.ScriptContext;
-import org.elasticsearch.script.ScriptFactory;
 import org.elasticsearch.script.TemplateScript;
 
 import java.util.Collections;
@@ -85,7 +84,7 @@ public class FactoryTests extends ScriptTestCase {
             boolean needsD();
         }
 
-        public interface Factory extends ScriptFactory {
+        public interface Factory  {
             StatefulFactory newFactory(int x, int y);
 
             boolean needsTest();
@@ -138,7 +137,7 @@ public class FactoryTests extends ScriptTestCase {
         public static final String[] PARAMETERS = new String[] {"test"};
         public abstract Object execute(int test);
 
-        public interface Factory extends ScriptFactory {
+        public interface Factory {
             FactoryTestScript newInstance(Map<String, Object> params);
 
             boolean needsTest();
@@ -162,6 +161,8 @@ public class FactoryTests extends ScriptTestCase {
         assertEquals(false, factory.needsNothing());
     }
 
+    // TODO(stu): do not reuse FactoryTestScript.Factory here, instead create on Factory that extends ScriptFactory
+    /*
     public void testDeterministic() {
         FactoryTestScript.Factory factory =
             scriptEngine.compile("deterministic_test", "Integer.parseInt('123')",
@@ -187,12 +188,13 @@ public class FactoryTests extends ScriptTestCase {
         Double d = (Double)factory.newInstance(Collections.emptyMap()).execute(0);
         assertTrue(d >= 123.0 && d <= 124.0);
     }
+     */
 
     public abstract static class EmptyTestScript {
         public static final String[] PARAMETERS = {};
         public abstract Object execute();
 
-        public interface Factory extends ScriptFactory {
+        public interface Factory {
             EmptyTestScript newInstance();
         }
 

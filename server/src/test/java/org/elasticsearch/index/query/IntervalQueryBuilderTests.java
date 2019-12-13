@@ -397,7 +397,7 @@ public class IntervalQueryBuilderTests extends AbstractQueryTestCase<IntervalQue
         ScriptService scriptService = new ScriptService(Settings.EMPTY, Collections.emptyMap(), Collections.emptyMap()){
             @Override
             @SuppressWarnings("unchecked")
-            public <FactoryType extends ScriptFactory> FactoryType compile(Script script, ScriptContext<FactoryType> context) {
+            public <FactoryType> FactoryType compile(Script script, ScriptContext<FactoryType> context) {
                 assertEquals(IntervalFilterScript.CONTEXT, context);
                 assertEquals(new Script("interval.start > 3"), script);
                 return (FactoryType) factory;
