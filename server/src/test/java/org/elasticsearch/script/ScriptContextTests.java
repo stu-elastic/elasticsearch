@@ -37,7 +37,7 @@ public class ScriptContextTests extends ESTestCase {
         String newFactory(int foo);
     }
 
-    public interface MissingNewInstance  
+    public interface MissingNewInstance {
         String typoNewInstanceMethod(int foo);
     }
 

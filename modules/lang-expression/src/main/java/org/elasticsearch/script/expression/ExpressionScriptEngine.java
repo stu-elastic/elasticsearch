@@ -112,14 +112,44 @@ public class ExpressionScriptEngine implements ScriptEngine {
         TermsSetQueryScript.CONTEXT,
             (Expression expr) -> (TermsSetQueryScript.Factory) (p, lookup) -> newTermsSetQueryScript(expr, lookup, p),
 
-        AggregationScript.CONTEXT, // TODO(stu): implement methods
-            (Expression expr) -> (AggregationScript.Factory) (p, lookup) -> newAggregationScript(expr, lookup, p),
+        AggregationScript.CONTEXT,
+            (Expression expr) -> new AggregationScript.Factory() {
+                @Override
+                public AggregationScript.LeafFactory newFactory(Map<String, Object> params, SearchLookup lookup) {
+                    return newAggregationScript(expr, lookup, params);
+                }
 
-        NumberSortScript.CONTEXT, // TODO(stu): implement methods
-            (Expression expr) -> (NumberSortScript.Factory) (p, lookup) -> newSortScript(expr, lookup, p),
+                @Override
+                public boolean isResultDeterministic() {
+                    return true;
+                }
+            },
 
-        FieldScript.CONTEXT, // TODO(stu): implement methods
-            (Expression expr) -> (FieldScript.Factory) (p, lookup) -> newFieldScript(expr, lookup, p)
+        NumberSortScript.CONTEXT,
+            (Expression expr) -> new NumberSortScript.Factory() {
+                @Override
+                public NumberSortScript.LeafFactory newFactory(Map<String, Object> params, SearchLookup lookup) {
+                    return newSortScript(expr, lookup, params);
+                }
+
+                @Override
+                public boolean isResultDeterministic() {
+                    return true;
+                }
+            },
+
+        FieldScript.CONTEXT,
+            (Expression expr) -> new FieldScript.Factory() {
+                @Override
+                public FieldScript.LeafFactory newFactory(Map<String, Object> params, SearchLookup lookup) {
+                    return newFieldScript(expr, lookup, params);
+                }
+
+                @Override
+                public boolean isResultDeterministic() {
+                    return true;
+                }
+            }
     );
 
     @Override
