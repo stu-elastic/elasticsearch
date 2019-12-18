@@ -84,7 +84,7 @@ public class FactoryTests extends ScriptTestCase {
             boolean needsD();
         }
 
-        public interface Factory  {
+        public interface Factory {
             StatefulFactory newFactory(int x, int y);
 
             boolean needsTest();
