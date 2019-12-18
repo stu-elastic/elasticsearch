@@ -96,8 +96,18 @@ public class ExpressionScriptEngine implements ScriptEngine {
                 }
             },
 
-        ScoreScript.CONTEXT, // TODO(stu): implement methods
-            (Expression expr) -> (ScoreScript.Factory) (p, lookup) -> newScoreScript(expr, lookup, p),
+        ScoreScript.CONTEXT,
+            (Expression expr) -> new ScoreScript.Factory() {
+                @Override
+                public ScoreScript.LeafFactory newFactory(Map<String, Object> params, SearchLookup lookup) {
+                    return newScoreScript(expr, lookup, params);
+                }
+
+                @Override
+                public boolean isResultDeterministic() {
+                    return true;
+                }
+            },
 
         TermsSetQueryScript.CONTEXT,
             (Expression expr) -> (TermsSetQueryScript.Factory) (p, lookup) -> newTermsSetQueryScript(expr, lookup, p),
