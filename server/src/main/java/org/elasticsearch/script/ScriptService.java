@@ -34,12 +34,6 @@ import org.elasticsearch.cluster.ClusterStateApplier;
 import org.elasticsearch.cluster.metadata.MetaData;
 import org.elasticsearch.cluster.service.ClusterService;
 import org.elasticsearch.common.Strings;
-import org.elasticsearch.common.breaker.CircuitBreaker;
-import org.elasticsearch.common.breaker.CircuitBreakingException;
-import org.elasticsearch.common.cache.Cache;
-import org.elasticsearch.common.cache.CacheBuilder;
-import org.elasticsearch.common.cache.RemovalListener;
-import org.elasticsearch.common.cache.RemovalNotification;
 import org.elasticsearch.common.collect.Tuple;
 import org.elasticsearch.common.settings.ClusterSettings;
 import org.elasticsearch.common.settings.Setting;
@@ -99,14 +93,28 @@ public class ScriptService implements Closeable, ClusterStateApplier {
                 }
             };
 
-    public static final Setting<Integer> SCRIPT_CACHE_SIZE_SETTING =
-        Setting.intSetting("script.cache.max_size", 100, 0, Property.NodeScope);
-    public static final Setting<TimeValue> SCRIPT_CACHE_EXPIRE_SETTING =
-        Setting.positiveTimeSetting("script.cache.expire", TimeValue.timeValueMillis(0), Property.NodeScope);
+    // Per-context settings
+    static final String contextPrefix = "script.context";
+
+    // script.context.<context-name>.{cache_max_size, cache_expire, max_compilations_rate}
+    public static final Setting.AffixSetting<Integer> SCRIPT_CACHE_SIZE_SETTING =
+        Setting.affixKeySetting(contextPrefix, "cache_max_size",
+            context -> Setting.intSetting(contextPrefix + "." + context + ".cache_max_size",
+                100, 0, Property.Dynamic));
+    public static final Setting.AffixSetting<TimeValue> SCRIPT_CACHE_EXPIRE_SETTING =
+        Setting.affixKeySetting(contextPrefix, "cache_expire",
+            context -> Setting.positiveTimeSetting(contextPrefix + "." + context + ".cache_expire",
+                TimeValue.timeValueMillis(0), Property.Dynamic));
+    public static final Setting.AffixSetting<Tuple<Integer, TimeValue>> SCRIPT_MAX_COMPILATIONS_RATE =
+        Setting.affixKeySetting(contextPrefix, "max_compilations_rate",
+            context -> new Setting<>(contextPrefix + "." + context + ".max_compilations_rate",
+                "75/5m", MAX_COMPILATION_RATE_FUNCTION, Property.Dynamic));
+    // TODO(stu): ingest should have much higher default values than other contexts
+    // how do we handle that? (maybe have them in script service and allow messages to update).
+
+
     public static final Setting<Integer> SCRIPT_MAX_SIZE_IN_BYTES =
         Setting.intSetting("script.max_size_in_bytes", 65535, 0, Property.Dynamic, Property.NodeScope);
-    public static final Setting<Tuple<Integer, TimeValue>> SCRIPT_MAX_COMPILATIONS_RATE =
-            new Setting<>("script.max_compilations_rate", "75/5m", MAX_COMPILATION_RATE_FUNCTION, Property.Dynamic, Property.NodeScope);
 
     public static final String ALLOW_NONE = "none";
 
@@ -119,21 +127,19 @@ public class ScriptService implements Closeable, ClusterStateApplier {
     private final Set<String> typesAllowed;
     private final Set<String> contextsAllowed;
 
+    // TODO(stu): these are stubs
+    private final Map<String, ContextCompiler> compilers = new HashMap<>();
+    // TODO(stu): end stubs
+
     private final Map<String, ScriptEngine> engines;
     private final Map<String, ScriptContext<?>> contexts;
 
-    private final Cache<CacheKey, Object> cache;
-
+    // TODO(stu): these need to be combined per compiler
     private final ScriptMetrics scriptMetrics = new ScriptMetrics();
 
     private ClusterState clusterState;
 
     private int maxSizeInBytes;
-
-    private Tuple<Integer, TimeValue> rate;
-    private long lastInlineCompileTime;
-    private double scriptsPerTimeWindow;
-    private double compilesAllowedPerNano;
 
     public ScriptService(Settings settings, Map<String, ScriptEngine> engines, Map<String, ScriptContext<?>> contexts) {
         this.settings = Objects.requireNonNull(settings);
@@ -213,6 +219,8 @@ public class ScriptService implements Closeable, ClusterStateApplier {
             }
         }
 
+        /*
+        // TODO(stu): this was all moved to ContextCompiler
         int cacheMaxSize = SCRIPT_CACHE_SIZE_SETTING.get(settings);
 
         CacheBuilder<CacheKey, Object> cacheBuilder = CacheBuilder.builder();
@@ -231,11 +239,15 @@ public class ScriptService implements Closeable, ClusterStateApplier {
         this.lastInlineCompileTime = System.nanoTime();
         this.setMaxSizeInBytes(SCRIPT_MAX_SIZE_IN_BYTES.get(settings));
         this.setMaxCompilationRate(SCRIPT_MAX_COMPILATIONS_RATE.get(settings));
+         */
     }
 
     void registerClusterSettingsListeners(ClusterSettings clusterSettings) {
         clusterSettings.addSettingsUpdateConsumer(SCRIPT_MAX_SIZE_IN_BYTES, this::setMaxSizeInBytes);
-        clusterSettings.addSettingsUpdateConsumer(SCRIPT_MAX_COMPILATIONS_RATE, this::setMaxCompilationRate);
+        // TODO(stu): delegate to ContextCompiler for..
+        // SCRIPT_CACHE_SIZE_SETTING -> ContextCompiler.setScriptCacheSize
+        // SCRIPT_CACHE_EXPIRE_SETTING -> ContextCompiler.setScriptCacheExpire
+        // SCRIPT_MAX_COMPILATIONS_RATE -> ContextCompiler.setMaxCompilationRate
     }
 
     @Override
@@ -267,19 +279,22 @@ public class ScriptService implements Closeable, ClusterStateApplier {
         maxSizeInBytes = newMaxSizeInBytes;
     }
 
-    /**
+    /*
      * This configures the maximum script compilations per five minute window.
      *
      * @param newRate the new expected maximum number of compilations per five minute window
      */
+    /*
+    // TODO(stu): this moved to ContextCompiler
     void setMaxCompilationRate(Tuple<Integer, TimeValue> newRate) {
         this.rate = newRate;
         // Reset the counter to allow new compilations
         this.scriptsPerTimeWindow = rate.v1();
         this.compilesAllowedPerNano = ((double) rate.v1()) / newRate.v2().nanos();
     }
+     */
 
-    /**
+    /*
      * Compiles a script using the given context.
      *
      * @return a compiled script which may be used to construct instances of a script for the given context
@@ -332,6 +347,15 @@ public class ScriptService implements Closeable, ClusterStateApplier {
             logger.trace("compiling lang: [{}] type: [{}] script: {}", lang, type, idOrCode);
         }
 
+        if (compilers.containsKey(context.name) == false) {
+            throw new IllegalArgumentException("script context [" + context.name + "] has no compiler");
+        }
+
+        ContextCompiler<FactoryType> compiler = compilers.get(context.name);
+        return compiler.compile(scriptEngine, id, idOrCode, type, options);
+
+        /*
+        // TODO(stu): Moved to ContextCompiler
         CacheKey cacheKey = new CacheKey(lang, idOrCode, context.name, options);
         Object compiledScript = cache.get(cacheKey);
 
@@ -372,9 +396,10 @@ public class ScriptService implements Closeable, ClusterStateApplier {
 
             return context.factoryClazz.cast(compiledScript);
         }
+         */
     }
 
-    /**
+    /*
      * Check whether there have been too many compilations within the last minute, throwing a circuit breaking exception if so.
      * This is a variant of the token bucket algorithm: https://en.wikipedia.org/wiki/Token_bucket
      *
@@ -383,6 +408,8 @@ public class ScriptService implements Closeable, ClusterStateApplier {
      * enough water the request is denied. Just like a normal bucket, if water is added that overflows the bucket, the extra water/capacity
      * is discarded - there can never be more water in the bucket than the size of the bucket.
      */
+    /*
+    // TODO(stu): this was moved to ContextCompiler
     void checkCompilationLimit() {
         long now = System.nanoTime();
         long timePassed = now - lastInlineCompileTime;
@@ -407,6 +434,7 @@ public class ScriptService implements Closeable, ClusterStateApplier {
                 CircuitBreaker.Durability.TRANSIENT);
         }
     }
+     */
 
     public boolean isLangSupported(String lang) {
         Objects.requireNonNull(lang);
@@ -577,48 +605,48 @@ public class ScriptService implements Closeable, ClusterStateApplier {
         clusterState = event.state();
     }
 
-    /**
-     * A small listener for the script cache that calls each
-     * {@code ScriptEngine}'s {@code scriptRemoved} method when the
-     * script has been removed from the cache
-     */
-    private class ScriptCacheRemovalListener implements RemovalListener<CacheKey, Object> {
-        @Override
-        public void onRemoval(RemovalNotification<CacheKey, Object> notification) {
-            if (logger.isDebugEnabled()) {
-                logger.debug("removed {} from cache, reason: {}", notification.getValue(), notification.getRemovalReason());
-            }
-            scriptMetrics.onCacheEviction();
-        }
-    }
-
-    private static final class CacheKey {
-        final String lang;
-        final String idOrCode;
-        final String context;
-        final Map<String, String> options;
-
-        private CacheKey(String lang, String idOrCode, String context, Map<String, String> options) {
-            this.lang = lang;
-            this.idOrCode = idOrCode;
-            this.context = context;
-            this.options = options;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            CacheKey cacheKey = (CacheKey) o;
-            return Objects.equals(lang, cacheKey.lang) &&
-                Objects.equals(idOrCode, cacheKey.idOrCode) &&
-                Objects.equals(context, cacheKey.context) &&
-                Objects.equals(options, cacheKey.options);
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(lang, idOrCode, context, options);
-        }
-    }
+//    /**
+//     * A small listener for the script cache that calls each
+//     * {@code ScriptEngine}'s {@code scriptRemoved} method when the
+//     * script has been removed from the cache
+//     */
+//    private class ScriptCacheRemovalListener implements RemovalListener<CacheKey, Object> {
+//        @Override
+//        public void onRemoval(RemovalNotification<CacheKey, Object> notification) {
+//            if (logger.isDebugEnabled()) {
+//                logger.debug("removed {} from cache, reason: {}", notification.getValue(), notification.getRemovalReason());
+//            }
+//            scriptMetrics.onCacheEviction();
+//        }
+//    }
+//
+//    private static final class CacheKey {
+//        final String lang;
+//        final String idOrCode;
+//        final String context;
+//        final Map<String, String> options;
+//
+//        private CacheKey(String lang, String idOrCode, String context, Map<String, String> options) {
+//            this.lang = lang;
+//            this.idOrCode = idOrCode;
+//            this.context = context;
+//            this.options = options;
+//        }
+//
+//        @Override
+//        public boolean equals(Object o) {
+//            if (this == o) return true;
+//            if (o == null || getClass() != o.getClass()) return false;
+//            CacheKey cacheKey = (CacheKey) o;
+//            return Objects.equals(lang, cacheKey.lang) &&
+//                Objects.equals(idOrCode, cacheKey.idOrCode) &&
+//                Objects.equals(context, cacheKey.context) &&
+//                Objects.equals(options, cacheKey.options);
+//        }
+//
+//        @Override
+//        public int hashCode() {
+//            return Objects.hash(lang, idOrCode, context, options);
+//        }
+//    }
 }
