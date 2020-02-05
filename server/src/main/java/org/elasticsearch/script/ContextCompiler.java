@@ -132,6 +132,10 @@ public class ContextCompiler<FactoryType> {
         return context.factoryClazz.cast(compiledScript);
     }
 
+    public ScriptStats stats() {
+        return scriptMetrics.stats();
+    }
+
     /**
      * Check whether there have been too many compilations within the last minute, throwing a circuit breaking exception if so.
      * This is a variant of the token bucket algorithm: https://en.wikipedia.org/wiki/Token_bucket

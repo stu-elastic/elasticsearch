@@ -38,6 +38,10 @@ public class ScriptStats implements Writeable, ToXContentFragment {
         this.compilationLimitTriggered = compilationLimitTriggered;
     }
 
+    ScriptStats() {
+        this(0, 0, 0);
+    }
+
     public ScriptStats(StreamInput in) throws IOException {
         compilations = in.readVLong();
         cacheEvictions = in.readVLong();
@@ -78,5 +82,13 @@ public class ScriptStats implements Writeable, ToXContentFragment {
         static final String COMPILATIONS = "compilations";
         static final String CACHE_EVICTIONS = "cache_evictions";
         static final String COMPILATION_LIMIT_TRIGGERED = "compilation_limit_triggered";
+    }
+
+    public ScriptStats add(ScriptStats other) {
+        return new ScriptStats(
+            compilations + other.compilations,
+            cacheEvictions + other.cacheEvictions,
+            compilationLimitTriggered + other.compilationLimitTriggered
+        );
     }
 }
