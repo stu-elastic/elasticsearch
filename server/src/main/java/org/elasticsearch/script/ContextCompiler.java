@@ -69,10 +69,9 @@ public class ContextCompiler<FactoryType> {
 
         this.lastInlineCompileTime = System.nanoTime();
 
-        this.setMaxCompilationRate(maxCompilationRate);
         this.cacheSize = cacheMaxSize;
         this.cacheExpire = cacheExpire;
-        this.cache = buildCache();
+        this.setMaxCompilationRate(maxCompilationRate);
     }
 
     private Cache<CacheKey,Object> buildCache() {

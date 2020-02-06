@@ -78,6 +78,7 @@ public class ScriptService implements Closeable, ClusterStateApplier {
                     if (rate < 0) {
                         throw new IllegalArgumentException("rate [" + rate + "] must be positive");
                     }
+                    // TODO(stu): this has changed
                     TimeValue timeValue = TimeValue.parseTimeValue(time, "script.max_compilations_rate");
                     if (timeValue.nanos() <= 0) {
                         throw new IllegalArgumentException("time value [" + time + "] must be positive");
@@ -100,15 +101,15 @@ public class ScriptService implements Closeable, ClusterStateApplier {
     public static final Setting.AffixSetting<Integer> SCRIPT_CACHE_SIZE_SETTING =
         Setting.affixKeySetting(contextPrefix, "cache_max_size",
             context -> Setting.intSetting(contextPrefix + "." + context + ".cache_max_size",
-                100, 0, Property.Dynamic));
+                100, 0, Property.NodeScope, Property.Dynamic));
     public static final Setting.AffixSetting<TimeValue> SCRIPT_CACHE_EXPIRE_SETTING =
         Setting.affixKeySetting(contextPrefix, "cache_expire",
             context -> Setting.positiveTimeSetting(contextPrefix + "." + context + ".cache_expire",
-                TimeValue.timeValueMillis(0), Property.Dynamic));
+                TimeValue.timeValueMillis(0), Property.NodeScope, Property.Dynamic));
     public static final Setting.AffixSetting<Tuple<Integer, TimeValue>> SCRIPT_MAX_COMPILATIONS_RATE =
         Setting.affixKeySetting(contextPrefix, "max_compilations_rate",
             context -> new Setting<>(contextPrefix + "." + context + ".max_compilations_rate",
-                "75/5m", MAX_COMPILATION_RATE_FUNCTION, Property.Dynamic));
+                "75/5m", MAX_COMPILATION_RATE_FUNCTION, Property.NodeScope, Property.Dynamic));
     // TODO(stu): ingest should have much higher default values than other contexts
     // how do we handle that? (maybe have them in script service and allow messages to update).
 
@@ -228,6 +229,7 @@ public class ScriptService implements Closeable, ClusterStateApplier {
                 );
             }
         );
+        this.setMaxSizeInBytes(SCRIPT_MAX_SIZE_IN_BYTES.get(settings));
     }
 
     void registerClusterSettingsListeners(ClusterSettings clusterSettings) {
