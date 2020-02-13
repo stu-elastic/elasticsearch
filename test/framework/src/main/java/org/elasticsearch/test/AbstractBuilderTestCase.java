@@ -69,6 +69,7 @@ import org.elasticsearch.plugins.PluginsService;
 import org.elasticsearch.plugins.ScriptPlugin;
 import org.elasticsearch.plugins.SearchPlugin;
 import org.elasticsearch.script.MockScriptEngine;
+import org.elasticsearch.script.MockScriptService;
 import org.elasticsearch.script.ScriptContext;
 import org.elasticsearch.script.ScriptEngine;
 import org.elasticsearch.script.ScriptModule;
@@ -426,6 +427,13 @@ public abstract class AbstractBuilderTestCase extends ESTestCase {
                 }));
             }
             return new ScriptModule(Settings.EMPTY, scriptPlugins);
+        }
+
+        protected ScriptService newScriptService(Settings settings, Map<String, ScriptEngine> engines, Map<String, ScriptContext<?>> contexts) {
+            if (getPluginsService().filterPlugins(MockScriptService.TestPlugin.class).isEmpty()) {
+                return super.newScriptService(settings, engines, contexts);
+            }
+            return new MockScriptService(settings, engines, contexts);
         }
     }
 }

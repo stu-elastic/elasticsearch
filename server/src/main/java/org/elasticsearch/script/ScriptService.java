@@ -78,8 +78,8 @@ public class ScriptService implements Closeable, ClusterStateApplier {
                     if (rate < 0) {
                         throw new IllegalArgumentException("rate [" + rate + "] must be positive");
                     }
-                    // TODO(stu): this has changed
-                    TimeValue timeValue = TimeValue.parseTimeValue(time, "script.max_compilations_rate");
+                    // TODO(stu): pass in full setting? Pass in context?
+                    TimeValue timeValue = TimeValue.parseTimeValue(time, "script.context.*.max_compilations_rate");
                     if (timeValue.nanos() <= 0) {
                         throw new IllegalArgumentException("time value [" + time + "] must be positive");
                     }
@@ -224,12 +224,17 @@ public class ScriptService implements Closeable, ClusterStateApplier {
                         context,
                         cacheSize.getOrDefault(name, context.cacheSizeDefault),
                         cacheExpire.getOrDefault(name, context.cacheExpireDefault),
+                        // TODO(stu): use compilationLimitsEnabled here
                         maxCompilationRate.getOrDefault(name, context.maxCompilationRateDefault)
                     )
                 );
             }
         );
         this.setMaxSizeInBytes(SCRIPT_MAX_SIZE_IN_BYTES.get(settings));
+    }
+
+    boolean compilationLimitsEnabled() {
+        return true;
     }
 
     void registerClusterSettingsListeners(ClusterSettings clusterSettings) {
