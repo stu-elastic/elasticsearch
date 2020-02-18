@@ -42,6 +42,7 @@ import java.util.Map;
 import java.util.function.Function;
 
 import static org.elasticsearch.script.ScriptService.MAX_COMPILATION_RATE_FUNCTION;
+import static org.elasticsearch.script.ScriptService.contextPrefix;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
@@ -267,10 +268,11 @@ public class ScriptServiceTests extends ESTestCase {
 
     public void testCacheEvictionCountedInCacheEvictionsStats() throws IOException {
         Settings.Builder builder = Settings.builder();
-        builder.put(ScriptService.SCRIPT_CACHE_SIZE_SETTING.getKey(), 1);
+        ScriptContext<?> context = randomFrom(contexts.values());
+        builder.put(contextPrefix + context.name + ".cache_max_size", 1);
         buildScriptService(builder.build());
-        scriptService.compile(new Script(ScriptType.INLINE, "test", "1+1", Collections.emptyMap()), randomFrom(contexts.values()));
-        scriptService.compile(new Script(ScriptType.INLINE, "test", "2+2", Collections.emptyMap()), randomFrom(contexts.values()));
+        scriptService.compile(new Script(ScriptType.INLINE, "test", "1+1", Collections.emptyMap()), context);
+        scriptService.compile(new Script(ScriptType.INLINE, "test", "2+2", Collections.emptyMap()), context);
         assertEquals(2L, scriptService.stats().getCompilations());
         assertEquals(1L, scriptService.stats().getCacheEvictions());
     }

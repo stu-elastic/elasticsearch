@@ -99,20 +99,38 @@ public class ScriptService implements Closeable, ClusterStateApplier {
 
     // script.context.<context-name>.{cache_max_size, cache_expire, max_compilations_rate}
     public static final Setting.AffixSetting<Integer> SCRIPT_CACHE_SIZE_SETTING =
-        Setting.affixKeySetting(contextPrefix, "cache_max_size",
-            context -> Setting.intSetting(contextPrefix + "." + context + ".cache_max_size",
-                100, 0, Property.NodeScope, Property.Dynamic));
+        Setting.affixKeySetting(
+            contextPrefix,
+            "cache_max_size",
+            key -> Setting.intSetting(
+                key,
+                100,
+                0,
+                Property.NodeScope,
+                Property.Dynamic)
+        );
     public static final Setting.AffixSetting<TimeValue> SCRIPT_CACHE_EXPIRE_SETTING =
-        Setting.affixKeySetting(contextPrefix, "cache_expire",
-            context -> Setting.positiveTimeSetting(contextPrefix + "." + context + ".cache_expire",
-                TimeValue.timeValueMillis(0), Property.NodeScope, Property.Dynamic));
+        Setting.affixKeySetting(
+            contextPrefix,
+            "cache_expire",
+            key -> Setting.positiveTimeSetting(
+                key,
+                TimeValue.timeValueMillis(0),
+                Property.NodeScope,
+                Property.Dynamic)
+        );
     public static final Setting.AffixSetting<Tuple<Integer, TimeValue>> SCRIPT_MAX_COMPILATIONS_RATE =
-        Setting.affixKeySetting(contextPrefix, "max_compilations_rate",
-            context -> new Setting<>(contextPrefix + "." + context + ".max_compilations_rate",
-                "75/5m", MAX_COMPILATION_RATE_FUNCTION, Property.NodeScope, Property.Dynamic));
+        Setting.affixKeySetting(
+            contextPrefix,
+            "max_compilations_rate",
+            key -> new Setting<>(
+                key,
+                "75/5m",
+                MAX_COMPILATION_RATE_FUNCTION,
+                Property.NodeScope,
+                Property.Dynamic)
+        );
     // TODO(stu): ingest should have much higher default values than other contexts
-    // how do we handle that? (maybe have them in script service and allow messages to update).
-
 
     public static final Setting<Integer> SCRIPT_MAX_SIZE_IN_BYTES =
         Setting.intSetting("script.max_size_in_bytes", 65535, 0, Property.Dynamic, Property.NodeScope);
@@ -238,12 +256,29 @@ public class ScriptService implements Closeable, ClusterStateApplier {
         return true;
     }
 
+    private void contextExists(String context, Object o) {
+        if (compilers.containsKey(context) == false) {
+            throw new IllegalArgumentException("Context [" + context + "] does not exist");
+        }
+    }
+
+    private void setScriptCacheSize(String context, Integer newSize) {
+        compilers.get(context).setScriptCacheSize(newSize);
+    }
+
+    private void setScriptCacheExpire(String context, TimeValue newExpire) {
+        compilers.get(context).setScriptCacheExpire(newExpire);
+    }
+
+    private void setMaxCompilationRate(String context, Tuple<Integer, TimeValue> newRate) {
+        compilers.get(context).setMaxCompilationRate(newRate);
+    }
+
     void registerClusterSettingsListeners(ClusterSettings clusterSettings) {
         clusterSettings.addSettingsUpdateConsumer(SCRIPT_MAX_SIZE_IN_BYTES, this::setMaxSizeInBytes);
-        // TODO(stu): delegate to ContextCompiler for..
-        // SCRIPT_CACHE_SIZE_SETTING -> ContextCompiler.setScriptCacheSize
-        // SCRIPT_CACHE_EXPIRE_SETTING -> ContextCompiler.setScriptCacheExpire
-        // SCRIPT_MAX_COMPILATIONS_RATE -> ContextCompiler.setMaxCompilationRate
+        clusterSettings.addAffixUpdateConsumer(SCRIPT_CACHE_SIZE_SETTING, this::setScriptCacheSize, this::contextExists);
+        clusterSettings.addAffixUpdateConsumer(SCRIPT_CACHE_EXPIRE_SETTING, this::setScriptCacheExpire, this::contextExists);
+        clusterSettings.addAffixUpdateConsumer(SCRIPT_MAX_COMPILATIONS_RATE, this::setMaxCompilationRate, this::contextExists);
     }
 
     @Override
