@@ -224,8 +224,9 @@ public class ScriptService implements Closeable, ClusterStateApplier {
                         context,
                         cacheSize.getOrDefault(name, context.cacheSizeDefault),
                         cacheExpire.getOrDefault(name, context.cacheExpireDefault),
-                        // TODO(stu): use compilationLimitsEnabled here
-                        maxCompilationRate.getOrDefault(name, context.maxCompilationRateDefault)
+                        compilationLimitsEnabled() ?
+                            maxCompilationRate.getOrDefault(name, context.maxCompilationRateDefault) :
+                            new Tuple<>(0, TimeValue.ZERO)
                     )
                 );
             }

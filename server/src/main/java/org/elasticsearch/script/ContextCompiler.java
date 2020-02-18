@@ -145,6 +145,11 @@ public class ContextCompiler<FactoryType> {
      * is discarded - there can never be more water in the bucket than the size of the bucket.
      */
     void checkCompilationLimit() {
+        if (rate.v1() == 0) {
+            // unlimited
+            return;
+        }
+
         long now = System.nanoTime();
         long timePassed = now - lastInlineCompileTime;
         lastInlineCompileTime = now;

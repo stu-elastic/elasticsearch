@@ -353,7 +353,7 @@ public abstract class AbstractBuilderTestCase extends ESTestCase {
             idxSettings = IndexSettingsModule.newIndexSettings(index, indexSettings, indexScopedSettings);
             AnalysisModule analysisModule = new AnalysisModule(TestEnvironment.newEnvironment(nodeSettings), emptyList());
             IndexAnalyzers indexAnalyzers = analysisModule.getAnalysisRegistry().build(idxSettings);
-            scriptService = scriptModule.getScriptService();
+            scriptService = new MockScriptService(Settings.EMPTY, scriptModule.engines, scriptModule.contexts);
             similarityService = new SimilarityService(idxSettings, null, Collections.emptyMap());
             MapperRegistry mapperRegistry = indicesModule.getMapperRegistry();
             mapperService = new MapperService(idxSettings, indexAnalyzers, xContentRegistry, similarityService, mapperRegistry,
@@ -427,15 +427,6 @@ public abstract class AbstractBuilderTestCase extends ESTestCase {
                 }));
             }
             return new ScriptModule(Settings.EMPTY, scriptPlugins);
-        }
-
-        protected ScriptService newScriptService(Settings settings, Map<String, ScriptEngine> engines, Map<String, ScriptContext<?>> contexts) {
-            /* TODO(stu): is this necessary?
-            if (getPluginsService().filterPlugins(MockScriptService.TestPlugin.class).isEmpty()) {
-                return super.newScriptService(settings, engines, contexts);
-            }
-             */
-            return new MockScriptService(settings, engines, contexts);
         }
     }
 }

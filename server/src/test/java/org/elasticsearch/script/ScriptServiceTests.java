@@ -60,7 +60,6 @@ public class ScriptServiceTests extends ESTestCase {
     public void setup() throws IOException {
         baseSettings = Settings.builder()
                 .put(Environment.PATH_HOME_SETTING.getKey(), createTempDir().toString())
-                .put(ScriptService.SCRIPT_MAX_COMPILATIONS_RATE.getKey(), "10000/1m")
                 .build();
         Map<String, Function<Map<String, Object>, Object>> scripts = new HashMap<>();
         for (int i = 0; i < 20; ++i) {
