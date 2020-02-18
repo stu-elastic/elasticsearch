@@ -430,9 +430,11 @@ public abstract class AbstractBuilderTestCase extends ESTestCase {
         }
 
         protected ScriptService newScriptService(Settings settings, Map<String, ScriptEngine> engines, Map<String, ScriptContext<?>> contexts) {
+            /* TODO(stu): is this necessary?
             if (getPluginsService().filterPlugins(MockScriptService.TestPlugin.class).isEmpty()) {
                 return super.newScriptService(settings, engines, contexts);
             }
+             */
             return new MockScriptService(settings, engines, contexts);
         }
     }
