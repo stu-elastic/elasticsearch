@@ -254,10 +254,10 @@ public class ScriptService implements Closeable, ClusterStateApplier {
     ScriptCache initCache(Settings settings, Map<String, ScriptCache> contextCache, Set<String> contextNames) {
         if (useGeneralCacheSettings(settings)) {
             return new ScriptCache(
-                SCRIPT_CACHE_SIZE_SETTING.get(settings),
-                SCRIPT_CACHE_EXPIRE_SETTING.get(settings),
+                SCRIPT_CACHE_SIZE_SETTING_DEPRECATED.get(settings),
+                SCRIPT_CACHE_EXPIRE_SETTING_DEPRECATED.get(settings),
                 compilationLimitsEnabled() ?
-                    SCRIPT_MAX_COMPILATIONS_RATE.get(settings):
+                    SCRIPT_MAX_COMPILATIONS_RATE_DEPRECATED.get(settings):
                     new Tuple<>(0, TimeValue.ZERO)
             );
         }
@@ -393,7 +393,7 @@ public class ScriptService implements Closeable, ClusterStateApplier {
 
     void registerClusterSettingsListeners(ClusterSettings clusterSettings) {
         clusterSettings.addSettingsUpdateConsumer(SCRIPT_MAX_SIZE_IN_BYTES, this::setMaxSizeInBytes);
-        clusterSettings.addSettingsUpdateConsumer(SCRIPT_MAX_COMPILATIONS_RATE,
+        clusterSettings.addSettingsUpdateConsumer(SCRIPT_MAX_COMPILATIONS_RATE_DEPRECATED,
                 // Don't deref potentially null generalCache
                 r -> generalCache.setMaxCompilationRate(r),
                 s -> {
