@@ -96,6 +96,21 @@ public class ScriptServiceTests extends ESTestCase {
         scriptService.registerClusterSettingsListeners(clusterSettings);
     }
 
+    public void testContextSettings() {
+        Settings settings = Settings.builder()
+            .put("script.context.foo.cache_max_size", 1)
+            .put("script.context.baz.cache_expire", TimeValue.timeValueMillis(1000))
+            .put("script.context.bar.cache_max_size", 2)
+            .put("script.cache.max_size", 5)
+            .build();
+        try {
+            boolean b = ScriptService.useGeneralCacheSettings(settings);
+            assertTrue(b);
+        } catch (IllegalArgumentException e) {
+            assertNull(e);
+        }
+    }
+
     public void testMaxCompilationRateSetting() throws Exception {
         assertThat(MAX_COMPILATION_RATE_FUNCTION.apply("10/1m"), is(Tuple.tuple(10, TimeValue.timeValueMinutes(1))));
         assertThat(MAX_COMPILATION_RATE_FUNCTION.apply("10/60s"), is(Tuple.tuple(10, TimeValue.timeValueMinutes(1))));
@@ -223,7 +238,7 @@ public class ScriptServiceTests extends ESTestCase {
 
     public void testCompilationStatsOnCacheHit() throws IOException {
         Settings.Builder builder = Settings.builder();
-        builder.put(ScriptService.SCRIPT_CACHE_SIZE_SETTING.getKey(), 1);
+        builder.put(ScriptService.SCRIPT_CACHE_SIZE_SETTING_DEPRECATED.getKey(), 1);
         buildScriptService(builder.build());
         Script script = new Script(ScriptType.INLINE, "test", "1+1", Collections.emptyMap());
         ScriptContext<?> context = randomFrom(contexts.values());
@@ -240,7 +255,7 @@ public class ScriptServiceTests extends ESTestCase {
 
     public void testCacheEvictionCountedInCacheEvictionsStats() throws IOException {
         Settings.Builder builder = Settings.builder();
-        builder.put(ScriptService.SCRIPT_CACHE_SIZE_SETTING.getKey(), 1);
+        builder.put(ScriptService.SCRIPT_CACHE_SIZE_SETTING_DEPRECATED.getKey(), 1);
         buildScriptService(builder.build());
         scriptService.compile(new Script(ScriptType.INLINE, "test", "1+1", Collections.emptyMap()), randomFrom(contexts.values()));
         scriptService.compile(new Script(ScriptType.INLINE, "test", "2+2", Collections.emptyMap()), randomFrom(contexts.values()));
