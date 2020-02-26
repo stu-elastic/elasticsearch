@@ -489,7 +489,15 @@ public class ScriptService implements Closeable, ClusterStateApplier {
             logger.trace("compiling lang: [{}] type: [{}] script: {}", lang, type, idOrCode);
         }
 
-        return generalCache.compile(context, scriptEngine, id, idOrCode, type, options);
+        if (generalCache != null) {
+            return generalCache.compile(context, scriptEngine, id, idOrCode, type, options);
+        }
+
+        if (contextCache.containsKey(context.name) == false) {
+            throw new IllegalArgumentException("script context [" + context.name + "] has no script cache");
+        }
+
+        return contextCache.get(context.name).compile(context, scriptEngine, id, idOrCode, type, options);
     }
 
     public boolean isLangSupported(String lang) {
