@@ -661,7 +661,11 @@ public class ScriptService implements Closeable, ClusterStateApplier {
     }
 
     public ScriptStats stats() {
-        return generalCache.stats();
+        if (generalCache != null) {
+            return generalCache.stats();
+        }
+
+        return ScriptStats.sum(contextCache.values().stream().map(ScriptCache::stats)::iterator);
     }
 
     @Override
