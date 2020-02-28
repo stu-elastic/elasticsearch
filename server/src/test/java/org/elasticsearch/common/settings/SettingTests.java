@@ -830,6 +830,41 @@ public class SettingTests extends ESTestCase {
         assertEquals("[\"testelement\"]", listAffixSetting.getDefaultRaw(Settings.EMPTY));
     }
 
+    private static class ConflictValidator<T> implements Setting.Validator<T> {
+        private final List<Setting<?>> conflicts;
+
+        public ConflictValidator(List<Setting<?>> conflicts) {
+            this.conflicts = Collections.unmodifiableList(conflicts);
+        }
+
+        @Override
+        public void validate(T value) {}
+
+        @Override
+        public void validate(T value, Map<Setting<?>, Object> settings, boolean isPresent) {
+            if (isPresent && settings.isEmpty() == false) {
+                throw new IllegalArgumentException("Conflicting settings found [" +
+                    settings.keySet().stream().map(Setting::getKey).sorted().collect(Collectors.joining(", ")) + "]");
+            }
+        }
+
+        @Override
+        public Iterator<Setting<?>> settings() {
+            return conflicts.iterator();
+        }
+    }
+
+    public void testAffixSettingsWithValidator() {
+        Setting<Integer> old = Setting.intSetting("s.old", 100, 0);
+        Setting.AffixSetting<Integer> newAffix = Setting.affixKeySetting("s.new.", "suffix", key -> Setting.intSetting(key, 100, 0),
+            new ConflictValidator<>(Collections.singletonList(old)));
+        IllegalArgumentException e = expectThrows(IllegalArgumentException.class,
+            () -> newAffix.getAsMap(
+                Settings.builder().put("s.old", 10).put("s.new.middle.suffix", 20).build(),
+                true));
+        assertThat(e.getMessage(), is("Conflicting settings found [s.old]"));
+    }
+
     public void testMinMaxInt() {
         Setting<Integer> integerSetting = Setting.intSetting("foo.bar", 1, 0, 10, Property.NodeScope);
         try {

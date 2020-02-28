@@ -146,7 +146,7 @@ public class Setting<T> implements ToXContentObject {
     @Nullable
     private final Setting<T> fallbackSetting;
     private final Function<String, T> parser;
-    private final Validator<T> validator;
+    protected final Validator<T> validator;
     private final EnumSet<Property> properties;
 
     private static final EnumSet<Property> EMPTY_PROPERTIES = EnumSet.noneOf(Property.class);
@@ -428,22 +428,27 @@ public class Setting<T> implements ToXContentObject {
         return get(settings, true);
     }
 
+    protected Map<Setting<?>, Object> validatorDependencies(Settings settings) {
+        final Iterator<Setting<?>> it = validator.settings();
+        final Map<Setting<?>, Object> map;
+        if (it.hasNext()) {
+            map = new HashMap<>();
+            while (it.hasNext()) {
+                final Setting<?> setting = it.next();
+                map.put(setting, setting.get(settings, false)); // we have to disable validation or we will stack overflow
+            }
+        } else {
+            map = Collections.emptyMap();
+        }
+        return map;
+    }
+
     private T get(Settings settings, boolean validate) {
         String value = getRaw(settings);
         try {
             T parsed = parser.apply(value);
             if (validate) {
-                final Iterator<Setting<?>> it = validator.settings();
-                final Map<Setting<?>, Object> map;
-                if (it.hasNext()) {
-                    map = new HashMap<>();
-                    while (it.hasNext()) {
-                        final Setting<?> setting = it.next();
-                        map.put(setting, setting.get(settings, false)); // we have to disable validation or we will stack overflow
-                    }
-                } else {
-                    map = Collections.emptyMap();
-                }
+                final Map<Setting<?>, Object> map = validatorDependencies(settings);
                 validator.validate(parsed);
                 validator.validate(parsed, map);
                 validator.validate(parsed, map, exists(settings));
@@ -720,6 +725,14 @@ public class Setting<T> implements ToXContentObject {
             this.dependencies = Set.of(dependencies);
         }
 
+        public AffixSetting(AffixKey key, Setting<T> delegate, BiFunction<String, String, Setting<T>> delegateFactory,
+            Validator<T> validator, AffixSettingDependency... dependencies) {
+            super(key, delegate.defaultValue, delegate.parser, validator, delegate.properties.toArray(new Property[0]));
+            this.key = key;
+            this.delegateFactory = delegateFactory;
+            this.dependencies = Set.of(dependencies);
+        }
+
         boolean isGroupSetting() {
             return true;
         }
@@ -894,13 +907,32 @@ public class Setting<T> implements ToXContentObject {
          * Returns a map of all namespaces to it's values give the provided settings
          */
         public Map<String, T> getAsMap(Settings settings) {
+            return getAsMap(settings, false);
+        }
+
+        /**
+         * Returns a map of all namespaces to it's values give the provided settings, checking against the validator if validate
+         */
+        public Map<String, T> getAsMap(Settings settings, boolean validate) {
             Map<String, T> map = new HashMap<>();
             matchStream(settings).distinct().forEach(key -> {
                 String namespace = this.key.getNamespace(key);
                 Setting<T> concreteSetting = getConcreteSetting(namespace, key);
-                map.put(namespace, concreteSetting.get(settings));
+                T parsed = concreteSetting.get(settings);
+                if (validate) {
+                    final Map<Setting<?>, Object> dependencies = validatorDependencies(settings);
+                    validator.validate(parsed);
+                    validator.validate(parsed, dependencies);
+                    validator.validate(parsed, dependencies, exists(settings));
+                }
+                map.put(namespace, parsed);
             });
             return Collections.unmodifiableMap(map);
+        }
+
+        @Override
+        public boolean exists(Settings settings) {
+            return matchStream(settings).findAny().isPresent();
         }
     }
 
@@ -1715,6 +1747,18 @@ public class Setting<T> implements ToXContentObject {
                                                        AffixSettingDependency... dependencies) {
         Setting<T> delegate = delegateFactory.apply("_na_", "_na_");
         return new AffixSetting<>(key, delegate, delegateFactory, dependencies);
+    }
+
+    public static <T> AffixSetting<T> affixKeySetting(String prefix, String suffix, Function<String, Setting<T>> delegateFactory,
+                                                      Validator<T> validator, AffixSettingDependency... dependencies) {
+        BiFunction<String, String, Setting<T>> delegateFactoryWithNamespace = (ns, k) -> delegateFactory.apply(k);
+        return affixKeySetting(new AffixKey(prefix, suffix), delegateFactoryWithNamespace, validator, dependencies);
+    }
+
+    private static <T> AffixSetting<T> affixKeySetting(AffixKey key, BiFunction<String, String, Setting<T>> delegateFactory,
+        Validator<T> validator, AffixSettingDependency... dependencies) {
+        Setting<T> delegate = delegateFactory.apply("_na_", "_na_");
+        return new AffixSetting<>(key, delegate, delegateFactory, validator, dependencies);
     }
 
     public interface Key {
