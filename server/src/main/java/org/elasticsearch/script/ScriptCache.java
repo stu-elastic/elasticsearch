@@ -45,14 +45,14 @@ public class ScriptCache {
 
     private final Object lock = new Object();
 
-    private Tuple<Integer, TimeValue> rate;
+    Tuple<Integer, TimeValue> rate;
     private long lastInlineCompileTime;
     private double scriptsPerTimeWindow;
     private double compilesAllowedPerNano;
 
     // Cache settings
-    private int cacheSize;
-    private TimeValue cacheExpire;
+    int cacheSize;
+    TimeValue cacheExpire;
 
     public ScriptCache(
             int cacheMaxSize,
@@ -182,6 +182,29 @@ public class ScriptCache {
                 rate.v1() + "/" + rate.v2() +"]; please use indexed, or scripts with parameters instead; " +
                 "this limit can be changed by the [script.max_compilations_rate] setting",
                 CircuitBreaker.Durability.TRANSIENT);
+        }
+    }
+    /**
+     * This sets the cache size.  Replaces existing cache.
+     * @param newSize the new size
+     */
+    void setScriptCacheSize(Integer newSize) {
+        synchronized (lock) {
+            this.cacheSize = newSize.intValue();
+
+            this.cache = buildCache();
+        }
+    }
+
+    /**
+     * This sets the cache expiration time.  Replaces existing cache.
+     * @param newExpire the new expiration
+     */
+    void setScriptCacheExpire(TimeValue newExpire) {
+        synchronized (lock) {
+            this.cacheExpire = newExpire;
+
+            this.cache = buildCache();
         }
     }
 
