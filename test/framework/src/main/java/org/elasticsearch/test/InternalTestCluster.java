@@ -494,13 +494,15 @@ public final class InternalTestCluster extends TestCluster {
             builder.put(TransportSettings.PING_SCHEDULE.getKey(), RandomNumbers.randomIntBetween(random, 100, 2000) + "ms");
         }
 
-        if (random.nextBoolean()) {
-            builder.put(ScriptService.SCRIPT_GENERAL_CACHE_SIZE_SETTING.getKey(), RandomNumbers.randomIntBetween(random, 0, 2000));
-        }
-        if (random.nextBoolean()) {
-            builder.put(ScriptService.SCRIPT_GENERAL_CACHE_EXPIRE_SETTING.getKey(),
-                    timeValueMillis(RandomNumbers.randomIntBetween(random, 750, 10000000)).getStringRep());
-        }
+        // TODO(stu): change to per-context
+        //if (random.nextBoolean()) {
+        //    builder.put(ScriptService.SCRIPT_GENERAL_CACHE_SIZE_SETTING.getKey(), RandomNumbers.randomIntBetween(random, 0, 2000));
+        //}
+        // TODO(stu): change to per-context
+        //if (random.nextBoolean()) {
+        //   builder.put(ScriptService.SCRIPT_GENERAL_CACHE_EXPIRE_SETTING.getKey(),
+        //            timeValueMillis(RandomNumbers.randomIntBetween(random, 750, 10000000)).getStringRep());
+        //}
 
         return builder.build();
     }
