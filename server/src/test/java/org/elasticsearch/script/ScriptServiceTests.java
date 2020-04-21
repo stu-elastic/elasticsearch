@@ -221,6 +221,7 @@ public class ScriptServiceTests extends ESTestCase {
         scriptService.compile(new Script(ScriptType.INLINE, "test", "1+1", Collections.emptyMap()), randomFrom(contexts.values()));
         assertEquals(1L, scriptService.stats().getCompilations());
     }
+
     public void testMultipleCompilationsCountedInCompilationStats() throws IOException {
         buildScriptService(Settings.EMPTY);
         int numberOfCompilations = randomIntBetween(1, 20);
@@ -465,7 +466,7 @@ public class ScriptServiceTests extends ESTestCase {
     public void testCacheHolderContextConstructor() throws IOException {
         String a = randomFrom(contexts.keySet());
         String b = randomValueOtherThan(a, () -> randomFrom(contexts.keySet()));
-        String c = randomValueOtherThanMany(Set.of(a, b)::contains, () -> randomFrom(contexts.keySet()));
+        String c = randomValueOtherThanMany(Arrays.asList(a, b)::contains, () -> randomFrom(contexts.keySet()));
         String aCompilationRate = "77/5m";
         String bCompilationRate = "78/6m";
 
@@ -485,6 +486,7 @@ public class ScriptServiceTests extends ESTestCase {
 
         assertEquals(ScriptService.MAX_COMPILATION_RATE_FUNCTION.apply(aCompilationRate), holder.contextCache.get(a).get().rate);
         assertEquals(ScriptService.MAX_COMPILATION_RATE_FUNCTION.apply(bCompilationRate), holder.contextCache.get(b).get().rate);
+        assertEquals(ScriptService.SCRIPT_MAX_COMPILATIONS_RATE_SETTING.getDefault(Settings.EMPTY), holder.contextCache.get(c).get().rate);
     }
 
     public void testCompilationRateUnlimitedContextOnly() throws IOException {
@@ -580,10 +582,11 @@ public class ScriptServiceTests extends ESTestCase {
         assertNull(holder.get(randomValueOtherThanMany(contexts.keySet()::contains, () -> randomAlphaOfLength(8))));
         assertEquals(contexts.keySet(), holder.contextCache.keySet());
 
-        String d = randomValueOtherThanMany(Set.of(a, b, c)::contains, () -> randomFrom(contextNames));
+        String d = randomValueOtherThanMany(Arrays.asList(a, b, c)::contains, () -> randomFrom(contextNames));
         assertEquals(ScriptService.MAX_COMPILATION_RATE_FUNCTION.apply(aRate), holder.contextCache.get(a).get().rate);
         assertEquals(ScriptService.MAX_COMPILATION_RATE_FUNCTION.apply(bRate), holder.contextCache.get(b).get().rate);
         assertEquals(ScriptCache.UNLIMITED_COMPILATION_RATE, holder.contextCache.get(c).get().rate);
+        assertEquals(contexts.get(d).maxCompilationRateDefault, holder.contextCache.get(d).get().rate);
 
         holder.set(b, scriptService.contextCache(Settings.builder()
                 .put(SCRIPT_MAX_COMPILATIONS_RATE_SETTING.getConcreteSettingForNamespace(b).getKey(), aRate).build(),
