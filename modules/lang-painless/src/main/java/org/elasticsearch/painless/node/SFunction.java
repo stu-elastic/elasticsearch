@@ -207,13 +207,6 @@ public class SFunction extends ANode {
         if (methodEscape) {
             functionScope.setCondition(userFunctionNode, MethodEscape.class);
         }
-
-        // TODO: do not specialize for execute
-        // TODO: https://github.com/elastic/elasticsearch/issues/51841
-        if ("execute".equals(functionName)) {
-            scriptScope.setUsedVariables(functionScope.getUsedVariables());
-        }
-        // TODO: end
     }
 
     public static IRNode visitDefaultIRTreeBuild(DefaultIRTreeBuilderPhase visitor, SFunction userFunctionNode, ScriptScope scriptScope) {

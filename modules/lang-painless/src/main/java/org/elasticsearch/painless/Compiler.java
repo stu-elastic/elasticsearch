@@ -24,9 +24,9 @@ import org.elasticsearch.painless.antlr.Walker;
 import org.elasticsearch.painless.ir.ClassNode;
 import org.elasticsearch.painless.lookup.PainlessLookup;
 import org.elasticsearch.painless.node.SClass;
-import org.elasticsearch.painless.phase.DefaultSemanticAnalysisPhase;
-import org.elasticsearch.painless.phase.DefaultIRTreeBuilderPhase;
-import org.elasticsearch.painless.phase.DefaultSemanticHeaderPhase;
+import org.elasticsearch.painless.phase.ESIRTreeBuilderPhase;
+import org.elasticsearch.painless.phase.ESSemanticAnalysisPhase;
+import org.elasticsearch.painless.phase.ESSemanticHeaderPhase;
 import org.elasticsearch.painless.spi.Whitelist;
 import org.elasticsearch.painless.symbol.ScriptScope;
 import org.objectweb.asm.util.Printer;
@@ -212,12 +212,11 @@ final class Compiler {
     ScriptScope compile(Loader loader, String name, String source, CompilerSettings settings) {
         String scriptName = Location.computeSourceName(name);
         ScriptClassInfo scriptClassInfo = new ScriptClassInfo(painlessLookup, scriptClass);
-        SClass root = Walker.buildPainlessTree(scriptClassInfo, scriptName, source, settings);
+        SClass root = Walker.buildPainlessTree(scriptName, source, settings);
         ScriptScope scriptScope = new ScriptScope(painlessLookup, settings, scriptClassInfo, scriptName, source, root.getIdentifier() + 1);
-        new DefaultSemanticHeaderPhase().visitClass(root, scriptScope);
-        new DefaultSemanticAnalysisPhase().visitClass(root, scriptScope);
-        ClassNode classNode = (ClassNode)new DefaultIRTreeBuilderPhase().visitClass(root, scriptScope);
-        ScriptInjectionPhase.phase(scriptScope, classNode);
+        new ESSemanticHeaderPhase().visitClass(root, scriptScope);
+        new ESSemanticAnalysisPhase().visitClass(root, scriptScope);
+        ClassNode classNode = (ClassNode)new ESIRTreeBuilderPhase().visitClass(root, scriptScope);
         byte[] bytes = classNode.write();
 
         try {
@@ -243,13 +242,12 @@ final class Compiler {
     byte[] compile(String name, String source, CompilerSettings settings, Printer debugStream) {
         String scriptName = Location.computeSourceName(name);
         ScriptClassInfo scriptClassInfo = new ScriptClassInfo(painlessLookup, scriptClass);
-        SClass root = Walker.buildPainlessTree(scriptClassInfo, scriptName, source, settings);
+        SClass root = Walker.buildPainlessTree(scriptName, source, settings);
         ScriptScope scriptScope = new ScriptScope(painlessLookup, settings, scriptClassInfo, scriptName, source, root.getIdentifier() + 1);
-        new DefaultSemanticHeaderPhase().visitClass(root, scriptScope);
-        new DefaultSemanticAnalysisPhase().visitClass(root, scriptScope);
-        ClassNode classNode = (ClassNode)new DefaultIRTreeBuilderPhase().visitClass(root, scriptScope);
+        new ESSemanticHeaderPhase().visitClass(root, scriptScope);
+        new ESSemanticAnalysisPhase().visitClass(root, scriptScope);
+        ClassNode classNode = (ClassNode)new ESIRTreeBuilderPhase().visitClass(root, scriptScope);
         classNode.setDebugStream(debugStream);
-        ScriptInjectionPhase.phase(scriptScope, classNode);
 
         return classNode.write();
     }
