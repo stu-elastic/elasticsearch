@@ -70,6 +70,7 @@ public class SClass extends ANode {
     public static IRNode visitDefaultIRTreeBuild(DefaultIRTreeBuilderPhase visitor, SClass userClassNode, ScriptScope scriptScope) {
         ClassNode irClassNode = new ClassNode();
         scriptScope.setIRClassNode(irClassNode);
+        visitor.injectBootstrapMethod(scriptScope);
 
         for (SFunction userFunctionNode : userClassNode.getFunctionNodes()) {
             irClassNode.addFunctionNode((FunctionNode)visitor.visit(userFunctionNode, scriptScope));

@@ -217,7 +217,6 @@ final class Compiler {
         new DefaultSemanticHeaderPhase().visitClass(root, scriptScope);
         new DefaultSemanticAnalysisPhase().visitClass(root, scriptScope);
         ClassNode classNode = (ClassNode)new DefaultIRTreeBuilderPhase().visitClass(root, scriptScope);
-        DefBootstrapInjectionPhase.phase(classNode);
         ScriptInjectionPhase.phase(scriptScope, classNode);
         byte[] bytes = classNode.write();
 
@@ -250,7 +249,6 @@ final class Compiler {
         new DefaultSemanticAnalysisPhase().visitClass(root, scriptScope);
         ClassNode classNode = (ClassNode)new DefaultIRTreeBuilderPhase().visitClass(root, scriptScope);
         classNode.setDebugStream(debugStream);
-        DefBootstrapInjectionPhase.phase(classNode);
         ScriptInjectionPhase.phase(scriptScope, classNode);
 
         return classNode.write();
