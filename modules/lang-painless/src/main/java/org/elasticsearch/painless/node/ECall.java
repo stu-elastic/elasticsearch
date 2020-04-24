@@ -20,8 +20,15 @@
 package org.elasticsearch.painless.node;
 
 import org.elasticsearch.painless.Location;
+import org.elasticsearch.painless.ir.CallNode;
+import org.elasticsearch.painless.ir.CallSubDefNode;
+import org.elasticsearch.painless.ir.CallSubNode;
+import org.elasticsearch.painless.ir.ExpressionNode;
+import org.elasticsearch.painless.ir.IRNode;
+import org.elasticsearch.painless.ir.NullSafeSubNode;
 import org.elasticsearch.painless.lookup.PainlessMethod;
 import org.elasticsearch.painless.lookup.def;
+import org.elasticsearch.painless.phase.DefaultIRTreeBuilderPhase;
 import org.elasticsearch.painless.phase.DefaultSemanticAnalysisPhase;
 import org.elasticsearch.painless.phase.UserTreeVisitor;
 import org.elasticsearch.painless.spi.annotation.NonDeterministicAnnotation;
@@ -34,6 +41,7 @@ import org.elasticsearch.painless.symbol.Decorations.StaticType;
 import org.elasticsearch.painless.symbol.Decorations.TargetType;
 import org.elasticsearch.painless.symbol.Decorations.ValueType;
 import org.elasticsearch.painless.symbol.Decorations.Write;
+import org.elasticsearch.painless.symbol.ScriptScope;
 import org.elasticsearch.painless.symbol.SemanticScope;
 
 import java.time.ZonedDateTime;
@@ -177,5 +185,60 @@ public class ECall extends AExpression {
         }
 
         semanticScope.putDecoration(userCallNode, new ValueType(valueType));
+    }
+
+    public static IRNode visitDefaultIRTreeBuild(DefaultIRTreeBuilderPhase visitor, ECall userCallNode, ScriptScope scriptScope) {
+        ExpressionNode irExpressionNode;
+
+        ValueType prefixValueType = scriptScope.getDecoration(userCallNode.getPrefixNode(), ValueType.class);
+
+        if (prefixValueType != null && prefixValueType.getValueType() == def.class) {
+            CallSubDefNode irCallSubDefNode = new CallSubDefNode();
+
+            for (AExpression userArgumentNode : userCallNode.getArgumentNodes()) {
+                irCallSubDefNode.addArgumentNode((ExpressionNode)visitor.visit(userArgumentNode, scriptScope));
+            }
+
+            irCallSubDefNode.setLocation(userCallNode.getLocation());
+            irCallSubDefNode.setExpressionType(scriptScope.getDecoration(userCallNode, ValueType.class).getValueType());
+            irCallSubDefNode.setName(userCallNode.getMethodName());
+            irExpressionNode = irCallSubDefNode;
+        } else {
+            Class<?> boxType;
+
+            if (prefixValueType != null) {
+                boxType = prefixValueType.getValueType();
+            } else {
+                boxType = scriptScope.getDecoration(userCallNode.getPrefixNode(), StaticType.class).getStaticType();
+            }
+
+            CallSubNode callSubNode = new CallSubNode();
+
+            for (AExpression userArgumentNode : userCallNode.getArgumentNodes()) {
+                callSubNode.addArgumentNode(visitor.injectCast(userArgumentNode, scriptScope));
+            }
+
+            callSubNode.setLocation(userCallNode.getLocation());
+            callSubNode.setExpressionType(scriptScope.getDecoration(userCallNode, ValueType.class).getValueType());;
+            callSubNode.setMethod(scriptScope.getDecoration(userCallNode, StandardPainlessMethod.class).getStandardPainlessMethod());
+            callSubNode.setBox(boxType);
+            irExpressionNode = callSubNode;
+        }
+
+        if (userCallNode.isNullSafe()) {
+            NullSafeSubNode nullSafeSubNode = new NullSafeSubNode();
+            nullSafeSubNode.setChildNode(irExpressionNode);
+            nullSafeSubNode.setLocation(irExpressionNode.getLocation());
+            nullSafeSubNode.setExpressionType(irExpressionNode.getExpressionType());
+            irExpressionNode = nullSafeSubNode;
+        }
+
+        CallNode callNode = new CallNode();
+        callNode.setLeftNode((ExpressionNode)visitor.visit(userCallNode.getPrefixNode(), scriptScope));
+        callNode.setRightNode(irExpressionNode);
+        callNode.setLocation(irExpressionNode.getLocation());
+        callNode.setExpressionType(irExpressionNode.getExpressionType());
+
+        return callNode;
     }
 }

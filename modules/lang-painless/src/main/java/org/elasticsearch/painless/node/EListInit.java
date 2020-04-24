@@ -20,9 +20,12 @@
 package org.elasticsearch.painless.node;
 
 import org.elasticsearch.painless.Location;
+import org.elasticsearch.painless.ir.IRNode;
+import org.elasticsearch.painless.ir.ListInitializationNode;
 import org.elasticsearch.painless.lookup.PainlessConstructor;
 import org.elasticsearch.painless.lookup.PainlessMethod;
 import org.elasticsearch.painless.lookup.def;
+import org.elasticsearch.painless.phase.DefaultIRTreeBuilderPhase;
 import org.elasticsearch.painless.phase.DefaultSemanticAnalysisPhase;
 import org.elasticsearch.painless.phase.UserTreeVisitor;
 import org.elasticsearch.painless.symbol.Decorations.Internal;
@@ -32,6 +35,7 @@ import org.elasticsearch.painless.symbol.Decorations.StandardPainlessMethod;
 import org.elasticsearch.painless.symbol.Decorations.TargetType;
 import org.elasticsearch.painless.symbol.Decorations.ValueType;
 import org.elasticsearch.painless.symbol.Decorations.Write;
+import org.elasticsearch.painless.symbol.ScriptScope;
 import org.elasticsearch.painless.symbol.SemanticScope;
 
 import java.util.ArrayList;
@@ -104,5 +108,22 @@ public class EListInit extends AExpression {
         }
 
         semanticScope.putDecoration(userListInitNode, new ValueType(valueType));
+    }
+
+    public static IRNode visitDefaultIRTreeBuild(DefaultIRTreeBuilderPhase visitor, EListInit userListInitNode, ScriptScope scriptScope) {
+        ListInitializationNode irListInitializationNode = new ListInitializationNode();
+
+        irListInitializationNode.setLocation(userListInitNode.getLocation());
+        irListInitializationNode.setExpressionType(scriptScope.getDecoration(userListInitNode, ValueType.class).getValueType());
+        irListInitializationNode.setConstructor(
+                scriptScope.getDecoration(userListInitNode, StandardPainlessConstructor.class).getStandardPainlessConstructor());
+        irListInitializationNode.setMethod(
+                scriptScope.getDecoration(userListInitNode, StandardPainlessMethod.class).getStandardPainlessMethod());
+
+        for (AExpression userValueNode : userListInitNode.getValueNodes()) {
+            irListInitializationNode.addArgumentNode(visitor.injectCast(userValueNode, scriptScope));
+        }
+
+        return irListInitializationNode;
     }
 }

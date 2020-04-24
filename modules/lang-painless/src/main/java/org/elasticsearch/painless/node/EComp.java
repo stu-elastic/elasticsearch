@@ -22,8 +22,11 @@ package org.elasticsearch.painless.node;
 import org.elasticsearch.painless.AnalyzerCaster;
 import org.elasticsearch.painless.Location;
 import org.elasticsearch.painless.Operation;
+import org.elasticsearch.painless.ir.ComparisonNode;
+import org.elasticsearch.painless.ir.IRNode;
 import org.elasticsearch.painless.lookup.PainlessLookupUtility;
 import org.elasticsearch.painless.lookup.def;
+import org.elasticsearch.painless.phase.DefaultIRTreeBuilderPhase;
 import org.elasticsearch.painless.phase.DefaultSemanticAnalysisPhase;
 import org.elasticsearch.painless.phase.UserTreeVisitor;
 import org.elasticsearch.painless.symbol.Decorations.ComparisonType;
@@ -31,6 +34,7 @@ import org.elasticsearch.painless.symbol.Decorations.Read;
 import org.elasticsearch.painless.symbol.Decorations.TargetType;
 import org.elasticsearch.painless.symbol.Decorations.ValueType;
 import org.elasticsearch.painless.symbol.Decorations.Write;
+import org.elasticsearch.painless.symbol.ScriptScope;
 import org.elasticsearch.painless.symbol.SemanticScope;
 
 import java.util.Objects;
@@ -125,5 +129,17 @@ public class EComp extends AExpression {
 
         semanticScope.putDecoration(userCompNode, new ValueType(boolean.class));
         semanticScope.putDecoration(userCompNode, new ComparisonType(promotedType));
+    }
+
+    public static IRNode visitDefaultIRTreeBuild(DefaultIRTreeBuilderPhase visitor, EComp userCompNode, ScriptScope scriptScope) {
+        ComparisonNode irComparisonNode = new ComparisonNode();
+        irComparisonNode.setLocation(userCompNode.getLocation());
+        irComparisonNode.setExpressionType(scriptScope.getDecoration(userCompNode, ValueType.class).getValueType());
+        irComparisonNode.setComparisonType(scriptScope.getDecoration(userCompNode, ComparisonType.class).getComparisonType());
+        irComparisonNode.setOperation(userCompNode.getOperation());
+        irComparisonNode.setLeftNode(visitor.injectCast(userCompNode.getLeftNode(), scriptScope));
+        irComparisonNode.setRightNode(visitor.injectCast(userCompNode.getRightNode(), scriptScope));
+
+        return irComparisonNode;
     }
 }

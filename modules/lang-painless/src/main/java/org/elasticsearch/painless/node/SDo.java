@@ -20,6 +20,10 @@
 package org.elasticsearch.painless.node;
 
 import org.elasticsearch.painless.Location;
+import org.elasticsearch.painless.ir.BlockNode;
+import org.elasticsearch.painless.ir.DoWhileLoopNode;
+import org.elasticsearch.painless.ir.IRNode;
+import org.elasticsearch.painless.phase.DefaultIRTreeBuilderPhase;
 import org.elasticsearch.painless.phase.DefaultSemanticAnalysisPhase;
 import org.elasticsearch.painless.phase.UserTreeVisitor;
 import org.elasticsearch.painless.symbol.Decorations.AllEscape;
@@ -32,6 +36,7 @@ import org.elasticsearch.painless.symbol.Decorations.LoopEscape;
 import org.elasticsearch.painless.symbol.Decorations.MethodEscape;
 import org.elasticsearch.painless.symbol.Decorations.Read;
 import org.elasticsearch.painless.symbol.Decorations.TargetType;
+import org.elasticsearch.painless.symbol.ScriptScope;
 import org.elasticsearch.painless.symbol.SemanticScope;
 
 import java.util.Objects;
@@ -107,5 +112,15 @@ public class SDo extends AStatement {
                 semanticScope.setCondition(userDoNode, AllEscape.class);
             }
         }
+    }
+
+    public static IRNode visitDefaultIRTreeBuild(DefaultIRTreeBuilderPhase visitor, SDo userDoNode, ScriptScope scriptScope) {
+        DoWhileLoopNode irDoWhileLoopNode = new DoWhileLoopNode();
+        irDoWhileLoopNode.setConditionNode(visitor.injectCast(userDoNode.getConditionNode(), scriptScope));
+        irDoWhileLoopNode.setBlockNode((BlockNode)visitor.visit(userDoNode.getBlockNode(), scriptScope));
+        irDoWhileLoopNode.setLocation(userDoNode.getLocation());
+        irDoWhileLoopNode.setContinuous(scriptScope.getCondition(userDoNode, ContinuousLoop.class));
+
+        return irDoWhileLoopNode;
     }
 }

@@ -20,9 +20,12 @@
 package org.elasticsearch.painless.node;
 
 import org.elasticsearch.painless.Location;
+import org.elasticsearch.painless.ir.IRNode;
+import org.elasticsearch.painless.ir.MapInitializationNode;
 import org.elasticsearch.painless.lookup.PainlessConstructor;
 import org.elasticsearch.painless.lookup.PainlessMethod;
 import org.elasticsearch.painless.lookup.def;
+import org.elasticsearch.painless.phase.DefaultIRTreeBuilderPhase;
 import org.elasticsearch.painless.phase.DefaultSemanticAnalysisPhase;
 import org.elasticsearch.painless.phase.UserTreeVisitor;
 import org.elasticsearch.painless.symbol.Decorations.Internal;
@@ -32,6 +35,7 @@ import org.elasticsearch.painless.symbol.Decorations.StandardPainlessMethod;
 import org.elasticsearch.painless.symbol.Decorations.TargetType;
 import org.elasticsearch.painless.symbol.Decorations.ValueType;
 import org.elasticsearch.painless.symbol.Decorations.Write;
+import org.elasticsearch.painless.symbol.ScriptScope;
 import org.elasticsearch.painless.symbol.SemanticScope;
 
 import java.util.Collections;
@@ -125,5 +129,25 @@ public class EMapInit extends AExpression {
         }
 
         semanticScope.putDecoration(userMapInitNode, new ValueType(valueType));
+    }
+
+    public static IRNode visitDefaultIRTreeBuild(DefaultIRTreeBuilderPhase visitor, EMapInit userMapInitNode, ScriptScope scriptScope) {
+        MapInitializationNode irMapInitializationNode = new MapInitializationNode();
+
+        irMapInitializationNode.setLocation(userMapInitNode.getLocation());
+        irMapInitializationNode.setExpressionType(scriptScope.getDecoration(userMapInitNode, ValueType.class).getValueType());
+        irMapInitializationNode.setConstructor(
+                scriptScope.getDecoration(userMapInitNode, StandardPainlessConstructor.class).getStandardPainlessConstructor());
+        irMapInitializationNode.setMethod(
+                scriptScope.getDecoration(userMapInitNode, StandardPainlessMethod.class).getStandardPainlessMethod());
+
+
+        for (int i = 0; i < userMapInitNode.getKeyNodes().size(); ++i) {
+            irMapInitializationNode.addArgumentNode(
+                    visitor.injectCast(userMapInitNode.getKeyNodes().get(i), scriptScope),
+                    visitor.injectCast(userMapInitNode.getValueNodes().get(i), scriptScope));
+        }
+
+        return irMapInitializationNode;
     }
 }

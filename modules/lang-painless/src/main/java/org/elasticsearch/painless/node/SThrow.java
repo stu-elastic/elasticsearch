@@ -20,6 +20,9 @@
 package org.elasticsearch.painless.node;
 
 import org.elasticsearch.painless.Location;
+import org.elasticsearch.painless.ir.IRNode;
+import org.elasticsearch.painless.ir.ThrowNode;
+import org.elasticsearch.painless.phase.DefaultIRTreeBuilderPhase;
 import org.elasticsearch.painless.phase.DefaultSemanticAnalysisPhase;
 import org.elasticsearch.painless.phase.UserTreeVisitor;
 import org.elasticsearch.painless.symbol.Decorations.AllEscape;
@@ -27,6 +30,7 @@ import org.elasticsearch.painless.symbol.Decorations.LoopEscape;
 import org.elasticsearch.painless.symbol.Decorations.MethodEscape;
 import org.elasticsearch.painless.symbol.Decorations.Read;
 import org.elasticsearch.painless.symbol.Decorations.TargetType;
+import org.elasticsearch.painless.symbol.ScriptScope;
 import org.elasticsearch.painless.symbol.SemanticScope;
 
 import java.util.Objects;
@@ -66,5 +70,13 @@ public class SThrow extends AStatement {
         semanticScope.setCondition(userThrowNode, MethodEscape.class);
         semanticScope.setCondition(userThrowNode, LoopEscape.class);
         semanticScope.setCondition(userThrowNode, AllEscape.class);
+    }
+
+    public static IRNode visitDefaultIRTreeBuild(DefaultIRTreeBuilderPhase visitor, SThrow userThrowNode, ScriptScope scriptScope) {
+        ThrowNode irThrowNode = new ThrowNode();
+        irThrowNode.setExpressionNode(visitor.injectCast(userThrowNode.getExpressionNode(), scriptScope));
+        irThrowNode.setLocation(userThrowNode.getLocation());
+
+        return irThrowNode;
     }
 }

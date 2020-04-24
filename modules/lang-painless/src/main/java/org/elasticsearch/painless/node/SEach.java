@@ -21,10 +21,18 @@ package org.elasticsearch.painless.node;
 
 import org.elasticsearch.painless.AnalyzerCaster;
 import org.elasticsearch.painless.Location;
+import org.elasticsearch.painless.ir.BlockNode;
+import org.elasticsearch.painless.ir.ConditionNode;
+import org.elasticsearch.painless.ir.ExpressionNode;
+import org.elasticsearch.painless.ir.ForEachLoopNode;
+import org.elasticsearch.painless.ir.ForEachSubArrayNode;
+import org.elasticsearch.painless.ir.ForEachSubIterableNode;
+import org.elasticsearch.painless.ir.IRNode;
 import org.elasticsearch.painless.lookup.PainlessCast;
 import org.elasticsearch.painless.lookup.PainlessLookupUtility;
 import org.elasticsearch.painless.lookup.PainlessMethod;
 import org.elasticsearch.painless.lookup.def;
+import org.elasticsearch.painless.phase.DefaultIRTreeBuilderPhase;
 import org.elasticsearch.painless.phase.DefaultSemanticAnalysisPhase;
 import org.elasticsearch.painless.phase.UserTreeVisitor;
 import org.elasticsearch.painless.symbol.Decorations.AnyContinue;
@@ -36,9 +44,11 @@ import org.elasticsearch.painless.symbol.Decorations.LoopEscape;
 import org.elasticsearch.painless.symbol.Decorations.Read;
 import org.elasticsearch.painless.symbol.Decorations.SemanticVariable;
 import org.elasticsearch.painless.symbol.Decorations.ValueType;
+import org.elasticsearch.painless.symbol.ScriptScope;
 import org.elasticsearch.painless.symbol.SemanticScope;
 import org.elasticsearch.painless.symbol.SemanticScope.Variable;
 
+import java.util.Iterator;
 import java.util.Objects;
 
 import static org.elasticsearch.painless.lookup.PainlessLookupUtility.typeToCanonicalTypeName;
@@ -151,5 +161,55 @@ public class SEach extends AStatement {
             throw userEachNode.createError(new IllegalArgumentException("invalid foreach loop: " +
                     "cannot iterate over type [" + PainlessLookupUtility.typeToCanonicalTypeName(iterableValueType) + "]."));
         }
+    }
+
+    public static IRNode visitDefaultIRTreeBuild(DefaultIRTreeBuilderPhase visitor, SEach userEachNode, ScriptScope scriptScope) {
+        Variable variable = scriptScope.getDecoration(userEachNode, SemanticVariable.class).getSemanticVariable();
+        PainlessCast painlessCast = scriptScope.hasDecoration(userEachNode, ExpressionPainlessCast.class) ?
+                scriptScope.getDecoration(userEachNode, ExpressionPainlessCast.class).getExpressionPainlessCast() : null;
+        ExpressionNode irIterableNode = (ExpressionNode)visitor.visit(userEachNode.getIterableNode(), scriptScope);
+        Class<?> iterableValueType = scriptScope.getDecoration(userEachNode.getIterableNode(), ValueType.class).getValueType();
+        BlockNode irBlockNode = (BlockNode)visitor.visit(userEachNode.getBlockNode(), scriptScope);
+
+        ConditionNode irConditionNode;
+
+        if (iterableValueType.isArray()) {
+            ForEachSubArrayNode irForEachSubArrayNode = new ForEachSubArrayNode();
+            irForEachSubArrayNode.setConditionNode(irIterableNode);
+            irForEachSubArrayNode.setBlockNode(irBlockNode);
+            irForEachSubArrayNode.setLocation(userEachNode.getLocation());
+            irForEachSubArrayNode.setVariableType(variable.getType());
+            irForEachSubArrayNode.setVariableName(variable.getName());
+            irForEachSubArrayNode.setCast(painlessCast);
+            irForEachSubArrayNode.setArrayType(iterableValueType);
+            irForEachSubArrayNode.setArrayName("#array" + userEachNode.getLocation().getOffset());
+            irForEachSubArrayNode.setIndexType(int.class);
+            irForEachSubArrayNode.setIndexName("#index" + userEachNode.getLocation().getOffset());
+            irForEachSubArrayNode.setIndexedType(iterableValueType.getComponentType());
+            irForEachSubArrayNode.setContinuous(false);
+            irConditionNode = irForEachSubArrayNode;
+        } else if (iterableValueType == def.class || Iterable.class.isAssignableFrom(iterableValueType)) {
+            ForEachSubIterableNode irForEachSubIterableNode = new ForEachSubIterableNode();
+            irForEachSubIterableNode.setConditionNode(irIterableNode);
+            irForEachSubIterableNode.setBlockNode(irBlockNode);
+            irForEachSubIterableNode.setLocation(userEachNode.getLocation());
+            irForEachSubIterableNode.setVariableType(variable.getType());
+            irForEachSubIterableNode.setVariableName(variable.getName());
+            irForEachSubIterableNode.setCast(painlessCast);
+            irForEachSubIterableNode.setIteratorType(Iterator.class);
+            irForEachSubIterableNode.setIteratorName("#itr" + userEachNode.getLocation().getOffset());
+            irForEachSubIterableNode.setMethod(iterableValueType == def.class ? null :
+                    scriptScope.getDecoration(userEachNode, IterablePainlessMethod.class).getIterablePainlessMethod());
+            irForEachSubIterableNode.setContinuous(false);
+            irConditionNode = irForEachSubIterableNode;
+        } else {
+            throw userEachNode.createError(new IllegalStateException("illegal tree structure"));
+        }
+
+        ForEachLoopNode irForEachLoopNode = new ForEachLoopNode();
+        irForEachLoopNode.setConditionNode(irConditionNode);
+        irForEachLoopNode.setLocation(userEachNode.getLocation());
+
+        return irForEachLoopNode;
     }
 }

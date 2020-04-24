@@ -20,7 +20,15 @@
 package org.elasticsearch.painless.node;
 
 import org.elasticsearch.painless.Location;
+import org.elasticsearch.painless.ir.BlockNode;
+import org.elasticsearch.painless.ir.ConstantNode;
+import org.elasticsearch.painless.ir.ExpressionNode;
+import org.elasticsearch.painless.ir.FunctionNode;
+import org.elasticsearch.painless.ir.IRNode;
+import org.elasticsearch.painless.ir.NullNode;
+import org.elasticsearch.painless.ir.ReturnNode;
 import org.elasticsearch.painless.lookup.PainlessLookup;
+import org.elasticsearch.painless.phase.DefaultIRTreeBuilderPhase;
 import org.elasticsearch.painless.phase.DefaultSemanticAnalysisPhase;
 import org.elasticsearch.painless.phase.DefaultSemanticHeaderPhase;
 import org.elasticsearch.painless.phase.UserTreeVisitor;
@@ -206,5 +214,74 @@ public class SFunction extends ANode {
             scriptScope.setUsedVariables(functionScope.getUsedVariables());
         }
         // TODO: end
+    }
+
+    public static IRNode visitDefaultIRTreeBuild(DefaultIRTreeBuilderPhase visitor, SFunction userFunctionNode, ScriptScope scriptScope) {
+        String functionName = userFunctionNode.getFunctionName();
+        int functionArity = userFunctionNode.getCanonicalTypeNameParameters().size();
+        LocalFunction localFunction = scriptScope.getFunctionTable().getFunction(functionName, functionArity);
+        Class<?> returnType = localFunction.getReturnType();
+        boolean methodEscape = scriptScope.getCondition(userFunctionNode, MethodEscape.class);
+
+        BlockNode irBlockNode = (BlockNode)visitor.visit(userFunctionNode.getBlockNode(), scriptScope);
+
+        if (methodEscape == false) {
+            ExpressionNode irExpressionNode;
+
+            if (returnType == void.class) {
+                irExpressionNode = null;
+            } else if (userFunctionNode.isAutoReturnEnabled()) {
+                if (returnType.isPrimitive()) {
+                    ConstantNode constantNode = new ConstantNode();
+                    constantNode.setLocation(userFunctionNode.getLocation());
+                    constantNode.setExpressionType(returnType);
+
+                    if (returnType == boolean.class) {
+                        constantNode.setConstant(false);
+                    } else if (returnType == byte.class
+                            || returnType == char.class
+                            || returnType == short.class
+                            || returnType == int.class) {
+                        constantNode.setConstant(0);
+                    } else if (returnType == long.class) {
+                        constantNode.setConstant(0L);
+                    } else if (returnType == float.class) {
+                        constantNode.setConstant(0f);
+                    } else if (returnType == double.class) {
+                        constantNode.setConstant(0d);
+                    } else {
+                        throw userFunctionNode.createError(new IllegalStateException("illegal tree structure"));
+                    }
+
+                    irExpressionNode = constantNode;
+                } else {
+                    irExpressionNode = new NullNode();
+                    irExpressionNode.setLocation(userFunctionNode.getLocation());
+                    irExpressionNode.setExpressionType(returnType);
+                }
+            } else {
+                throw userFunctionNode.createError(new IllegalStateException("illegal tree structure"));
+            }
+
+            ReturnNode irReturnNode = new ReturnNode();
+            irReturnNode.setLocation(userFunctionNode.getLocation());
+            irReturnNode.setExpressionNode(irExpressionNode);
+
+            irBlockNode.addStatementNode(irReturnNode);
+        }
+
+        FunctionNode irFunctionNode = new FunctionNode();
+        irFunctionNode.setBlockNode(irBlockNode);
+        irFunctionNode.setLocation(userFunctionNode.getLocation());
+        irFunctionNode.setName(userFunctionNode.getFunctionName());
+        irFunctionNode.setReturnType(returnType);
+        irFunctionNode.getTypeParameters().addAll(localFunction.getTypeParameters());
+        irFunctionNode.getParameterNames().addAll(userFunctionNode.getParameterNames());
+        irFunctionNode.setStatic(userFunctionNode.isStatic());
+        irFunctionNode.setVarArgs(false);
+        irFunctionNode.setSynthetic(userFunctionNode.isSynthetic());
+        irFunctionNode.setMaxLoopCounter(scriptScope.getCompilerSettings().getMaxLoopCounter());
+
+        return irFunctionNode;
     }
 }

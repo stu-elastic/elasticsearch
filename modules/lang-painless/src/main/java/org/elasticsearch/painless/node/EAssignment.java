@@ -23,9 +23,13 @@ package org.elasticsearch.painless.node;
 import org.elasticsearch.painless.AnalyzerCaster;
 import org.elasticsearch.painless.Location;
 import org.elasticsearch.painless.Operation;
+import org.elasticsearch.painless.ir.AssignmentNode;
+import org.elasticsearch.painless.ir.ExpressionNode;
+import org.elasticsearch.painless.ir.IRNode;
 import org.elasticsearch.painless.lookup.PainlessCast;
 import org.elasticsearch.painless.lookup.PainlessLookupUtility;
 import org.elasticsearch.painless.lookup.def;
+import org.elasticsearch.painless.phase.DefaultIRTreeBuilderPhase;
 import org.elasticsearch.painless.phase.DefaultSemanticAnalysisPhase;
 import org.elasticsearch.painless.phase.UserTreeVisitor;
 import org.elasticsearch.painless.symbol.Decorations;
@@ -39,6 +43,7 @@ import org.elasticsearch.painless.symbol.Decorations.TargetType;
 import org.elasticsearch.painless.symbol.Decorations.UpcastPainlessCast;
 import org.elasticsearch.painless.symbol.Decorations.ValueType;
 import org.elasticsearch.painless.symbol.Decorations.Write;
+import org.elasticsearch.painless.symbol.ScriptScope;
 import org.elasticsearch.painless.symbol.SemanticScope;
 
 import java.util.Objects;
@@ -205,5 +210,31 @@ public class EAssignment extends AExpression {
 
         semanticScope.putDecoration(userAssignmentNode,
                 new ValueType(semanticScope.getCondition(userAssignmentNode, Read.class) ? leftValueType : void.class));
+    }
+
+    public static IRNode visitDefaultIRTreeBuild(
+            DefaultIRTreeBuilderPhase visitor, EAssignment userAssignmentNode, ScriptScope scriptScope) {
+
+        Class<?> compoundType = scriptScope.hasDecoration(userAssignmentNode, CompoundType.class) ?
+                scriptScope.getDecoration(userAssignmentNode, CompoundType.class).getCompoundType() : null;
+        PainlessCast upcast = scriptScope.hasDecoration(userAssignmentNode, UpcastPainlessCast.class) ?
+                scriptScope.getDecoration(userAssignmentNode, UpcastPainlessCast.class).getUpcastPainlessCast() : null;
+        PainlessCast downcast = scriptScope.hasDecoration(userAssignmentNode, DowncastPainlessCast.class) ?
+                scriptScope.getDecoration(userAssignmentNode, DowncastPainlessCast.class).getDowncastPainlessCast() : null;
+
+        AssignmentNode irAssignmentNode = new AssignmentNode();
+        irAssignmentNode.setLeftNode((ExpressionNode)visitor.visit(userAssignmentNode.getLeftNode(), scriptScope));
+        irAssignmentNode.setRightNode(visitor.injectCast(userAssignmentNode.getRightNode(), scriptScope));
+        irAssignmentNode.setLocation(userAssignmentNode.getLocation());
+        irAssignmentNode.setExpressionType(scriptScope.getDecoration(userAssignmentNode, ValueType.class).getValueType());
+        irAssignmentNode.setCompoundType(compoundType);
+        irAssignmentNode.setPost(userAssignmentNode.postIfRead());
+        irAssignmentNode.setOperation(userAssignmentNode.getOperation());
+        irAssignmentNode.setRead(scriptScope.getCondition(userAssignmentNode, Read.class));
+        irAssignmentNode.setCat(scriptScope.getCondition(userAssignmentNode, Concatenate.class));
+        irAssignmentNode.setThere(upcast);
+        irAssignmentNode.setBack(downcast);
+
+        return irAssignmentNode;
     }
 }

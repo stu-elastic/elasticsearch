@@ -21,12 +21,16 @@ package org.elasticsearch.painless.node;
 
 import org.elasticsearch.painless.Location;
 import org.elasticsearch.painless.Operation;
+import org.elasticsearch.painless.ir.BooleanNode;
+import org.elasticsearch.painless.ir.IRNode;
+import org.elasticsearch.painless.phase.DefaultIRTreeBuilderPhase;
 import org.elasticsearch.painless.phase.DefaultSemanticAnalysisPhase;
 import org.elasticsearch.painless.phase.UserTreeVisitor;
 import org.elasticsearch.painless.symbol.Decorations.Read;
 import org.elasticsearch.painless.symbol.Decorations.TargetType;
 import org.elasticsearch.painless.symbol.Decorations.ValueType;
 import org.elasticsearch.painless.symbol.Decorations.Write;
+import org.elasticsearch.painless.symbol.ScriptScope;
 import org.elasticsearch.painless.symbol.SemanticScope;
 
 import java.util.Objects;
@@ -93,5 +97,16 @@ public class EBool extends AExpression {
         visitor.decorateWithCast(userRightNode, semanticScope);
 
         semanticScope.putDecoration(userBoolNode, new ValueType(boolean.class));
+    }
+
+    public static IRNode visitDefaultIRTreeBuild(DefaultIRTreeBuilderPhase visitor, EBool userBoolNode, ScriptScope scriptScope) {
+        BooleanNode irBooleanNode = new BooleanNode();
+        irBooleanNode.setLocation(userBoolNode.getLocation());
+        irBooleanNode.setExpressionType(scriptScope.getDecoration(userBoolNode, ValueType.class).getValueType());
+        irBooleanNode.setOperation(userBoolNode.getOperation());
+        irBooleanNode.setLeftNode(visitor.injectCast(userBoolNode.getLeftNode(), scriptScope));
+        irBooleanNode.setRightNode(visitor.injectCast(userBoolNode.getRightNode(), scriptScope));
+
+        return irBooleanNode;
     }
 }

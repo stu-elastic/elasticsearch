@@ -20,6 +20,10 @@
 package org.elasticsearch.painless.node;
 
 import org.elasticsearch.painless.Location;
+import org.elasticsearch.painless.ir.ClassNode;
+import org.elasticsearch.painless.ir.FunctionNode;
+import org.elasticsearch.painless.ir.IRNode;
+import org.elasticsearch.painless.phase.DefaultIRTreeBuilderPhase;
 import org.elasticsearch.painless.phase.DefaultSemanticAnalysisPhase;
 import org.elasticsearch.painless.phase.DefaultSemanticHeaderPhase;
 import org.elasticsearch.painless.phase.UserTreeVisitor;
@@ -61,5 +65,19 @@ public class SClass extends ANode {
         for (SFunction userFunctionNode : userClassNode.getFunctionNodes()) {
             visitor.visitFunction(userFunctionNode, scriptScope);
         }
+    }
+
+    public static IRNode visitDefaultIRTreeBuild(DefaultIRTreeBuilderPhase visitor, SClass userClassNode, ScriptScope scriptScope) {
+        ClassNode irClassNode = new ClassNode();
+        scriptScope.setIRClassNode(irClassNode);
+
+        for (SFunction userFunctionNode : userClassNode.getFunctionNodes()) {
+            irClassNode.addFunctionNode((FunctionNode)visitor.visit(userFunctionNode, scriptScope));
+        }
+
+        irClassNode.setLocation(irClassNode.getLocation());
+        irClassNode.setScriptScope(scriptScope);
+
+        return irClassNode;
     }
 }

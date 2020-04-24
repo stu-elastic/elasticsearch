@@ -20,8 +20,11 @@
 package org.elasticsearch.painless.node;
 
 import org.elasticsearch.painless.Location;
+import org.elasticsearch.painless.ir.IRNode;
+import org.elasticsearch.painless.ir.NewObjectNode;
 import org.elasticsearch.painless.lookup.PainlessConstructor;
 import org.elasticsearch.painless.lookup.PainlessLookupUtility;
+import org.elasticsearch.painless.phase.DefaultIRTreeBuilderPhase;
 import org.elasticsearch.painless.phase.DefaultSemanticAnalysisPhase;
 import org.elasticsearch.painless.phase.UserTreeVisitor;
 import org.elasticsearch.painless.spi.annotation.NonDeterministicAnnotation;
@@ -118,5 +121,21 @@ public class ENewObj extends AExpression {
         }
 
         semanticScope.putDecoration(userNewObjNode, new ValueType(valueType));
+    }
+
+    public static IRNode visitDefaultIRTreeBuild(DefaultIRTreeBuilderPhase visitor, ENewObj userNewObjNode, ScriptScope scriptScope) {
+        NewObjectNode irNewObjectNode = new NewObjectNode();
+
+        irNewObjectNode.setLocation(userNewObjNode.getLocation());
+        irNewObjectNode.setExpressionType(scriptScope.getDecoration(userNewObjNode, ValueType.class).getValueType());
+        irNewObjectNode.setRead(scriptScope.getCondition(userNewObjNode, Read.class));
+        irNewObjectNode.setConstructor(
+                scriptScope.getDecoration(userNewObjNode, StandardPainlessConstructor.class).getStandardPainlessConstructor());
+
+        for (AExpression userArgumentNode : userNewObjNode.getArgumentNodes()) {
+            irNewObjectNode.addArgumentNode(visitor.injectCast(userArgumentNode, scriptScope));
+        }
+
+        return irNewObjectNode;
     }
 }

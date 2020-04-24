@@ -21,6 +21,16 @@ package org.elasticsearch.painless.node;
 
 import org.elasticsearch.painless.FunctionRef;
 import org.elasticsearch.painless.Location;
+import org.elasticsearch.painless.ir.BlockNode;
+import org.elasticsearch.painless.ir.DefInterfaceReferenceNode;
+import org.elasticsearch.painless.ir.FunctionNode;
+import org.elasticsearch.painless.ir.IRNode;
+import org.elasticsearch.painless.ir.NewArrayNode;
+import org.elasticsearch.painless.ir.ReferenceNode;
+import org.elasticsearch.painless.ir.ReturnNode;
+import org.elasticsearch.painless.ir.TypedInterfaceReferenceNode;
+import org.elasticsearch.painless.ir.VariableNode;
+import org.elasticsearch.painless.phase.DefaultIRTreeBuilderPhase;
 import org.elasticsearch.painless.phase.DefaultSemanticAnalysisPhase;
 import org.elasticsearch.painless.phase.UserTreeVisitor;
 import org.elasticsearch.painless.symbol.Decorations.EncodingDecoration;
@@ -101,5 +111,64 @@ public class ENewArrayFunctionRef extends AExpression {
         }
 
         semanticScope.putDecoration(userNewArrayFunctionRefNode, new ValueType(valueType));
+    }
+
+    public static IRNode visitDefaultIRTreeBuild(
+            DefaultIRTreeBuilderPhase visitor, ENewArrayFunctionRef userNewArrayFunctionRefNode, ScriptScope scriptScope) {
+
+        ReferenceNode irReferenceNode;
+
+        if (scriptScope.hasDecoration(userNewArrayFunctionRefNode, TargetType.class)) {
+            TypedInterfaceReferenceNode typedInterfaceReferenceNode = new TypedInterfaceReferenceNode();
+            typedInterfaceReferenceNode.setReference(
+                    scriptScope.getDecoration(userNewArrayFunctionRefNode, ReferenceDecoration.class).getReference());
+            irReferenceNode = typedInterfaceReferenceNode;
+        } else {
+            DefInterfaceReferenceNode defInterfaceReferenceNode = new DefInterfaceReferenceNode();
+            defInterfaceReferenceNode.setDefReferenceEncoding(
+                    scriptScope.getDecoration(userNewArrayFunctionRefNode, EncodingDecoration.class).getEncoding());
+            irReferenceNode = defInterfaceReferenceNode;
+        }
+
+        Class<?> returnType = scriptScope.getDecoration(userNewArrayFunctionRefNode, ReturnType.class).getReturnType();
+
+        VariableNode irVariableNode = new VariableNode();
+        irVariableNode.setLocation(userNewArrayFunctionRefNode.getLocation());
+        irVariableNode.setExpressionType(int.class);
+        irVariableNode.setName("size");
+
+        NewArrayNode irNewArrayNode = new NewArrayNode();
+        irNewArrayNode.setLocation(userNewArrayFunctionRefNode.getLocation());
+        irNewArrayNode.setExpressionType(returnType);
+        irNewArrayNode.setInitialize(false);
+
+        irNewArrayNode.addArgumentNode(irVariableNode);
+
+        ReturnNode irReturnNode = new ReturnNode();
+        irReturnNode.setLocation(userNewArrayFunctionRefNode.getLocation());
+        irReturnNode.setExpressionNode(irNewArrayNode);
+
+        BlockNode irBlockNode = new BlockNode();
+        irBlockNode.setAllEscape(true);
+        irBlockNode.setStatementCount(1);
+        irBlockNode.addStatementNode(irReturnNode);
+
+        FunctionNode irFunctionNode = new FunctionNode();
+        irFunctionNode.setMaxLoopCounter(0);
+        irFunctionNode.setName(scriptScope.getDecoration(userNewArrayFunctionRefNode, MethodNameDecoration.class).getMethodName());
+        irFunctionNode.setReturnType(returnType);
+        irFunctionNode.addTypeParameter(int.class);
+        irFunctionNode.addParameterName("size");
+        irFunctionNode.setStatic(true);
+        irFunctionNode.setVarArgs(false);
+        irFunctionNode.setSynthetic(true);
+        irFunctionNode.setBlockNode(irBlockNode);
+
+        scriptScope.getIRClassNode().addFunctionNode(irFunctionNode);
+
+        irReferenceNode.setLocation(userNewArrayFunctionRefNode.getLocation());
+        irReferenceNode.setExpressionType(scriptScope.getDecoration(userNewArrayFunctionRefNode, ValueType.class).getValueType());
+
+        return irReferenceNode;
     }
 }

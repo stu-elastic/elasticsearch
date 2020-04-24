@@ -20,7 +20,10 @@
 package org.elasticsearch.painless.node;
 
 import org.elasticsearch.painless.Location;
+import org.elasticsearch.painless.ir.IRNode;
+import org.elasticsearch.painless.ir.ReturnNode;
 import org.elasticsearch.painless.lookup.PainlessLookupUtility;
+import org.elasticsearch.painless.phase.DefaultIRTreeBuilderPhase;
 import org.elasticsearch.painless.phase.DefaultSemanticAnalysisPhase;
 import org.elasticsearch.painless.phase.UserTreeVisitor;
 import org.elasticsearch.painless.symbol.Decorations.AllEscape;
@@ -29,6 +32,7 @@ import org.elasticsearch.painless.symbol.Decorations.LoopEscape;
 import org.elasticsearch.painless.symbol.Decorations.MethodEscape;
 import org.elasticsearch.painless.symbol.Decorations.Read;
 import org.elasticsearch.painless.symbol.Decorations.TargetType;
+import org.elasticsearch.painless.symbol.ScriptScope;
 import org.elasticsearch.painless.symbol.SemanticScope;
 
 /**
@@ -75,5 +79,13 @@ public class SReturn extends AStatement {
         semanticScope.setCondition(userReturnNode, MethodEscape.class);
         semanticScope.setCondition(userReturnNode, LoopEscape.class);
         semanticScope.setCondition(userReturnNode, AllEscape.class);
+    }
+
+    public static IRNode visitDefaultIRTreeBuild(DefaultIRTreeBuilderPhase visitor, SReturn userReturnNode, ScriptScope scriptScope) {
+        ReturnNode irReturnNode = new ReturnNode();
+        irReturnNode.setExpressionNode(visitor.injectCast(userReturnNode.getValueNode(), scriptScope));
+        irReturnNode.setLocation(userReturnNode.getLocation());
+
+        return irReturnNode;
     }
 }

@@ -20,6 +20,11 @@
 package org.elasticsearch.painless.node;
 
 import org.elasticsearch.painless.Location;
+import org.elasticsearch.painless.ir.BlockNode;
+import org.elasticsearch.painless.ir.CatchNode;
+import org.elasticsearch.painless.ir.IRNode;
+import org.elasticsearch.painless.ir.TryNode;
+import org.elasticsearch.painless.phase.DefaultIRTreeBuilderPhase;
 import org.elasticsearch.painless.phase.DefaultSemanticAnalysisPhase;
 import org.elasticsearch.painless.phase.UserTreeVisitor;
 import org.elasticsearch.painless.symbol.Decorations.AllEscape;
@@ -30,6 +35,7 @@ import org.elasticsearch.painless.symbol.Decorations.LastLoop;
 import org.elasticsearch.painless.symbol.Decorations.LastSource;
 import org.elasticsearch.painless.symbol.Decorations.LoopEscape;
 import org.elasticsearch.painless.symbol.Decorations.MethodEscape;
+import org.elasticsearch.painless.symbol.ScriptScope;
 import org.elasticsearch.painless.symbol.SemanticScope;
 
 import java.util.Collections;
@@ -116,5 +122,18 @@ public class STry extends AStatement {
         if (anyBreak) {
             semanticScope.setCondition(userTryNode, AnyBreak.class);
         }
+    }
+
+    public static IRNode visitDefaultIRTreeBuild(DefaultIRTreeBuilderPhase visitor, STry userTryNode, ScriptScope scriptScope) {
+        TryNode irTryNode = new TryNode();
+
+        for (SCatch userCatchNode : userTryNode.getCatchNodes()) {
+            irTryNode.addCatchNode((CatchNode)visitor.visit(userCatchNode, scriptScope));
+        }
+
+        irTryNode.setBlockNode((BlockNode)visitor.visit(userTryNode.getBlockNode(), scriptScope));
+        irTryNode.setLocation(userTryNode.getLocation());
+
+        return irTryNode;
     }
 }

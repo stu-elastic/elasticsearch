@@ -20,17 +20,24 @@
 package org.elasticsearch.painless.node;
 
 import org.elasticsearch.painless.Location;
+import org.elasticsearch.painless.ir.BlockNode;
+import org.elasticsearch.painless.ir.ExpressionNode;
+import org.elasticsearch.painless.ir.ForLoopNode;
+import org.elasticsearch.painless.ir.IRNode;
+import org.elasticsearch.painless.phase.DefaultIRTreeBuilderPhase;
 import org.elasticsearch.painless.phase.DefaultSemanticAnalysisPhase;
 import org.elasticsearch.painless.phase.UserTreeVisitor;
 import org.elasticsearch.painless.symbol.Decorations.AllEscape;
 import org.elasticsearch.painless.symbol.Decorations.AnyBreak;
 import org.elasticsearch.painless.symbol.Decorations.AnyContinue;
 import org.elasticsearch.painless.symbol.Decorations.BeginLoop;
+import org.elasticsearch.painless.symbol.Decorations.ContinuousLoop;
 import org.elasticsearch.painless.symbol.Decorations.InLoop;
 import org.elasticsearch.painless.symbol.Decorations.LoopEscape;
 import org.elasticsearch.painless.symbol.Decorations.MethodEscape;
 import org.elasticsearch.painless.symbol.Decorations.Read;
 import org.elasticsearch.painless.symbol.Decorations.TargetType;
+import org.elasticsearch.painless.symbol.ScriptScope;
 import org.elasticsearch.painless.symbol.SemanticScope;
 
 /**
@@ -138,5 +145,17 @@ public class SFor extends AStatement {
                 semanticScope.setCondition(userForNode, AllEscape.class);
             }
         }
+    }
+
+    public static IRNode visitDefaultIRTreeBuild(DefaultIRTreeBuilderPhase visitor, SFor userForNode, ScriptScope scriptScope) {
+        ForLoopNode irForLoopNode = new ForLoopNode();
+        irForLoopNode.setInitialzerNode(visitor.visit(userForNode.getInitializerNode(), scriptScope));
+        irForLoopNode.setConditionNode(visitor.injectCast(userForNode.getConditionNode(), scriptScope));
+        irForLoopNode.setAfterthoughtNode((ExpressionNode)visitor.visit(userForNode.getAfterthoughtNode(), scriptScope));
+        irForLoopNode.setBlockNode((BlockNode)visitor.visit(userForNode.getBlockNode(), scriptScope));
+        irForLoopNode.setLocation(userForNode.getLocation());
+        irForLoopNode.setContinuous(scriptScope.getCondition(userForNode, ContinuousLoop.class));
+
+        return irForLoopNode;
     }
 }

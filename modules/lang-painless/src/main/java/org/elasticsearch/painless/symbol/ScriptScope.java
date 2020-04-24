@@ -21,6 +21,7 @@ package org.elasticsearch.painless.symbol;
 
 import org.elasticsearch.painless.CompilerSettings;
 import org.elasticsearch.painless.ScriptClassInfo;
+import org.elasticsearch.painless.ir.ClassNode;
 import org.elasticsearch.painless.lookup.PainlessLookup;
 import org.elasticsearch.painless.node.ANode;
 
@@ -47,6 +48,8 @@ public class ScriptScope extends Decorator {
     protected boolean deterministic = true;
     protected Set<String> usedVariables = Collections.emptySet();
     protected Map<String, Object> staticConstants = new HashMap<>();
+
+    protected ClassNode irClassNode;
 
     public ScriptScope(PainlessLookup painlessLookup, CompilerSettings compilerSettings,
                       ScriptClassInfo scriptClassInfo, String scriptName, String scriptSource, int nodeCount) {
@@ -154,5 +157,13 @@ public class ScriptScope extends Decorator {
 
     public boolean replicateCondition(ANode originalNode, ANode targetNode, Class<? extends Condition> type) {
         return replicate(originalNode.getIdentifier(), targetNode.getIdentifier(), type);
+    }
+
+    public void setIRClassNode(ClassNode irClassNode) {
+        this.irClassNode = irClassNode;
+    }
+
+    public ClassNode getIRClassNode() {
+        return irClassNode;
     }
 }

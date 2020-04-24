@@ -20,6 +20,9 @@
 package org.elasticsearch.painless.node;
 
 import org.elasticsearch.painless.Location;
+import org.elasticsearch.painless.ir.DeclarationNode;
+import org.elasticsearch.painless.ir.IRNode;
+import org.elasticsearch.painless.phase.DefaultIRTreeBuilderPhase;
 import org.elasticsearch.painless.phase.DefaultSemanticAnalysisPhase;
 import org.elasticsearch.painless.phase.UserTreeVisitor;
 import org.elasticsearch.painless.symbol.Decorations.Read;
@@ -96,5 +99,19 @@ public class SDeclaration extends AStatement {
         Location location = userDeclarationNode.getLocation();
         Variable variable = semanticScope.defineVariable(location, type, symbol, false);
         semanticScope.putDecoration(userDeclarationNode, new SemanticVariable(variable));
+    }
+
+    public static IRNode visitDefaultIRTreeBuild(
+            DefaultIRTreeBuilderPhase visitor, SDeclaration userDeclarationNode, ScriptScope scriptScope) {
+
+        Variable variable = scriptScope.getDecoration(userDeclarationNode, SemanticVariable.class).getSemanticVariable();
+
+        DeclarationNode declarationNode = new DeclarationNode();
+        declarationNode.setExpressionNode(visitor.injectCast(userDeclarationNode.getValueNode(), scriptScope));
+        declarationNode.setLocation(userDeclarationNode.getLocation());
+        declarationNode.setDeclarationType(variable.getType());
+        declarationNode.setName(variable.getName());
+
+        return declarationNode;
     }
 }

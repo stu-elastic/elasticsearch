@@ -20,12 +20,16 @@
 package org.elasticsearch.painless.node;
 
 import org.elasticsearch.painless.Location;
+import org.elasticsearch.painless.ir.ContinueNode;
+import org.elasticsearch.painless.ir.IRNode;
+import org.elasticsearch.painless.phase.DefaultIRTreeBuilderPhase;
 import org.elasticsearch.painless.phase.DefaultSemanticAnalysisPhase;
 import org.elasticsearch.painless.phase.UserTreeVisitor;
 import org.elasticsearch.painless.symbol.Decorations.AllEscape;
 import org.elasticsearch.painless.symbol.Decorations.AnyContinue;
 import org.elasticsearch.painless.symbol.Decorations.InLoop;
 import org.elasticsearch.painless.symbol.Decorations.LastLoop;
+import org.elasticsearch.painless.symbol.ScriptScope;
 import org.elasticsearch.painless.symbol.SemanticScope;
 
 /**
@@ -55,5 +59,12 @@ public class SContinue extends AStatement {
 
         semanticScope.setCondition(userContinueNode, AllEscape.class);
         semanticScope.setCondition(userContinueNode, AnyContinue.class);
+    }
+
+    public static IRNode visitDefaultIRTreeBuild(DefaultIRTreeBuilderPhase visitor, SContinue userContinueNode, ScriptScope scriptScope) {
+        ContinueNode irContinueNode = new ContinueNode();
+        irContinueNode.setLocation(userContinueNode.getLocation());
+
+        return irContinueNode;
     }
 }

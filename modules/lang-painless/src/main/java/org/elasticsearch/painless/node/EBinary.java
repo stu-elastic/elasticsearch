@@ -22,8 +22,11 @@ package org.elasticsearch.painless.node;
 import org.elasticsearch.painless.AnalyzerCaster;
 import org.elasticsearch.painless.Location;
 import org.elasticsearch.painless.Operation;
+import org.elasticsearch.painless.ir.BinaryMathNode;
+import org.elasticsearch.painless.ir.IRNode;
 import org.elasticsearch.painless.lookup.PainlessLookupUtility;
 import org.elasticsearch.painless.lookup.def;
+import org.elasticsearch.painless.phase.DefaultIRTreeBuilderPhase;
 import org.elasticsearch.painless.phase.DefaultSemanticAnalysisPhase;
 import org.elasticsearch.painless.phase.UserTreeVisitor;
 import org.elasticsearch.painless.symbol.Decorations.BinaryType;
@@ -34,6 +37,7 @@ import org.elasticsearch.painless.symbol.Decorations.ShiftType;
 import org.elasticsearch.painless.symbol.Decorations.TargetType;
 import org.elasticsearch.painless.symbol.Decorations.ValueType;
 import org.elasticsearch.painless.symbol.Decorations.Write;
+import org.elasticsearch.painless.symbol.ScriptScope;
 import org.elasticsearch.painless.symbol.SemanticScope;
 
 import java.util.Objects;
@@ -181,5 +185,23 @@ public class EBinary extends AExpression {
         if (shiftType != null) {
             semanticScope.putDecoration(userBinaryNode, new ShiftType(shiftType));
         }
+    }
+
+    public static IRNode visitDefaultIRTreeBuild(DefaultIRTreeBuilderPhase visitor, EBinary userBinaryNode, ScriptScope scriptScope) {
+        Class<?> shiftType = scriptScope.hasDecoration(userBinaryNode, ShiftType.class) ?
+                scriptScope.getDecoration(userBinaryNode, ShiftType.class).getShiftType() : null;
+
+        BinaryMathNode irBinaryMathNode = new BinaryMathNode();
+        irBinaryMathNode.setLocation(userBinaryNode.getLocation());
+        irBinaryMathNode.setExpressionType(scriptScope.getDecoration(userBinaryNode, ValueType.class).getValueType());
+        irBinaryMathNode.setBinaryType(scriptScope.getDecoration(userBinaryNode, BinaryType.class).getBinaryType());
+        irBinaryMathNode.setShiftType(shiftType);
+        irBinaryMathNode.setOperation(userBinaryNode.getOperation());
+        irBinaryMathNode.setCat(scriptScope.getCondition(userBinaryNode, Concatenate.class));
+        irBinaryMathNode.setOriginallyExplicit(scriptScope.getCondition(userBinaryNode, Explicit.class));
+        irBinaryMathNode.setLeftNode(visitor.injectCast(userBinaryNode.getLeftNode(), scriptScope));
+        irBinaryMathNode.setRightNode(visitor.injectCast(userBinaryNode.getRightNode(), scriptScope));
+
+        return irBinaryMathNode;
     }
 }

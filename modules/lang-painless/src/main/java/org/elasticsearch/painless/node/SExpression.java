@@ -20,6 +20,12 @@
 package org.elasticsearch.painless.node;
 
 import org.elasticsearch.painless.Location;
+import org.elasticsearch.painless.ir.ExpressionNode;
+import org.elasticsearch.painless.ir.IRNode;
+import org.elasticsearch.painless.ir.ReturnNode;
+import org.elasticsearch.painless.ir.StatementExpressionNode;
+import org.elasticsearch.painless.ir.StatementNode;
+import org.elasticsearch.painless.phase.DefaultIRTreeBuilderPhase;
 import org.elasticsearch.painless.phase.DefaultSemanticAnalysisPhase;
 import org.elasticsearch.painless.phase.UserTreeVisitor;
 import org.elasticsearch.painless.symbol.Decorations.AllEscape;
@@ -30,6 +36,7 @@ import org.elasticsearch.painless.symbol.Decorations.MethodEscape;
 import org.elasticsearch.painless.symbol.Decorations.Read;
 import org.elasticsearch.painless.symbol.Decorations.TargetType;
 import org.elasticsearch.painless.symbol.Decorations.ValueType;
+import org.elasticsearch.painless.symbol.ScriptScope;
 import org.elasticsearch.painless.symbol.SemanticScope;
 
 import java.util.Objects;
@@ -81,5 +88,26 @@ public class SExpression extends AStatement {
             semanticScope.setCondition(userExpressionNode, LoopEscape.class);
             semanticScope.setCondition(userExpressionNode, AllEscape.class);
         }
+    }
+
+    public static IRNode visitDefaultIRTreeBuild(
+            DefaultIRTreeBuilderPhase visitor, SExpression userExpressionNode, ScriptScope scriptScope) {
+
+        StatementNode irStatementNode;
+        ExpressionNode irExpressionNode = visitor.injectCast(userExpressionNode.getStatementNode(), scriptScope);
+
+        if (scriptScope.getCondition(userExpressionNode, MethodEscape.class)) {
+            ReturnNode returnNode = new ReturnNode();
+            returnNode.setExpressionNode(irExpressionNode);
+            returnNode.setLocation(userExpressionNode.getLocation());
+            irStatementNode = returnNode;
+        } else {
+            StatementExpressionNode statementExpressionNode = new StatementExpressionNode();
+            statementExpressionNode.setExpressionNode(irExpressionNode);
+            statementExpressionNode.setLocation(userExpressionNode.getLocation());
+            irStatementNode = statementExpressionNode;
+        }
+
+        return irStatementNode;
     }
 }

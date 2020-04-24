@@ -20,12 +20,17 @@
 package org.elasticsearch.painless.node;
 
 import org.elasticsearch.painless.Location;
+import org.elasticsearch.painless.ir.ExpressionNode;
+import org.elasticsearch.painless.ir.IRNode;
+import org.elasticsearch.painless.ir.InstanceofNode;
+import org.elasticsearch.painless.phase.DefaultIRTreeBuilderPhase;
 import org.elasticsearch.painless.phase.DefaultSemanticAnalysisPhase;
 import org.elasticsearch.painless.phase.UserTreeVisitor;
 import org.elasticsearch.painless.symbol.Decorations.InstanceType;
 import org.elasticsearch.painless.symbol.Decorations.Read;
 import org.elasticsearch.painless.symbol.Decorations.ValueType;
 import org.elasticsearch.painless.symbol.Decorations.Write;
+import org.elasticsearch.painless.symbol.ScriptScope;
 import org.elasticsearch.painless.symbol.SemanticScope;
 
 import java.util.Objects;
@@ -87,5 +92,17 @@ public class EInstanceof extends AExpression {
 
         semanticScope.putDecoration(userInstanceofNode, new ValueType(boolean.class));
         semanticScope.putDecoration(userInstanceofNode, new InstanceType(instanceType));
+    }
+
+    public static IRNode visitDefaultIRTreeBuild(
+            DefaultIRTreeBuilderPhase visitor, EInstanceof userInstanceofNode, ScriptScope scriptScope) {
+
+        InstanceofNode irInstanceofNode = new InstanceofNode();
+        irInstanceofNode.setLocation(userInstanceofNode.getLocation());
+        irInstanceofNode.setExpressionType(scriptScope.getDecoration(userInstanceofNode, ValueType.class).getValueType());
+        irInstanceofNode.setInstanceType(scriptScope.getDecoration(userInstanceofNode, InstanceType.class).getInstanceType());
+        irInstanceofNode.setChildNode((ExpressionNode)visitor.visit(userInstanceofNode.getExpressionNode(), scriptScope));
+
+        return irInstanceofNode;
     }
 }

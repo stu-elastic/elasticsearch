@@ -21,7 +21,10 @@ package org.elasticsearch.painless.node;
 
 import org.elasticsearch.painless.AnalyzerCaster;
 import org.elasticsearch.painless.Location;
+import org.elasticsearch.painless.ir.ConditionalNode;
+import org.elasticsearch.painless.ir.IRNode;
 import org.elasticsearch.painless.lookup.PainlessLookupUtility;
+import org.elasticsearch.painless.phase.DefaultIRTreeBuilderPhase;
 import org.elasticsearch.painless.phase.DefaultSemanticAnalysisPhase;
 import org.elasticsearch.painless.phase.UserTreeVisitor;
 import org.elasticsearch.painless.symbol.Decorations.Explicit;
@@ -30,6 +33,7 @@ import org.elasticsearch.painless.symbol.Decorations.Read;
 import org.elasticsearch.painless.symbol.Decorations.TargetType;
 import org.elasticsearch.painless.symbol.Decorations.ValueType;
 import org.elasticsearch.painless.symbol.Decorations.Write;
+import org.elasticsearch.painless.symbol.ScriptScope;
 import org.elasticsearch.painless.symbol.SemanticScope;
 
 import java.util.Objects;
@@ -126,5 +130,18 @@ public class EConditional extends AExpression {
         visitor.decorateWithCast(userRightNode, semanticScope);
 
         semanticScope.putDecoration(userConditionalNode, new ValueType(valueType));
+    }
+
+    public static IRNode visitDefaultIRTreeBuild(
+            DefaultIRTreeBuilderPhase visitor, EConditional userConditionalNode, ScriptScope scriptScope) {
+
+        ConditionalNode irConditionalNode = new ConditionalNode();
+        irConditionalNode.setLocation(userConditionalNode.getLocation());
+        irConditionalNode.setExpressionType(scriptScope.getDecoration(userConditionalNode, ValueType.class).getValueType());
+        irConditionalNode.setConditionNode(visitor.injectCast(userConditionalNode.getConditionNode(), scriptScope));
+        irConditionalNode.setLeftNode(visitor.injectCast(userConditionalNode.getLeftNode(), scriptScope));
+        irConditionalNode.setRightNode(visitor.injectCast(userConditionalNode.getRightNode(), scriptScope));
+
+        return irConditionalNode;
     }
 }

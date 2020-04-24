@@ -20,14 +20,29 @@
 package org.elasticsearch.painless.node;
 
 import org.elasticsearch.painless.Location;
+import org.elasticsearch.painless.ir.BlockNode;
+import org.elasticsearch.painless.ir.CallNode;
+import org.elasticsearch.painless.ir.CallSubNode;
+import org.elasticsearch.painless.ir.ConstantNode;
+import org.elasticsearch.painless.ir.FieldNode;
+import org.elasticsearch.painless.ir.IRNode;
+import org.elasticsearch.painless.ir.MemberFieldLoadNode;
+import org.elasticsearch.painless.ir.MemberFieldStoreNode;
+import org.elasticsearch.painless.ir.StatementExpressionNode;
+import org.elasticsearch.painless.ir.StaticNode;
+import org.elasticsearch.painless.lookup.PainlessMethod;
+import org.elasticsearch.painless.phase.DefaultIRTreeBuilderPhase;
 import org.elasticsearch.painless.phase.DefaultSemanticAnalysisPhase;
 import org.elasticsearch.painless.phase.UserTreeVisitor;
 import org.elasticsearch.painless.symbol.Decorations.Read;
 import org.elasticsearch.painless.symbol.Decorations.StandardConstant;
 import org.elasticsearch.painless.symbol.Decorations.ValueType;
 import org.elasticsearch.painless.symbol.Decorations.Write;
+import org.elasticsearch.painless.symbol.ScriptScope;
 import org.elasticsearch.painless.symbol.SemanticScope;
 
+import java.lang.reflect.Modifier;
+import java.util.Arrays;
 import java.util.Objects;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
@@ -129,5 +144,87 @@ public class ERegex extends AExpression {
 
         semanticScope.putDecoration(userRegexNode, new ValueType(Pattern.class));
         semanticScope.putDecoration(userRegexNode, new StandardConstant(constant));
+    }
+
+    public static IRNode visitDefaultIRTreeBuild(DefaultIRTreeBuilderPhase visitor, ERegex userRegexNode, ScriptScope scriptScope) {
+        String memberFieldName = scriptScope.getNextSyntheticName("regex");
+
+        FieldNode irFieldNode = new FieldNode();
+        irFieldNode.setLocation(userRegexNode.getLocation());
+        irFieldNode.setModifiers(Modifier.FINAL | Modifier.STATIC | Modifier.PRIVATE);
+        irFieldNode.setFieldType(Pattern.class);
+        irFieldNode.setName(memberFieldName);
+
+        scriptScope.getIRClassNode().addFieldNode(irFieldNode);
+
+        try {
+            StatementExpressionNode irStatementExpressionNode = new StatementExpressionNode();
+            irStatementExpressionNode.setLocation(userRegexNode.getLocation());
+
+            BlockNode blockNode = scriptScope.getIRClassNode().getClinitBlockNode();
+            blockNode.addStatementNode(irStatementExpressionNode);
+
+            MemberFieldStoreNode irMemberFieldStoreNode = new MemberFieldStoreNode();
+            irMemberFieldStoreNode.setLocation(userRegexNode.getLocation());
+            irMemberFieldStoreNode.setExpressionType(void.class);
+            irMemberFieldStoreNode.setFieldType(Pattern.class);
+            irMemberFieldStoreNode.setName(memberFieldName);
+            irMemberFieldStoreNode.setStatic(true);
+
+            irStatementExpressionNode.setExpressionNode(irMemberFieldStoreNode);
+
+            CallNode irCallNode = new CallNode();
+            irCallNode.setLocation(userRegexNode.getLocation());
+            irCallNode.setExpressionType(Pattern.class);
+
+            irMemberFieldStoreNode.setChildNode(irCallNode);
+
+            StaticNode irStaticNode = new StaticNode();
+            irStaticNode.setLocation(userRegexNode.getLocation());
+            irStaticNode.setExpressionType(Pattern.class);
+
+            irCallNode.setLeftNode(irStaticNode);
+
+            CallSubNode callSubNode = new CallSubNode();
+            callSubNode.setLocation(userRegexNode.getLocation());
+            callSubNode.setExpressionType(Pattern.class);
+            callSubNode.setBox(Pattern.class);
+            callSubNode.setMethod(new PainlessMethod(
+                            Pattern.class.getMethod("compile", String.class, int.class),
+                            Pattern.class,
+                            Pattern.class,
+                            Arrays.asList(String.class, int.class),
+                            null,
+                            null,
+                            null
+                    )
+            );
+
+            irCallNode.setRightNode(callSubNode);
+
+            ConstantNode irConstantNode = new ConstantNode();
+            irConstantNode.setLocation(userRegexNode.getLocation());
+            irConstantNode.setExpressionType(String.class);
+            irConstantNode.setConstant(userRegexNode.getPattern());
+
+            callSubNode.addArgumentNode(irConstantNode);
+
+            irConstantNode = new ConstantNode();
+            irConstantNode.setLocation(userRegexNode.getLocation());
+            irConstantNode.setExpressionType(int.class);
+            irConstantNode.setConstant(scriptScope.getDecoration(userRegexNode, StandardConstant.class).getStandardConstant());
+
+            callSubNode.addArgumentNode(irConstantNode);
+        } catch (Exception exception) {
+            throw userRegexNode.createError(new IllegalStateException("illegal tree structure"));
+        }
+
+        MemberFieldLoadNode irMemberFieldLoadNode = new MemberFieldLoadNode();
+        irMemberFieldLoadNode.setLocation(userRegexNode.getLocation());
+        irMemberFieldLoadNode.setExpressionType(Pattern.class);
+        irMemberFieldLoadNode.setName(memberFieldName);
+        irMemberFieldLoadNode.setStatic(true);
+
+        return irMemberFieldLoadNode;
     }
 }

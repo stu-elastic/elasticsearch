@@ -20,6 +20,10 @@
 package org.elasticsearch.painless.node;
 
 import org.elasticsearch.painless.Location;
+import org.elasticsearch.painless.ir.BlockNode;
+import org.elasticsearch.painless.ir.IRNode;
+import org.elasticsearch.painless.ir.StatementNode;
+import org.elasticsearch.painless.phase.DefaultIRTreeBuilderPhase;
 import org.elasticsearch.painless.phase.DefaultSemanticAnalysisPhase;
 import org.elasticsearch.painless.phase.UserTreeVisitor;
 import org.elasticsearch.painless.symbol.Decorations.AllEscape;
@@ -31,6 +35,7 @@ import org.elasticsearch.painless.symbol.Decorations.LastLoop;
 import org.elasticsearch.painless.symbol.Decorations.LastSource;
 import org.elasticsearch.painless.symbol.Decorations.LoopEscape;
 import org.elasticsearch.painless.symbol.Decorations.MethodEscape;
+import org.elasticsearch.painless.symbol.ScriptScope;
 import org.elasticsearch.painless.symbol.SemanticScope;
 
 import java.util.Collections;
@@ -121,5 +126,18 @@ public class SBlock extends AStatement {
         if (anyBreak) {
             semanticScope.setCondition(userBlockNode, AnyBreak.class);
         }
+    }
+
+    public static IRNode visitDefaultIRTreeBuild(DefaultIRTreeBuilderPhase visitor, SBlock userBlockNode, ScriptScope scriptScope) {
+        BlockNode irBlockNode = new BlockNode();
+
+        for (AStatement userStatementNode : userBlockNode.getStatementNodes()) {
+            irBlockNode.addStatementNode((StatementNode)visitor.visit(userStatementNode, scriptScope));
+        }
+
+        irBlockNode.setLocation(userBlockNode.getLocation());
+        irBlockNode.setAllEscape(scriptScope.getCondition(userBlockNode, AllEscape.class));
+
+        return irBlockNode;
     }
 }

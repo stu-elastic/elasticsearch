@@ -21,6 +21,9 @@ package org.elasticsearch.painless.node;
 
 import org.elasticsearch.painless.AnalyzerCaster;
 import org.elasticsearch.painless.Location;
+import org.elasticsearch.painless.ir.ElvisNode;
+import org.elasticsearch.painless.ir.IRNode;
+import org.elasticsearch.painless.phase.DefaultIRTreeBuilderPhase;
 import org.elasticsearch.painless.phase.DefaultSemanticAnalysisPhase;
 import org.elasticsearch.painless.phase.UserTreeVisitor;
 import org.elasticsearch.painless.symbol.Decorations.Explicit;
@@ -29,6 +32,7 @@ import org.elasticsearch.painless.symbol.Decorations.Read;
 import org.elasticsearch.painless.symbol.Decorations.TargetType;
 import org.elasticsearch.painless.symbol.Decorations.ValueType;
 import org.elasticsearch.painless.symbol.Decorations.Write;
+import org.elasticsearch.painless.symbol.ScriptScope;
 import org.elasticsearch.painless.symbol.SemanticScope;
 
 import static java.util.Objects.requireNonNull;
@@ -128,5 +132,15 @@ public class EElvis extends AExpression {
         visitor.decorateWithCast(userRightNode, semanticScope);
 
         semanticScope.putDecoration(userElvisNode, new ValueType(valueType));
+    }
+
+    public static IRNode visitDefaultIRTreeBuild(DefaultIRTreeBuilderPhase visitor, EElvis userElvisNode, ScriptScope scriptScope) {
+        ElvisNode irElvisNode = new ElvisNode();
+        irElvisNode.setLocation(userElvisNode.getLocation());
+        irElvisNode.setExpressionType(scriptScope.getDecoration(userElvisNode, ValueType.class).getValueType());
+        irElvisNode.setLeftNode(visitor.injectCast(userElvisNode.getLeftNode(), scriptScope));
+        irElvisNode.setRightNode(visitor.injectCast(userElvisNode.getRightNode(), scriptScope));
+
+        return irElvisNode;
     }
 }

@@ -21,7 +21,13 @@ package org.elasticsearch.painless.node;
 
 import org.elasticsearch.painless.FunctionRef;
 import org.elasticsearch.painless.Location;
+import org.elasticsearch.painless.ir.DefInterfaceReferenceNode;
+import org.elasticsearch.painless.ir.IRNode;
+import org.elasticsearch.painless.ir.ReferenceNode;
+import org.elasticsearch.painless.ir.TypedCaptureReferenceNode;
+import org.elasticsearch.painless.ir.TypedInterfaceReferenceNode;
 import org.elasticsearch.painless.lookup.def;
+import org.elasticsearch.painless.phase.DefaultIRTreeBuilderPhase;
 import org.elasticsearch.painless.phase.DefaultSemanticAnalysisPhase;
 import org.elasticsearch.painless.phase.UserTreeVisitor;
 import org.elasticsearch.painless.symbol.Decorations.CapturesDecoration;
@@ -136,5 +142,39 @@ public class EFunctionRef extends AExpression {
         }
 
         semanticScope.putDecoration(userFunctionRefNode, new ValueType(valueType));
+    }
+
+    public static IRNode visitDefaultIRTreeBuild(
+            DefaultIRTreeBuilderPhase visitor, EFunctionRef userFunctionRefNode, ScriptScope scriptScope) {
+
+        ReferenceNode irReferenceNode;
+
+        TargetType targetType = scriptScope.getDecoration(userFunctionRefNode, TargetType.class);
+        CapturesDecoration capturesDecoration = scriptScope.getDecoration(userFunctionRefNode, CapturesDecoration.class);
+
+        if (targetType == null) {
+            DefInterfaceReferenceNode defInterfaceReferenceNode = new DefInterfaceReferenceNode();
+            defInterfaceReferenceNode.setDefReferenceEncoding(
+                    scriptScope.getDecoration(userFunctionRefNode, EncodingDecoration.class).getEncoding());
+            irReferenceNode = defInterfaceReferenceNode;
+        } else if (capturesDecoration != null && capturesDecoration.getCaptures().get(0).getType() == def.class) {
+            TypedCaptureReferenceNode typedCaptureReferenceNode = new TypedCaptureReferenceNode();
+            typedCaptureReferenceNode.setMethodName(userFunctionRefNode.getMethodName());
+            irReferenceNode = typedCaptureReferenceNode;
+        } else {
+            TypedInterfaceReferenceNode typedInterfaceReferenceNode = new TypedInterfaceReferenceNode();
+            typedInterfaceReferenceNode.setReference(
+                    scriptScope.getDecoration(userFunctionRefNode, ReferenceDecoration.class).getReference());
+            irReferenceNode = typedInterfaceReferenceNode;
+        }
+
+        irReferenceNode.setLocation(userFunctionRefNode.getLocation());
+        irReferenceNode.setExpressionType(scriptScope.getDecoration(userFunctionRefNode, ValueType.class).getValueType());
+
+        if (capturesDecoration != null) {
+            irReferenceNode.addCapture(capturesDecoration.getCaptures().get(0).getName());
+        }
+
+        return irReferenceNode;
     }
 }

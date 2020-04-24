@@ -20,6 +20,10 @@
 package org.elasticsearch.painless.node;
 
 import org.elasticsearch.painless.Location;
+import org.elasticsearch.painless.ir.BlockNode;
+import org.elasticsearch.painless.ir.IRNode;
+import org.elasticsearch.painless.ir.IfNode;
+import org.elasticsearch.painless.phase.DefaultIRTreeBuilderPhase;
 import org.elasticsearch.painless.phase.DefaultSemanticAnalysisPhase;
 import org.elasticsearch.painless.phase.UserTreeVisitor;
 import org.elasticsearch.painless.symbol.Decorations.AnyBreak;
@@ -29,6 +33,7 @@ import org.elasticsearch.painless.symbol.Decorations.LastLoop;
 import org.elasticsearch.painless.symbol.Decorations.LastSource;
 import org.elasticsearch.painless.symbol.Decorations.Read;
 import org.elasticsearch.painless.symbol.Decorations.TargetType;
+import org.elasticsearch.painless.symbol.ScriptScope;
 import org.elasticsearch.painless.symbol.SemanticScope;
 
 import java.util.Objects;
@@ -82,5 +87,14 @@ public class SIf extends AStatement {
         visitor.visit(userIfBlockNode, semanticScope.newLocalScope());
         semanticScope.replicateCondition(userIfBlockNode, userIfNode, AnyContinue.class);
         semanticScope.replicateCondition(userIfBlockNode, userIfNode, AnyBreak.class);
+    }
+
+    public static IRNode visitDefaultIRTreeBuild(DefaultIRTreeBuilderPhase visitor, SIf userIfNode, ScriptScope scriptScope) {
+        IfNode irIfNode = new IfNode();
+        irIfNode.setConditionNode(visitor.injectCast(userIfNode.getConditionNode(), scriptScope));
+        irIfNode.setBlockNode((BlockNode)visitor.visit(userIfNode.getIfBlockNode(), scriptScope));
+        irIfNode.setLocation(userIfNode.getLocation());
+
+        return irIfNode;
     }
 }

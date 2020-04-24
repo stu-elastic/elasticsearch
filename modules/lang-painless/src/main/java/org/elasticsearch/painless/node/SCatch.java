@@ -20,7 +20,11 @@
 package org.elasticsearch.painless.node;
 
 import org.elasticsearch.painless.Location;
+import org.elasticsearch.painless.ir.BlockNode;
+import org.elasticsearch.painless.ir.CatchNode;
+import org.elasticsearch.painless.ir.IRNode;
 import org.elasticsearch.painless.lookup.PainlessLookupUtility;
+import org.elasticsearch.painless.phase.DefaultIRTreeBuilderPhase;
 import org.elasticsearch.painless.phase.DefaultSemanticAnalysisPhase;
 import org.elasticsearch.painless.phase.UserTreeVisitor;
 import org.elasticsearch.painless.symbol.Decorations.AllEscape;
@@ -122,5 +126,17 @@ public class SCatch extends AStatement {
             semanticScope.replicateCondition(userBlockNode, userCatchNode, AnyContinue.class);
             semanticScope.replicateCondition(userBlockNode, userCatchNode, AnyBreak.class);
         }
+    }
+
+    public static IRNode visitDefaultIRTreeBuild(DefaultIRTreeBuilderPhase visitor, SCatch userCatchNode, ScriptScope scriptScope) {
+        Variable variable = scriptScope.getDecoration(userCatchNode, SemanticVariable.class).getSemanticVariable();
+
+        CatchNode irCatchNode = new CatchNode();
+        irCatchNode.setExceptionType(variable.getType());
+        irCatchNode.setSymbol(variable.getName());
+        irCatchNode.setBlockNode((BlockNode)visitor.visit(userCatchNode.getBlockNode(), scriptScope));
+        irCatchNode.setLocation(userCatchNode.getLocation());
+
+        return irCatchNode;
     }
 }

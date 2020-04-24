@@ -20,9 +20,13 @@
 package org.elasticsearch.painless.node;
 
 import org.elasticsearch.painless.Location;
+import org.elasticsearch.painless.ir.FieldNode;
+import org.elasticsearch.painless.ir.IRNode;
+import org.elasticsearch.painless.ir.MemberCallNode;
 import org.elasticsearch.painless.lookup.PainlessClassBinding;
 import org.elasticsearch.painless.lookup.PainlessInstanceBinding;
 import org.elasticsearch.painless.lookup.PainlessMethod;
+import org.elasticsearch.painless.phase.DefaultIRTreeBuilderPhase;
 import org.elasticsearch.painless.phase.DefaultSemanticAnalysisPhase;
 import org.elasticsearch.painless.phase.UserTreeVisitor;
 import org.elasticsearch.painless.spi.annotation.NonDeterministicAnnotation;
@@ -40,6 +44,7 @@ import org.elasticsearch.painless.symbol.FunctionTable;
 import org.elasticsearch.painless.symbol.ScriptScope;
 import org.elasticsearch.painless.symbol.SemanticScope;
 
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -186,5 +191,59 @@ public class ECallLocal extends AExpression {
         }
 
         semanticScope.putDecoration(userCallLocalNode, new ValueType(valueType));
+    }
+
+    public static IRNode visitDefaultIRTreeBuild(DefaultIRTreeBuilderPhase visitor, ECallLocal userCallLocalNode, ScriptScope scriptScope) {
+        MemberCallNode irMemberCallNode = new MemberCallNode();
+
+        if (scriptScope.hasDecoration(userCallLocalNode, StandardLocalFunction.class)) {
+            irMemberCallNode.setLocalFunction(scriptScope.getDecoration(userCallLocalNode, StandardLocalFunction.class).getLocalFunction());
+        } else if (scriptScope.hasDecoration(userCallLocalNode, StandardPainlessMethod.class)) {
+            irMemberCallNode.setImportedMethod(
+                    scriptScope.getDecoration(userCallLocalNode, StandardPainlessMethod.class).getStandardPainlessMethod());
+        } else if (scriptScope.hasDecoration(userCallLocalNode, StandardPainlessClassBinding.class)) {
+            PainlessClassBinding painlessClassBinding =
+                    scriptScope.getDecoration(userCallLocalNode, StandardPainlessClassBinding.class).getPainlessClassBinding();
+            String bindingName = scriptScope.getNextSyntheticName("class_binding");
+
+            FieldNode irFieldNode = new FieldNode();
+            irFieldNode.setLocation(userCallLocalNode.getLocation());
+            irFieldNode.setModifiers(Modifier.PRIVATE);
+            irFieldNode.setFieldType(painlessClassBinding.javaConstructor.getDeclaringClass());
+            irFieldNode.setName(bindingName);
+            scriptScope.getIRClassNode().addFieldNode(irFieldNode);
+
+            irMemberCallNode.setClassBinding(painlessClassBinding);
+            irMemberCallNode.setClassBindingOffset(
+                    (int)scriptScope.getDecoration(userCallLocalNode, StandardConstant.class).getStandardConstant());
+            irMemberCallNode.setBindingName(bindingName);
+        } else if (scriptScope.hasDecoration(userCallLocalNode, StandardPainlessInstanceBinding.class)) {
+            PainlessInstanceBinding painlessInstanceBinding =
+                    scriptScope.getDecoration(userCallLocalNode, StandardPainlessInstanceBinding.class).getPainlessInstanceBinding();
+            String bindingName = scriptScope.getNextSyntheticName("instance_binding");
+
+            FieldNode irFieldNode = new FieldNode();
+            irFieldNode.setLocation(userCallLocalNode.getLocation());
+            irFieldNode.setModifiers(Modifier.PUBLIC | Modifier.STATIC);
+            irFieldNode.setFieldType(painlessInstanceBinding.targetInstance.getClass());
+            irFieldNode.setName(bindingName);
+            scriptScope.getIRClassNode().addFieldNode(irFieldNode);
+
+            irMemberCallNode.setInstanceBinding(painlessInstanceBinding);
+            irMemberCallNode.setBindingName(bindingName);
+
+            scriptScope.addStaticConstant(bindingName, painlessInstanceBinding.targetInstance);
+        } else {
+            throw userCallLocalNode.createError(new IllegalStateException("illegal tree structure"));
+        }
+
+        for (AExpression userArgumentNode : userCallLocalNode.getArgumentNodes()) {
+            irMemberCallNode.addArgumentNode(visitor.injectCast(userArgumentNode, scriptScope));
+        }
+
+        irMemberCallNode.setLocation(userCallLocalNode.getLocation());
+        irMemberCallNode.setExpressionType(scriptScope.getDecoration(userCallLocalNode, ValueType.class).getValueType());
+
+        return irMemberCallNode;
     }
 }

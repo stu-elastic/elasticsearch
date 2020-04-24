@@ -20,10 +20,23 @@
 package org.elasticsearch.painless.node;
 
 import org.elasticsearch.painless.Location;
+import org.elasticsearch.painless.ir.ConstantNode;
+import org.elasticsearch.painless.ir.DotNode;
+import org.elasticsearch.painless.ir.DotSubArrayLengthNode;
+import org.elasticsearch.painless.ir.DotSubDefNode;
+import org.elasticsearch.painless.ir.DotSubNode;
+import org.elasticsearch.painless.ir.DotSubShortcutNode;
+import org.elasticsearch.painless.ir.ExpressionNode;
+import org.elasticsearch.painless.ir.IRNode;
+import org.elasticsearch.painless.ir.ListSubShortcutNode;
+import org.elasticsearch.painless.ir.MapSubShortcutNode;
+import org.elasticsearch.painless.ir.NullSafeSubNode;
+import org.elasticsearch.painless.ir.StaticNode;
 import org.elasticsearch.painless.lookup.PainlessField;
 import org.elasticsearch.painless.lookup.PainlessLookupUtility;
 import org.elasticsearch.painless.lookup.PainlessMethod;
 import org.elasticsearch.painless.lookup.def;
+import org.elasticsearch.painless.phase.DefaultIRTreeBuilderPhase;
 import org.elasticsearch.painless.phase.DefaultSemanticAnalysisPhase;
 import org.elasticsearch.painless.phase.UserTreeVisitor;
 import org.elasticsearch.painless.symbol.Decorations.DefOptimized;
@@ -336,5 +349,117 @@ public class EDot extends AExpression {
                 }
             }
         }
+    }
+
+    public static IRNode visitDefaultIRTreeBuild(DefaultIRTreeBuilderPhase visitor, EDot userDotNode, ScriptScope scriptScope) {
+        ExpressionNode irExpressionNode;
+
+        if (scriptScope.hasDecoration(userDotNode, StaticType.class)) {
+            Class<?> staticType = scriptScope.getDecoration(userDotNode, StaticType.class).getStaticType();
+            StaticNode staticNode = new StaticNode();
+            staticNode.setLocation(userDotNode.getLocation());
+            staticNode.setExpressionType(staticType);
+            irExpressionNode = staticNode;
+        } else {
+            ValueType prefixValueType = scriptScope.getDecoration(userDotNode.getPrefixNode(), ValueType.class);
+
+            if (prefixValueType != null && prefixValueType.getValueType().isArray()) {
+                DotSubArrayLengthNode dotSubArrayLengthNode = new DotSubArrayLengthNode();
+                dotSubArrayLengthNode.setLocation(userDotNode.getLocation());
+                dotSubArrayLengthNode.setExpressionType(int.class);
+                irExpressionNode = dotSubArrayLengthNode;
+            } else if (prefixValueType != null && prefixValueType.getValueType() == def.class) {
+                DotSubDefNode dotSubDefNode = new DotSubDefNode();
+                dotSubDefNode.setLocation(userDotNode.getLocation());
+                dotSubDefNode.setExpressionType(scriptScope.getDecoration(userDotNode, ValueType.class).getValueType());
+                dotSubDefNode.setValue(userDotNode.getIndex());
+                irExpressionNode = dotSubDefNode;
+            } else if (scriptScope.hasDecoration(userDotNode, StandardPainlessField.class)) {
+                DotSubNode dotSubNode = new DotSubNode();
+                dotSubNode.setLocation(userDotNode.getLocation());
+                dotSubNode.setExpressionType(scriptScope.getDecoration(userDotNode, ValueType.class).getValueType());
+                dotSubNode.setField(scriptScope.getDecoration(userDotNode, StandardPainlessField.class).getStandardPainlessField());
+                irExpressionNode = dotSubNode;
+            } else if (scriptScope.getCondition(userDotNode, Shortcut.class)) {
+                DotSubShortcutNode dotSubShortcutNode = new DotSubShortcutNode();
+                dotSubShortcutNode.setLocation(userDotNode.getLocation());
+                dotSubShortcutNode.setExpressionType(scriptScope.getDecoration(userDotNode, ValueType.class).getValueType());
+
+                if (scriptScope.hasDecoration(userDotNode, GetterPainlessMethod.class)) {
+                    dotSubShortcutNode.setGetter(
+                            scriptScope.getDecoration(userDotNode, GetterPainlessMethod.class).getGetterPainlessMethod());
+                }
+
+                if (scriptScope.hasDecoration(userDotNode, SetterPainlessMethod.class)) {
+                    dotSubShortcutNode.setSetter(
+                            scriptScope.getDecoration(userDotNode, SetterPainlessMethod.class).getSetterPainlessMethod());
+                }
+
+                irExpressionNode = dotSubShortcutNode;
+            } else if (scriptScope.getCondition(userDotNode, MapShortcut.class)) {
+                ConstantNode constantNode = new ConstantNode();
+                constantNode.setLocation(userDotNode.getLocation());
+                constantNode.setExpressionType(String.class);
+                constantNode.setConstant(userDotNode.getIndex());
+
+                MapSubShortcutNode mapSubShortcutNode = new MapSubShortcutNode();
+                mapSubShortcutNode.setChildNode(constantNode);
+                mapSubShortcutNode.setLocation(userDotNode.getLocation());
+                mapSubShortcutNode.setExpressionType(scriptScope.getDecoration(userDotNode, ValueType.class).getValueType());
+
+                if (scriptScope.hasDecoration(userDotNode, GetterPainlessMethod.class)) {
+                    mapSubShortcutNode.setGetter(
+                            scriptScope.getDecoration(userDotNode, GetterPainlessMethod.class).getGetterPainlessMethod());
+                }
+
+                if (scriptScope.hasDecoration(userDotNode, SetterPainlessMethod.class)) {
+                    mapSubShortcutNode.setSetter(
+                            scriptScope.getDecoration(userDotNode, SetterPainlessMethod.class).getSetterPainlessMethod());
+                }
+
+                irExpressionNode = mapSubShortcutNode;
+            } else if (scriptScope.getCondition(userDotNode, ListShortcut.class)) {
+                ConstantNode constantNode = new ConstantNode();
+                constantNode.setLocation(userDotNode.getLocation());
+                constantNode.setExpressionType(int.class);
+                constantNode.setConstant(scriptScope.getDecoration(userDotNode, StandardConstant.class).getStandardConstant());
+
+                ListSubShortcutNode listSubShortcutNode = new ListSubShortcutNode();
+                listSubShortcutNode.setChildNode(constantNode);
+                listSubShortcutNode.setLocation(userDotNode.getLocation());
+                listSubShortcutNode.setExpressionType(scriptScope.getDecoration(userDotNode, ValueType.class).getValueType());
+
+                if (scriptScope.hasDecoration(userDotNode, GetterPainlessMethod.class)) {
+                    listSubShortcutNode.setGetter(
+                            scriptScope.getDecoration(userDotNode, GetterPainlessMethod.class).getGetterPainlessMethod());
+                }
+
+                if (scriptScope.hasDecoration(userDotNode, SetterPainlessMethod.class)) {
+                    listSubShortcutNode.setSetter(
+                            scriptScope.getDecoration(userDotNode, SetterPainlessMethod.class).getSetterPainlessMethod());
+                }
+
+                irExpressionNode = listSubShortcutNode;
+            } else {
+                throw userDotNode.createError(new IllegalStateException("illegal tree structure"));
+            }
+
+            if (userDotNode.isNullSafe()) {
+                NullSafeSubNode nullSafeSubNode = new NullSafeSubNode();
+                nullSafeSubNode.setChildNode(irExpressionNode);
+                nullSafeSubNode.setLocation(irExpressionNode.getLocation());
+                nullSafeSubNode.setExpressionType(irExpressionNode.getExpressionType());
+                irExpressionNode = nullSafeSubNode;
+            }
+
+            DotNode irDotNode = new DotNode();
+            irDotNode.setLeftNode((ExpressionNode)visitor.visit(userDotNode.getPrefixNode(), scriptScope));
+            irDotNode.setRightNode(irExpressionNode);
+            irDotNode.setLocation(irExpressionNode.getLocation());
+            irDotNode.setExpressionType(irExpressionNode.getExpressionType());
+            irExpressionNode = irDotNode;
+        }
+
+        return irExpressionNode;
     }
 }

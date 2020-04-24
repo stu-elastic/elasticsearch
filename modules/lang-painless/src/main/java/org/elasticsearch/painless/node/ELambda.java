@@ -21,8 +21,15 @@ package org.elasticsearch.painless.node;
 
 import org.elasticsearch.painless.FunctionRef;
 import org.elasticsearch.painless.Location;
+import org.elasticsearch.painless.ir.BlockNode;
+import org.elasticsearch.painless.ir.DefInterfaceReferenceNode;
+import org.elasticsearch.painless.ir.FunctionNode;
+import org.elasticsearch.painless.ir.IRNode;
+import org.elasticsearch.painless.ir.ReferenceNode;
+import org.elasticsearch.painless.ir.TypedInterfaceReferenceNode;
 import org.elasticsearch.painless.lookup.PainlessMethod;
 import org.elasticsearch.painless.lookup.def;
+import org.elasticsearch.painless.phase.DefaultIRTreeBuilderPhase;
 import org.elasticsearch.painless.phase.DefaultSemanticAnalysisPhase;
 import org.elasticsearch.painless.phase.UserTreeVisitor;
 import org.elasticsearch.painless.symbol.Decorations.CapturesDecoration;
@@ -236,5 +243,44 @@ public class ELambda extends AExpression {
         semanticScope.putDecoration(userLambdaNode, new TypeParameters(typeParametersWithCaptures));
         semanticScope.putDecoration(userLambdaNode, new ParameterNames(parameterNamesWithCaptures));
         semanticScope.putDecoration(userLambdaNode, new CapturesDecoration(capturedVariables));
+    }
+
+    public static IRNode visitDefaultIRTreeBuild(DefaultIRTreeBuilderPhase visitor, ELambda userLambdaNode, ScriptScope scriptScope) {
+        ReferenceNode irReferenceNode;
+
+        if (scriptScope.hasDecoration(userLambdaNode, TargetType.class)) {
+            TypedInterfaceReferenceNode typedInterfaceReferenceNode = new TypedInterfaceReferenceNode();
+            typedInterfaceReferenceNode.setReference(scriptScope.getDecoration(userLambdaNode, ReferenceDecoration.class).getReference());
+            irReferenceNode = typedInterfaceReferenceNode;
+        } else {
+            DefInterfaceReferenceNode defInterfaceReferenceNode = new DefInterfaceReferenceNode();
+            defInterfaceReferenceNode.setDefReferenceEncoding(
+                    scriptScope.getDecoration(userLambdaNode, EncodingDecoration.class).getEncoding());
+            irReferenceNode = defInterfaceReferenceNode;
+        }
+
+        FunctionNode irFunctionNode = new FunctionNode();
+        irFunctionNode.setBlockNode((BlockNode)visitor.visit(userLambdaNode.getBlockNode(), scriptScope));
+        irFunctionNode.setLocation(userLambdaNode.getLocation());
+        irFunctionNode.setName(scriptScope.getDecoration(userLambdaNode, MethodNameDecoration.class).getMethodName());
+        irFunctionNode.setReturnType(scriptScope.getDecoration(userLambdaNode, ReturnType.class).getReturnType());
+        irFunctionNode.getTypeParameters().addAll(scriptScope.getDecoration(userLambdaNode, TypeParameters.class).getTypeParameters());
+        irFunctionNode.getParameterNames().addAll(scriptScope.getDecoration(userLambdaNode, ParameterNames.class).getParameterNames());
+        irFunctionNode.setStatic(true);
+        irFunctionNode.setVarArgs(false);
+        irFunctionNode.setSynthetic(true);
+        irFunctionNode.setMaxLoopCounter(scriptScope.getCompilerSettings().getMaxLoopCounter());
+        scriptScope.getIRClassNode().addFunctionNode(irFunctionNode);
+
+        irReferenceNode.setLocation(userLambdaNode.getLocation());
+        irReferenceNode.setExpressionType(scriptScope.getDecoration(userLambdaNode, ValueType.class).getValueType());
+
+        List<Variable> captures = scriptScope.getDecoration(userLambdaNode, CapturesDecoration.class).getCaptures();
+
+        for (Variable capture : captures) {
+            irReferenceNode.addCapture(capture.getName());
+        }
+
+        return irReferenceNode;
     }
 }

@@ -20,9 +20,17 @@
 package org.elasticsearch.painless.node;
 
 import org.elasticsearch.painless.Location;
+import org.elasticsearch.painless.ir.BraceNode;
+import org.elasticsearch.painless.ir.BraceSubDefNode;
+import org.elasticsearch.painless.ir.BraceSubNode;
+import org.elasticsearch.painless.ir.ExpressionNode;
+import org.elasticsearch.painless.ir.IRNode;
+import org.elasticsearch.painless.ir.ListSubShortcutNode;
+import org.elasticsearch.painless.ir.MapSubShortcutNode;
 import org.elasticsearch.painless.lookup.PainlessLookupUtility;
 import org.elasticsearch.painless.lookup.PainlessMethod;
 import org.elasticsearch.painless.lookup.def;
+import org.elasticsearch.painless.phase.DefaultIRTreeBuilderPhase;
 import org.elasticsearch.painless.phase.DefaultSemanticAnalysisPhase;
 import org.elasticsearch.painless.phase.UserTreeVisitor;
 import org.elasticsearch.painless.symbol.Decorations.DefOptimized;
@@ -35,6 +43,7 @@ import org.elasticsearch.painless.symbol.Decorations.SetterPainlessMethod;
 import org.elasticsearch.painless.symbol.Decorations.TargetType;
 import org.elasticsearch.painless.symbol.Decorations.ValueType;
 import org.elasticsearch.painless.symbol.Decorations.Write;
+import org.elasticsearch.painless.symbol.ScriptScope;
 import org.elasticsearch.painless.symbol.SemanticScope;
 
 import java.time.ZonedDateTime;
@@ -198,5 +207,69 @@ public class EBrace extends AExpression {
         }
 
         semanticScope.putDecoration(userBraceNode, new ValueType(valueType));
+    }
+
+    public static IRNode visitDefaultIRTreeBuild(DefaultIRTreeBuilderPhase visitor, EBrace userBraceNode, ScriptScope scriptScope) {
+        ExpressionNode irExpressionNode;
+
+        Class<?> prefixValueType = scriptScope.getDecoration(userBraceNode.getPrefixNode(), ValueType.class).getValueType();
+
+        if (prefixValueType.isArray()) {
+            BraceSubNode braceSubNode = new BraceSubNode();
+            braceSubNode.setChildNode(visitor.injectCast(userBraceNode.getIndexNode(), scriptScope));
+            braceSubNode.setLocation(userBraceNode.getLocation());
+            braceSubNode.setExpressionType(scriptScope.getDecoration(userBraceNode, ValueType.class).getValueType());
+            irExpressionNode = braceSubNode;
+        } else if (prefixValueType == def.class) {
+            BraceSubDefNode braceSubDefNode = new BraceSubDefNode();
+            braceSubDefNode.setChildNode((ExpressionNode)visitor.visit(userBraceNode.getIndexNode(), scriptScope));
+            braceSubDefNode.setLocation(userBraceNode.getLocation());
+            braceSubDefNode.setExpressionType(scriptScope.getDecoration(userBraceNode, ValueType.class).getValueType());
+            irExpressionNode = braceSubDefNode;
+        } else if (scriptScope.getCondition(userBraceNode, MapShortcut.class)) {
+            MapSubShortcutNode mapSubShortcutNode = new MapSubShortcutNode();
+            mapSubShortcutNode.setChildNode(visitor.injectCast(userBraceNode.getIndexNode(), scriptScope));
+            mapSubShortcutNode.setLocation(userBraceNode.getLocation());
+            mapSubShortcutNode.setExpressionType(scriptScope.getDecoration(userBraceNode, ValueType.class).getValueType());
+
+            if (scriptScope.hasDecoration(userBraceNode, GetterPainlessMethod.class)) {
+                mapSubShortcutNode.setGetter(
+                        scriptScope.getDecoration(userBraceNode, GetterPainlessMethod.class).getGetterPainlessMethod());
+            }
+
+            if (scriptScope.hasDecoration(userBraceNode, SetterPainlessMethod.class)) {
+                mapSubShortcutNode.setSetter(
+                        scriptScope.getDecoration(userBraceNode, SetterPainlessMethod.class).getSetterPainlessMethod());
+            }
+
+            irExpressionNode = mapSubShortcutNode;
+        } else if (scriptScope.getCondition(userBraceNode, ListShortcut.class)) {
+            ListSubShortcutNode listSubShortcutNode = new ListSubShortcutNode();
+            listSubShortcutNode.setChildNode(visitor.injectCast(userBraceNode.getIndexNode(), scriptScope));
+            listSubShortcutNode.setLocation(userBraceNode.getLocation());
+            listSubShortcutNode.setExpressionType(scriptScope.getDecoration(userBraceNode, ValueType.class).getValueType());
+
+            if (scriptScope.hasDecoration(userBraceNode, GetterPainlessMethod.class)) {
+                listSubShortcutNode.setGetter(
+                        scriptScope.getDecoration(userBraceNode, GetterPainlessMethod.class).getGetterPainlessMethod());
+            }
+
+            if (scriptScope.hasDecoration(userBraceNode, SetterPainlessMethod.class)) {
+                listSubShortcutNode.setSetter(
+                        scriptScope.getDecoration(userBraceNode, SetterPainlessMethod.class).getSetterPainlessMethod());
+            }
+
+            irExpressionNode = listSubShortcutNode;
+        } else {
+            throw userBraceNode.createError(new IllegalStateException("illegal tree structure"));
+        }
+
+        BraceNode braceNode = new BraceNode();
+        braceNode.setLeftNode((ExpressionNode)visitor.visit(userBraceNode.getPrefixNode(), scriptScope));
+        braceNode.setRightNode(irExpressionNode);
+        braceNode.setLocation(irExpressionNode.getLocation());
+        braceNode.setExpressionType(irExpressionNode.getExpressionType());
+
+        return braceNode;
     }
 }

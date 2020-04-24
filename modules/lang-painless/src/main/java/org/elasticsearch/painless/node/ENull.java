@@ -20,12 +20,16 @@
 package org.elasticsearch.painless.node;
 
 import org.elasticsearch.painless.Location;
+import org.elasticsearch.painless.ir.IRNode;
+import org.elasticsearch.painless.ir.NullNode;
+import org.elasticsearch.painless.phase.DefaultIRTreeBuilderPhase;
 import org.elasticsearch.painless.phase.DefaultSemanticAnalysisPhase;
 import org.elasticsearch.painless.phase.UserTreeVisitor;
 import org.elasticsearch.painless.symbol.Decorations.Read;
 import org.elasticsearch.painless.symbol.Decorations.TargetType;
 import org.elasticsearch.painless.symbol.Decorations.ValueType;
 import org.elasticsearch.painless.symbol.Decorations.Write;
+import org.elasticsearch.painless.symbol.ScriptScope;
 import org.elasticsearch.painless.symbol.SemanticScope;
 
 /**
@@ -68,5 +72,13 @@ public class ENull extends AExpression {
         }
 
         semanticScope.putDecoration(userNullNode, new ValueType(valueType));
+    }
+
+    public static IRNode visitDefaultIRTreeBuild(DefaultIRTreeBuilderPhase visitor, ENull userNullNode, ScriptScope scriptScope) {
+        NullNode irNullNode = new NullNode();
+        irNullNode.setLocation(userNullNode.getLocation());
+        irNullNode.setExpressionType(scriptScope.getDecoration(userNullNode, ValueType.class).getValueType());
+
+        return irNullNode;
     }
 }

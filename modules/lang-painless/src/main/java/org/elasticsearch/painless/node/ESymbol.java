@@ -20,7 +20,12 @@
 package org.elasticsearch.painless.node;
 
 import org.elasticsearch.painless.Location;
+import org.elasticsearch.painless.ir.ExpressionNode;
+import org.elasticsearch.painless.ir.IRNode;
+import org.elasticsearch.painless.ir.StaticNode;
+import org.elasticsearch.painless.ir.VariableNode;
 import org.elasticsearch.painless.lookup.PainlessLookupUtility;
+import org.elasticsearch.painless.phase.DefaultIRTreeBuilderPhase;
 import org.elasticsearch.painless.phase.DefaultSemanticAnalysisPhase;
 import org.elasticsearch.painless.phase.UserTreeVisitor;
 import org.elasticsearch.painless.symbol.Decorations.PartialCanonicalTypeName;
@@ -28,6 +33,7 @@ import org.elasticsearch.painless.symbol.Decorations.Read;
 import org.elasticsearch.painless.symbol.Decorations.StaticType;
 import org.elasticsearch.painless.symbol.Decorations.ValueType;
 import org.elasticsearch.painless.symbol.Decorations.Write;
+import org.elasticsearch.painless.symbol.ScriptScope;
 import org.elasticsearch.painless.symbol.SemanticScope;
 import org.elasticsearch.painless.symbol.SemanticScope.Variable;
 
@@ -92,5 +98,27 @@ public class ESymbol extends AExpression {
         } else {
             semanticScope.putDecoration(userSymbolNode, new PartialCanonicalTypeName(symbol));
         }
+    }
+
+    public static IRNode visitDefaultIRTreeBuild(DefaultIRTreeBuilderPhase visitor, ESymbol userSymbolNode, ScriptScope scriptScope) {
+        ExpressionNode irExpressionNode;
+
+        if (scriptScope.hasDecoration(userSymbolNode, StaticType.class)) {
+            Class<?> staticType = scriptScope.getDecoration(userSymbolNode, StaticType.class).getStaticType();
+            StaticNode staticNode = new StaticNode();
+            staticNode.setLocation(userSymbolNode.getLocation());
+            staticNode.setExpressionType(staticType);
+            irExpressionNode = staticNode;
+        } else if (scriptScope.hasDecoration(userSymbolNode, ValueType.class)) {
+            VariableNode variableNode = new VariableNode();
+            variableNode.setLocation(userSymbolNode.getLocation());
+            variableNode.setExpressionType(scriptScope.getDecoration(userSymbolNode, ValueType.class).getValueType());
+            variableNode.setName(userSymbolNode.getSymbol());
+            irExpressionNode = variableNode;
+        } else {
+            throw userSymbolNode.createError(new IllegalStateException("illegal tree structure"));
+        }
+
+        return irExpressionNode;
     }
 }

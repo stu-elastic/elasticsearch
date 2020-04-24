@@ -20,12 +20,16 @@
 package org.elasticsearch.painless.node;
 
 import org.elasticsearch.painless.Location;
+import org.elasticsearch.painless.ir.BreakNode;
+import org.elasticsearch.painless.ir.IRNode;
+import org.elasticsearch.painless.phase.DefaultIRTreeBuilderPhase;
 import org.elasticsearch.painless.phase.DefaultSemanticAnalysisPhase;
 import org.elasticsearch.painless.phase.UserTreeVisitor;
 import org.elasticsearch.painless.symbol.Decorations.AllEscape;
 import org.elasticsearch.painless.symbol.Decorations.AnyBreak;
 import org.elasticsearch.painless.symbol.Decorations.InLoop;
 import org.elasticsearch.painless.symbol.Decorations.LoopEscape;
+import org.elasticsearch.painless.symbol.ScriptScope;
 import org.elasticsearch.painless.symbol.SemanticScope;
 
 /**
@@ -52,5 +56,12 @@ public class SBreak extends AStatement {
         semanticScope.setCondition(userBreakNode, AllEscape.class);
         semanticScope.setCondition(userBreakNode, LoopEscape.class);
         semanticScope.setCondition(userBreakNode, AnyBreak.class);
+    }
+
+    public static IRNode visitDefaultIRTreeBuild(DefaultIRTreeBuilderPhase visitor, SBreak userBreakNode, ScriptScope scriptScope) {
+        BreakNode irBreakNode = new BreakNode();
+        irBreakNode.setLocation(userBreakNode.getLocation());
+
+        return irBreakNode;
     }
 }

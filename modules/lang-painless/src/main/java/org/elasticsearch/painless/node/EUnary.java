@@ -22,8 +22,11 @@ package org.elasticsearch.painless.node;
 import org.elasticsearch.painless.AnalyzerCaster;
 import org.elasticsearch.painless.Location;
 import org.elasticsearch.painless.Operation;
+import org.elasticsearch.painless.ir.IRNode;
+import org.elasticsearch.painless.ir.UnaryMathNode;
 import org.elasticsearch.painless.lookup.PainlessLookupUtility;
 import org.elasticsearch.painless.lookup.def;
+import org.elasticsearch.painless.phase.DefaultIRTreeBuilderPhase;
 import org.elasticsearch.painless.phase.DefaultSemanticAnalysisPhase;
 import org.elasticsearch.painless.phase.UserTreeVisitor;
 import org.elasticsearch.painless.symbol.Decorations.Explicit;
@@ -34,6 +37,7 @@ import org.elasticsearch.painless.symbol.Decorations.TargetType;
 import org.elasticsearch.painless.symbol.Decorations.UnaryType;
 import org.elasticsearch.painless.symbol.Decorations.ValueType;
 import org.elasticsearch.painless.symbol.Decorations.Write;
+import org.elasticsearch.painless.symbol.ScriptScope;
 import org.elasticsearch.painless.symbol.SemanticScope;
 
 import java.util.Objects;
@@ -93,10 +97,6 @@ public class EUnary extends AExpression {
             semanticScope.setCondition(userChildNode, Negate.class);
             visitor.checkedVisit(userChildNode, semanticScope);
 
-            if (semanticScope.hasDecoration(userUnaryNode, TargetType.class)) {
-                visitor.decorateWithCast(userChildNode, semanticScope);
-            }
-
             valueType = semanticScope.getDecoration(userChildNode, ValueType.class).getValueType();
         } else {
             if (operation == Operation.NOT) {
@@ -139,5 +139,27 @@ public class EUnary extends AExpression {
         if (unaryType != null) {
             semanticScope.putDecoration(userUnaryNode, new UnaryType(unaryType));
         }
+    }
+
+    public static IRNode visitDefaultIRTreeBuild(DefaultIRTreeBuilderPhase visitor, EUnary userUnaryNode, ScriptScope scriptScope) {
+        Class<?> unaryType = scriptScope.hasDecoration(userUnaryNode, UnaryType.class) ?
+                scriptScope.getDecoration(userUnaryNode, UnaryType.class).getUnaryType() : null;
+
+        IRNode irNode;
+
+        if (scriptScope.getCondition(userUnaryNode.getChildNode(), Negate.class)) {
+            irNode = visitor.visit(userUnaryNode.getChildNode(), scriptScope);
+        } else {
+            UnaryMathNode irUnaryMathNode = new UnaryMathNode();
+            irUnaryMathNode.setLocation(userUnaryNode.getLocation());
+            irUnaryMathNode.setExpressionType(scriptScope.getDecoration(userUnaryNode, ValueType.class).getValueType());
+            irUnaryMathNode.setUnaryType(unaryType);
+            irUnaryMathNode.setOperation(userUnaryNode.getOperation());
+            irUnaryMathNode.setOriginallyExplicit(scriptScope.getCondition(userUnaryNode, Explicit.class));
+            irUnaryMathNode.setChildNode(visitor.injectCast(userUnaryNode.getChildNode(), scriptScope));
+            irNode = irUnaryMathNode;
+        }
+
+        return irNode;
     }
 }

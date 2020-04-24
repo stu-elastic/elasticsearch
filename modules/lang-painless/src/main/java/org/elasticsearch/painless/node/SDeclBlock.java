@@ -20,8 +20,13 @@
 package org.elasticsearch.painless.node;
 
 import org.elasticsearch.painless.Location;
+import org.elasticsearch.painless.ir.DeclarationBlockNode;
+import org.elasticsearch.painless.ir.DeclarationNode;
+import org.elasticsearch.painless.ir.IRNode;
+import org.elasticsearch.painless.phase.DefaultIRTreeBuilderPhase;
 import org.elasticsearch.painless.phase.DefaultSemanticAnalysisPhase;
 import org.elasticsearch.painless.phase.UserTreeVisitor;
+import org.elasticsearch.painless.symbol.ScriptScope;
 import org.elasticsearch.painless.symbol.SemanticScope;
 
 import java.util.Collections;
@@ -55,5 +60,17 @@ public class SDeclBlock extends AStatement {
         for (SDeclaration userDeclarationNode : userDeclBlockNode.getDeclarationNodes()) {
             visitor.visit(userDeclarationNode, semanticScope);
         }
+    }
+
+    public static IRNode visitDefaultIRTreeBuild(DefaultIRTreeBuilderPhase visitor, SDeclBlock userDeclBlockNode, ScriptScope scriptScope) {
+        DeclarationBlockNode irDeclarationBlockNode = new DeclarationBlockNode();
+
+        for (SDeclaration userDeclarationNode : userDeclBlockNode.getDeclarationNodes()) {
+            irDeclarationBlockNode.addDeclarationNode((DeclarationNode)visitor.visit(userDeclarationNode, scriptScope));
+        }
+
+        irDeclarationBlockNode.setLocation(userDeclBlockNode.getLocation());
+
+        return irDeclarationBlockNode;
     }
 }

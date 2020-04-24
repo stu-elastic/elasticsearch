@@ -20,6 +20,9 @@
 package org.elasticsearch.painless.node;
 
 import org.elasticsearch.painless.Location;
+import org.elasticsearch.painless.ir.IRNode;
+import org.elasticsearch.painless.ir.NewArrayNode;
+import org.elasticsearch.painless.phase.DefaultIRTreeBuilderPhase;
 import org.elasticsearch.painless.phase.DefaultSemanticAnalysisPhase;
 import org.elasticsearch.painless.phase.UserTreeVisitor;
 import org.elasticsearch.painless.symbol.Decorations.Internal;
@@ -27,6 +30,7 @@ import org.elasticsearch.painless.symbol.Decorations.Read;
 import org.elasticsearch.painless.symbol.Decorations.TargetType;
 import org.elasticsearch.painless.symbol.Decorations.ValueType;
 import org.elasticsearch.painless.symbol.Decorations.Write;
+import org.elasticsearch.painless.symbol.ScriptScope;
 import org.elasticsearch.painless.symbol.SemanticScope;
 
 import java.util.Collections;
@@ -95,5 +99,19 @@ public class ENewArray extends AExpression {
         }
 
         semanticScope.putDecoration(userNewArrayNode, new ValueType(valueType));
+    }
+
+    public static IRNode visitDefaultIRTreeBuild(DefaultIRTreeBuilderPhase visitor, ENewArray userNewArrayNode, ScriptScope scriptScope) {
+        NewArrayNode irNewArrayNode = new NewArrayNode();
+
+        irNewArrayNode.setLocation(userNewArrayNode.getLocation());
+        irNewArrayNode.setExpressionType(scriptScope.getDecoration(userNewArrayNode, ValueType.class).getValueType());
+        irNewArrayNode.setInitialize(userNewArrayNode.isInitializer());
+
+        for (AExpression userArgumentNode : userNewArrayNode.getValueNodes()) {
+            irNewArrayNode.addArgumentNode(visitor.injectCast(userArgumentNode, scriptScope));
+        }
+
+        return irNewArrayNode;
     }
 }
