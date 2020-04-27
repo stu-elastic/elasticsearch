@@ -20,7 +20,7 @@
 package org.elasticsearch.painless.node;
 
 import org.elasticsearch.painless.Location;
-import org.elasticsearch.painless.ir.BraceNode;
+import org.elasticsearch.painless.ir.AccessNode;
 import org.elasticsearch.painless.ir.BraceSubDefNode;
 import org.elasticsearch.painless.ir.BraceSubNode;
 import org.elasticsearch.painless.ir.ExpressionNode;
@@ -264,12 +264,12 @@ public class EBrace extends AExpression {
             throw userBraceNode.createError(new IllegalStateException("illegal tree structure"));
         }
 
-        BraceNode braceNode = new BraceNode();
-        braceNode.setLeftNode((ExpressionNode)visitor.visit(userBraceNode.getPrefixNode(), scriptScope));
-        braceNode.setRightNode(irExpressionNode);
-        braceNode.setLocation(irExpressionNode.getLocation());
-        braceNode.setExpressionType(irExpressionNode.getExpressionType());
+        AccessNode irAccessNode = new AccessNode();
+        irAccessNode.setLeftNode((ExpressionNode)visitor.visit(userBraceNode.getPrefixNode(), scriptScope));
+        irAccessNode.setRightNode(irExpressionNode);
+        irAccessNode.setLocation(irExpressionNode.getLocation());
+        irAccessNode.setExpressionType(irExpressionNode.getExpressionType());
 
-        return braceNode;
+        return irAccessNode;
     }
 }

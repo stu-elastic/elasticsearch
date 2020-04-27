@@ -21,7 +21,7 @@ package org.elasticsearch.painless.node;
 
 import org.elasticsearch.painless.Location;
 import org.elasticsearch.painless.ir.ConstantNode;
-import org.elasticsearch.painless.ir.DotNode;
+import org.elasticsearch.painless.ir.AccessNode;
 import org.elasticsearch.painless.ir.DotSubArrayLengthNode;
 import org.elasticsearch.painless.ir.DotSubDefNode;
 import org.elasticsearch.painless.ir.DotSubNode;
@@ -452,12 +452,12 @@ public class EDot extends AExpression {
                 irExpressionNode = nullSafeSubNode;
             }
 
-            DotNode irDotNode = new DotNode();
-            irDotNode.setLeftNode((ExpressionNode)visitor.visit(userDotNode.getPrefixNode(), scriptScope));
-            irDotNode.setRightNode(irExpressionNode);
-            irDotNode.setLocation(irExpressionNode.getLocation());
-            irDotNode.setExpressionType(irExpressionNode.getExpressionType());
-            irExpressionNode = irDotNode;
+            AccessNode irAccessNode = new AccessNode();
+            irAccessNode.setLeftNode((ExpressionNode)visitor.visit(userDotNode.getPrefixNode(), scriptScope));
+            irAccessNode.setRightNode(irExpressionNode);
+            irAccessNode.setLocation(irExpressionNode.getLocation());
+            irAccessNode.setExpressionType(irExpressionNode.getExpressionType());
+            irExpressionNode = irAccessNode;
         }
 
         return irExpressionNode;
