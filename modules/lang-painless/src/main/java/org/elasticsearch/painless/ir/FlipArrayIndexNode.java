@@ -25,7 +25,7 @@ import org.elasticsearch.painless.symbol.WriteScope;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
 
-public class FlipArrayIndex extends IndexNode {
+public class FlipArrayIndexNode extends IndexNode {
 
     @Override
     protected void write(ClassWriter classWriter, MethodWriter methodWriter, WriteScope writeScope) {

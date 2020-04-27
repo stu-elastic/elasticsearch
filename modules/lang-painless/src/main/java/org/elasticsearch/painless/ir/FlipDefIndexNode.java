@@ -25,7 +25,7 @@ import org.elasticsearch.painless.MethodWriter;
 import org.elasticsearch.painless.symbol.WriteScope;
 import org.objectweb.asm.Type;
 
-public class FlipDefIndex extends IndexNode {
+public class FlipDefIndexNode extends IndexNode {
 
     @Override
     protected void write(ClassWriter classWriter, MethodWriter methodWriter, WriteScope writeScope) {
