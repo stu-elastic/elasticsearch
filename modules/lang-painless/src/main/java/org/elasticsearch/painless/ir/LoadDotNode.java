@@ -25,7 +25,7 @@ import org.elasticsearch.painless.lookup.PainlessField;
 import org.elasticsearch.painless.symbol.WriteScope;
 import org.objectweb.asm.Type;
 
-public class DotSubNode extends ExpressionNode {
+public class LoadDotNode extends ExpressionNode {
 
     /* ---- begin node data ---- */
 

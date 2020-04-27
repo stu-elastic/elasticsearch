@@ -32,7 +32,7 @@ import org.elasticsearch.painless.ir.IRNode;
 import org.elasticsearch.painless.ir.LoadFieldMemberNode;
 import org.elasticsearch.painless.ir.ReturnNode;
 import org.elasticsearch.painless.ir.StaticNode;
-import org.elasticsearch.painless.ir.VariableNode;
+import org.elasticsearch.painless.ir.LoadVariableNode;
 import org.elasticsearch.painless.lookup.PainlessLookup;
 import org.elasticsearch.painless.lookup.PainlessMethod;
 import org.elasticsearch.painless.node.AExpression;
@@ -212,47 +212,47 @@ public class DefaultIRTreeBuilderPhase implements UserTreeVisitor<ScriptScope, I
 
             invokeCallNode.addArgumentNode(loadFieldMemberNode);
 
-            VariableNode variableNode = new VariableNode();
-            variableNode.setLocation(internalLocation);
-            variableNode.setExpressionType(Lookup.class);
-            variableNode.setName("methodHandlesLookup");
+            LoadVariableNode loadVariableNode = new LoadVariableNode();
+            loadVariableNode.setLocation(internalLocation);
+            loadVariableNode.setExpressionType(Lookup.class);
+            loadVariableNode.setName("methodHandlesLookup");
 
-            invokeCallNode.addArgumentNode(variableNode);
+            invokeCallNode.addArgumentNode(loadVariableNode);
 
-            variableNode = new VariableNode();
-            variableNode.setLocation(internalLocation);
-            variableNode.setExpressionType(String.class);
-            variableNode.setName("name");
+            loadVariableNode = new LoadVariableNode();
+            loadVariableNode.setLocation(internalLocation);
+            loadVariableNode.setExpressionType(String.class);
+            loadVariableNode.setName("name");
 
-            invokeCallNode.addArgumentNode(variableNode);
+            invokeCallNode.addArgumentNode(loadVariableNode);
 
-            variableNode = new VariableNode();
-            variableNode.setLocation(internalLocation);
-            variableNode.setExpressionType(MethodType.class);
-            variableNode.setName("type");
+            loadVariableNode = new LoadVariableNode();
+            loadVariableNode.setLocation(internalLocation);
+            loadVariableNode.setExpressionType(MethodType.class);
+            loadVariableNode.setName("type");
 
-            invokeCallNode.addArgumentNode(variableNode);
+            invokeCallNode.addArgumentNode(loadVariableNode);
 
-            variableNode = new VariableNode();
-            variableNode.setLocation(internalLocation);
-            variableNode.setExpressionType(int.class);
-            variableNode.setName("initialDepth");
+            loadVariableNode = new LoadVariableNode();
+            loadVariableNode.setLocation(internalLocation);
+            loadVariableNode.setExpressionType(int.class);
+            loadVariableNode.setName("initialDepth");
 
-            invokeCallNode.addArgumentNode(variableNode);
+            invokeCallNode.addArgumentNode(loadVariableNode);
 
-            variableNode = new VariableNode();
-            variableNode.setLocation(internalLocation);
-            variableNode.setExpressionType(int.class);
-            variableNode.setName("flavor");
+            loadVariableNode = new LoadVariableNode();
+            loadVariableNode.setLocation(internalLocation);
+            loadVariableNode.setExpressionType(int.class);
+            loadVariableNode.setName("flavor");
 
-            invokeCallNode.addArgumentNode(variableNode);
+            invokeCallNode.addArgumentNode(loadVariableNode);
 
-            variableNode = new VariableNode();
-            variableNode.setLocation(internalLocation);
-            variableNode.setExpressionType(Object[].class);
-            variableNode.setName("args");
+            loadVariableNode = new LoadVariableNode();
+            loadVariableNode.setLocation(internalLocation);
+            loadVariableNode.setExpressionType(Object[].class);
+            loadVariableNode.setName("args");
 
-            invokeCallNode.addArgumentNode(variableNode);
+            invokeCallNode.addArgumentNode(loadVariableNode);
         } catch (Exception exception) {
             throw new IllegalStateException(exception);
         }

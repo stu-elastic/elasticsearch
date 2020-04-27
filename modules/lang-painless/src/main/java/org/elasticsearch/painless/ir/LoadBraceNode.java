@@ -22,50 +22,34 @@ package org.elasticsearch.painless.ir;
 import org.elasticsearch.painless.ClassWriter;
 import org.elasticsearch.painless.MethodWriter;
 import org.elasticsearch.painless.symbol.WriteScope;
-import org.elasticsearch.painless.symbol.WriteScope.Variable;
-import org.objectweb.asm.Opcodes;
 
-public class VariableNode extends ExpressionNode {
-
-    /* ---- begin node data ---- */
-
-    private String name;
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    /* ---- end node data ---- */
+public class LoadBraceNode extends IndexNode {
 
     @Override
     protected void write(ClassWriter classWriter, MethodWriter methodWriter, WriteScope writeScope) {
-        Variable variable = writeScope.getVariable(name);
-        methodWriter.visitVarInsn(variable.getAsmType().getOpcode(Opcodes.ILOAD), variable.getSlot());
+        setup(classWriter, methodWriter, writeScope);
+        load(classWriter, methodWriter, writeScope);
     }
 
     @Override
     protected int accessElementCount() {
-        return 0;
+        return 2;
     }
 
     @Override
     protected void setup(ClassWriter classWriter, MethodWriter methodWriter, WriteScope writeScope) {
-        // do nothing
+        getIndexNode().write(classWriter, methodWriter, writeScope);
     }
 
     @Override
     protected void load(ClassWriter classWriter, MethodWriter methodWriter, WriteScope writeScope) {
-        Variable variable = writeScope.getVariable(name);
-        methodWriter.visitVarInsn(variable.getAsmType().getOpcode(Opcodes.ILOAD), variable.getSlot());
+        methodWriter.writeDebugInfo(location);
+        methodWriter.arrayLoad(MethodWriter.getType(getExpressionType()));
     }
 
     @Override
     protected void store(ClassWriter classWriter, MethodWriter methodWriter, WriteScope writeScope) {
-        Variable variable = writeScope.getVariable(name);
-        methodWriter.visitVarInsn(variable.getAsmType().getOpcode(Opcodes.ISTORE), variable.getSlot());
+        methodWriter.writeDebugInfo(location);
+        methodWriter.arrayStore(MethodWriter.getType(getExpressionType()));
     }
 }

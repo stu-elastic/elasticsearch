@@ -29,7 +29,7 @@ import org.elasticsearch.painless.ir.NewArrayNode;
 import org.elasticsearch.painless.ir.ReferenceNode;
 import org.elasticsearch.painless.ir.ReturnNode;
 import org.elasticsearch.painless.ir.TypedInterfaceReferenceNode;
-import org.elasticsearch.painless.ir.VariableNode;
+import org.elasticsearch.painless.ir.LoadVariableNode;
 import org.elasticsearch.painless.phase.DefaultIRTreeBuilderPhase;
 import org.elasticsearch.painless.phase.DefaultSemanticAnalysisPhase;
 import org.elasticsearch.painless.phase.UserTreeVisitor;
@@ -132,17 +132,17 @@ public class ENewArrayFunctionRef extends AExpression {
 
         Class<?> returnType = scriptScope.getDecoration(userNewArrayFunctionRefNode, ReturnType.class).getReturnType();
 
-        VariableNode irVariableNode = new VariableNode();
-        irVariableNode.setLocation(userNewArrayFunctionRefNode.getLocation());
-        irVariableNode.setExpressionType(int.class);
-        irVariableNode.setName("size");
+        LoadVariableNode irLoadVariableNode = new LoadVariableNode();
+        irLoadVariableNode.setLocation(userNewArrayFunctionRefNode.getLocation());
+        irLoadVariableNode.setExpressionType(int.class);
+        irLoadVariableNode.setName("size");
 
         NewArrayNode irNewArrayNode = new NewArrayNode();
         irNewArrayNode.setLocation(userNewArrayFunctionRefNode.getLocation());
         irNewArrayNode.setExpressionType(returnType);
         irNewArrayNode.setInitialize(false);
 
-        irNewArrayNode.addArgumentNode(irVariableNode);
+        irNewArrayNode.addArgumentNode(irLoadVariableNode);
 
         ReturnNode irReturnNode = new ReturnNode();
         irReturnNode.setLocation(userNewArrayFunctionRefNode.getLocation());

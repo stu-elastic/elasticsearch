@@ -23,7 +23,7 @@ import org.elasticsearch.painless.Location;
 import org.elasticsearch.painless.ir.ExpressionNode;
 import org.elasticsearch.painless.ir.IRNode;
 import org.elasticsearch.painless.ir.StaticNode;
-import org.elasticsearch.painless.ir.VariableNode;
+import org.elasticsearch.painless.ir.LoadVariableNode;
 import org.elasticsearch.painless.lookup.PainlessLookupUtility;
 import org.elasticsearch.painless.phase.DefaultIRTreeBuilderPhase;
 import org.elasticsearch.painless.phase.DefaultSemanticAnalysisPhase;
@@ -110,11 +110,11 @@ public class ESymbol extends AExpression {
             staticNode.setExpressionType(staticType);
             irExpressionNode = staticNode;
         } else if (scriptScope.hasDecoration(userSymbolNode, ValueType.class)) {
-            VariableNode variableNode = new VariableNode();
-            variableNode.setLocation(userSymbolNode.getLocation());
-            variableNode.setExpressionType(scriptScope.getDecoration(userSymbolNode, ValueType.class).getValueType());
-            variableNode.setName(userSymbolNode.getSymbol());
-            irExpressionNode = variableNode;
+            LoadVariableNode loadVariableNode = new LoadVariableNode();
+            loadVariableNode.setLocation(userSymbolNode.getLocation());
+            loadVariableNode.setExpressionType(scriptScope.getDecoration(userSymbolNode, ValueType.class).getValueType());
+            loadVariableNode.setName(userSymbolNode.getSymbol());
+            irExpressionNode = loadVariableNode;
         } else {
             throw userSymbolNode.createError(new IllegalStateException("illegal tree structure"));
         }

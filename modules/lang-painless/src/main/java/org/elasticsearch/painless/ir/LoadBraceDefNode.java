@@ -20,45 +20,17 @@
 package org.elasticsearch.painless.ir;
 
 import org.elasticsearch.painless.ClassWriter;
+import org.elasticsearch.painless.DefBootstrap;
 import org.elasticsearch.painless.MethodWriter;
-import org.elasticsearch.painless.lookup.PainlessMethod;
 import org.elasticsearch.painless.symbol.WriteScope;
+import org.objectweb.asm.Type;
 
-public class MapSubShortcutNode extends IndexNode {
-
-    /* ---- begin node data ---- */
-
-    private PainlessMethod setter;
-    private PainlessMethod getter;
-
-    public void setSetter(PainlessMethod setter) {
-        this.setter = setter;
-    }
-
-    public PainlessMethod getSetter() {
-        return setter;
-    }
-
-    public void setGetter(PainlessMethod getter) {
-        this.getter = getter;
-    }
-
-    public PainlessMethod getGetter() {
-        return getter;
-    }
-
-    /* ---- end node data ---- */
+public class LoadBraceDefNode extends IndexNode {
 
     @Override
     protected void write(ClassWriter classWriter, MethodWriter methodWriter, WriteScope writeScope) {
-        getIndexNode().write(classWriter, methodWriter, writeScope);
-
-        methodWriter.writeDebugInfo(location);
-        methodWriter.invokeMethodCall(getter);
-
-        if (getter.returnType != getter.javaMethod.getReturnType()) {
-            methodWriter.checkCast(MethodWriter.getType(getter.returnType));
-        }
+        setup(classWriter, methodWriter, writeScope);
+        load(classWriter, methodWriter, writeScope);
     }
 
     @Override
@@ -74,17 +46,18 @@ public class MapSubShortcutNode extends IndexNode {
     @Override
     protected void load(ClassWriter classWriter, MethodWriter methodWriter, WriteScope writeScope) {
         methodWriter.writeDebugInfo(location);
-        methodWriter.invokeMethodCall(getter);
 
-        if (getter.returnType != getter.javaMethod.getReturnType()) {
-            methodWriter.checkCast(MethodWriter.getType(getter.returnType));
-        }
+        Type methodType = Type.getMethodType(MethodWriter.getType(
+                getExpressionType()), Type.getType(Object.class), MethodWriter.getType(getIndexNode().getExpressionType()));
+        methodWriter.invokeDefCall("arrayLoad", methodType, DefBootstrap.ARRAY_LOAD);
     }
 
     @Override
     protected void store(ClassWriter classWriter, MethodWriter methodWriter, WriteScope writeScope) {
         methodWriter.writeDebugInfo(location);
-        methodWriter.invokeMethodCall(setter);
-        methodWriter.writePop(MethodWriter.getType(setter.returnType).getSize());
+
+        Type methodType = Type.getMethodType(Type.getType(void.class), Type.getType(Object.class),
+                MethodWriter.getType(getIndexNode().getExpressionType()), MethodWriter.getType(getExpressionType()));
+        methodWriter.invokeDefCall("arrayStore", methodType, DefBootstrap.ARRAY_STORE);
     }
 }
