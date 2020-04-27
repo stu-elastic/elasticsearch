@@ -24,7 +24,7 @@ import org.elasticsearch.painless.MethodWriter;
 import org.elasticsearch.painless.lookup.PainlessMethod;
 import org.elasticsearch.painless.symbol.WriteScope;
 
-public class MapSubShortcutNode extends UnaryNode {
+public class MapSubShortcutNode extends IndexNode {
 
     /* ---- begin node data ---- */
 
@@ -51,7 +51,7 @@ public class MapSubShortcutNode extends UnaryNode {
 
     @Override
     protected void write(ClassWriter classWriter, MethodWriter methodWriter, WriteScope writeScope) {
-        getChildNode().write(classWriter, methodWriter, writeScope);
+        getIndexNode().write(classWriter, methodWriter, writeScope);
 
         methodWriter.writeDebugInfo(location);
         methodWriter.invokeMethodCall(getter);
@@ -68,7 +68,7 @@ public class MapSubShortcutNode extends UnaryNode {
 
     @Override
     protected void setup(ClassWriter classWriter, MethodWriter methodWriter, WriteScope writeScope) {
-        getChildNode().write(classWriter, methodWriter, writeScope);
+        getIndexNode().write(classWriter, methodWriter, writeScope);
     }
 
     @Override

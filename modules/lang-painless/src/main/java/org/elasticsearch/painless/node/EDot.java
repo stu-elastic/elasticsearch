@@ -403,7 +403,7 @@ public class EDot extends AExpression {
                 constantNode.setConstant(userDotNode.getIndex());
 
                 MapSubShortcutNode mapSubShortcutNode = new MapSubShortcutNode();
-                mapSubShortcutNode.setChildNode(constantNode);
+                mapSubShortcutNode.setIndexNode(constantNode);
                 mapSubShortcutNode.setLocation(userDotNode.getLocation());
                 mapSubShortcutNode.setExpressionType(scriptScope.getDecoration(userDotNode, ValueType.class).getValueType());
 
@@ -425,7 +425,7 @@ public class EDot extends AExpression {
                 constantNode.setConstant(scriptScope.getDecoration(userDotNode, StandardConstant.class).getStandardConstant());
 
                 ListSubShortcutNode listSubShortcutNode = new ListSubShortcutNode();
-                listSubShortcutNode.setChildNode(constantNode);
+                listSubShortcutNode.setIndexNode(constantNode);
                 listSubShortcutNode.setLocation(userDotNode.getLocation());
                 listSubShortcutNode.setExpressionType(scriptScope.getDecoration(userDotNode, ValueType.class).getValueType());
 

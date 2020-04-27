@@ -24,6 +24,9 @@ import org.elasticsearch.painless.ir.AccessNode;
 import org.elasticsearch.painless.ir.BraceSubDefNode;
 import org.elasticsearch.painless.ir.BraceSubNode;
 import org.elasticsearch.painless.ir.ExpressionNode;
+import org.elasticsearch.painless.ir.FlipArrayIndex;
+import org.elasticsearch.painless.ir.FlipCollectionIndex;
+import org.elasticsearch.painless.ir.FlipDefIndex;
 import org.elasticsearch.painless.ir.IRNode;
 import org.elasticsearch.painless.ir.ListSubShortcutNode;
 import org.elasticsearch.painless.ir.MapSubShortcutNode;
@@ -215,20 +218,31 @@ public class EBrace extends AExpression {
         Class<?> prefixValueType = scriptScope.getDecoration(userBraceNode.getPrefixNode(), ValueType.class).getValueType();
 
         if (prefixValueType.isArray()) {
+            FlipArrayIndex irFlipArrayIndex = new FlipArrayIndex();
+            irFlipArrayIndex.setLocation(userBraceNode.getIndexNode().getLocation());
+            irFlipArrayIndex.setExpressionType(int.class);
+            irFlipArrayIndex.setIndexNode(visitor.injectCast(userBraceNode.getIndexNode(), scriptScope));
+
             BraceSubNode braceSubNode = new BraceSubNode();
-            braceSubNode.setChildNode(visitor.injectCast(userBraceNode.getIndexNode(), scriptScope));
+            braceSubNode.setIndexNode(irFlipArrayIndex);
             braceSubNode.setLocation(userBraceNode.getLocation());
             braceSubNode.setExpressionType(scriptScope.getDecoration(userBraceNode, ValueType.class).getValueType());
             irExpressionNode = braceSubNode;
         } else if (prefixValueType == def.class) {
+            ;
+            FlipDefIndex irFlipDefIndex = new FlipDefIndex();
+            irFlipDefIndex.setLocation(userBraceNode.getIndexNode().getLocation());
+            irFlipDefIndex.setExpressionType(scriptScope.getDecoration(userBraceNode.getIndexNode(), ValueType.class).getValueType());
+            irFlipDefIndex.setIndexNode((ExpressionNode)visitor.visit(userBraceNode.getIndexNode(), scriptScope));
+
             BraceSubDefNode braceSubDefNode = new BraceSubDefNode();
-            braceSubDefNode.setChildNode((ExpressionNode)visitor.visit(userBraceNode.getIndexNode(), scriptScope));
+            braceSubDefNode.setIndexNode(irFlipDefIndex);
             braceSubDefNode.setLocation(userBraceNode.getLocation());
             braceSubDefNode.setExpressionType(scriptScope.getDecoration(userBraceNode, ValueType.class).getValueType());
             irExpressionNode = braceSubDefNode;
         } else if (scriptScope.getCondition(userBraceNode, MapShortcut.class)) {
             MapSubShortcutNode mapSubShortcutNode = new MapSubShortcutNode();
-            mapSubShortcutNode.setChildNode(visitor.injectCast(userBraceNode.getIndexNode(), scriptScope));
+            mapSubShortcutNode.setIndexNode(visitor.injectCast(userBraceNode.getIndexNode(), scriptScope));
             mapSubShortcutNode.setLocation(userBraceNode.getLocation());
             mapSubShortcutNode.setExpressionType(scriptScope.getDecoration(userBraceNode, ValueType.class).getValueType());
 
@@ -244,8 +258,13 @@ public class EBrace extends AExpression {
 
             irExpressionNode = mapSubShortcutNode;
         } else if (scriptScope.getCondition(userBraceNode, ListShortcut.class)) {
+            FlipCollectionIndex irFlipCollectionIndex = new FlipCollectionIndex();
+            irFlipCollectionIndex.setLocation(userBraceNode.getIndexNode().getLocation());
+            irFlipCollectionIndex.setExpressionType(int.class);
+            irFlipCollectionIndex.setIndexNode(visitor.injectCast(userBraceNode.getIndexNode(), scriptScope));
+
             ListSubShortcutNode listSubShortcutNode = new ListSubShortcutNode();
-            listSubShortcutNode.setChildNode(visitor.injectCast(userBraceNode.getIndexNode(), scriptScope));
+            listSubShortcutNode.setIndexNode(irFlipCollectionIndex);
             listSubShortcutNode.setLocation(userBraceNode.getLocation());
             listSubShortcutNode.setExpressionType(scriptScope.getDecoration(userBraceNode, ValueType.class).getValueType());
 
