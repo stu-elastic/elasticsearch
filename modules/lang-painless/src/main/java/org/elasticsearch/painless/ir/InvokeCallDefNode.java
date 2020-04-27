@@ -30,7 +30,7 @@ import java.util.List;
 
 import static org.elasticsearch.painless.symbol.WriteScope.Variable;
 
-public class CallSubDefNode extends ArgumentsNode {
+public class InvokeCallDefNode extends ArgumentsNode {
 
     /* ---- begin node data ---- */
 

@@ -22,7 +22,7 @@ package org.elasticsearch.painless.node;
 import org.elasticsearch.painless.Location;
 import org.elasticsearch.painless.ir.FieldNode;
 import org.elasticsearch.painless.ir.IRNode;
-import org.elasticsearch.painless.ir.MemberCallNode;
+import org.elasticsearch.painless.ir.InvokeCallMemberNode;
 import org.elasticsearch.painless.lookup.PainlessClassBinding;
 import org.elasticsearch.painless.lookup.PainlessInstanceBinding;
 import org.elasticsearch.painless.lookup.PainlessMethod;
@@ -194,12 +194,13 @@ public class ECallLocal extends AExpression {
     }
 
     public static IRNode visitDefaultIRTreeBuild(DefaultIRTreeBuilderPhase visitor, ECallLocal userCallLocalNode, ScriptScope scriptScope) {
-        MemberCallNode irMemberCallNode = new MemberCallNode();
+        InvokeCallMemberNode irInvokeCallMemberNode = new InvokeCallMemberNode();
 
         if (scriptScope.hasDecoration(userCallLocalNode, StandardLocalFunction.class)) {
-            irMemberCallNode.setLocalFunction(scriptScope.getDecoration(userCallLocalNode, StandardLocalFunction.class).getLocalFunction());
+            irInvokeCallMemberNode.setLocalFunction(
+                    scriptScope.getDecoration(userCallLocalNode, StandardLocalFunction.class).getLocalFunction());
         } else if (scriptScope.hasDecoration(userCallLocalNode, StandardPainlessMethod.class)) {
-            irMemberCallNode.setImportedMethod(
+            irInvokeCallMemberNode.setImportedMethod(
                     scriptScope.getDecoration(userCallLocalNode, StandardPainlessMethod.class).getStandardPainlessMethod());
         } else if (scriptScope.hasDecoration(userCallLocalNode, StandardPainlessClassBinding.class)) {
             PainlessClassBinding painlessClassBinding =
@@ -213,10 +214,10 @@ public class ECallLocal extends AExpression {
             irFieldNode.setName(bindingName);
             scriptScope.getIRClassNode().addFieldNode(irFieldNode);
 
-            irMemberCallNode.setClassBinding(painlessClassBinding);
-            irMemberCallNode.setClassBindingOffset(
+            irInvokeCallMemberNode.setClassBinding(painlessClassBinding);
+            irInvokeCallMemberNode.setClassBindingOffset(
                     (int)scriptScope.getDecoration(userCallLocalNode, StandardConstant.class).getStandardConstant());
-            irMemberCallNode.setBindingName(bindingName);
+            irInvokeCallMemberNode.setBindingName(bindingName);
         } else if (scriptScope.hasDecoration(userCallLocalNode, StandardPainlessInstanceBinding.class)) {
             PainlessInstanceBinding painlessInstanceBinding =
                     scriptScope.getDecoration(userCallLocalNode, StandardPainlessInstanceBinding.class).getPainlessInstanceBinding();
@@ -229,8 +230,8 @@ public class ECallLocal extends AExpression {
             irFieldNode.setName(bindingName);
             scriptScope.getIRClassNode().addFieldNode(irFieldNode);
 
-            irMemberCallNode.setInstanceBinding(painlessInstanceBinding);
-            irMemberCallNode.setBindingName(bindingName);
+            irInvokeCallMemberNode.setInstanceBinding(painlessInstanceBinding);
+            irInvokeCallMemberNode.setBindingName(bindingName);
 
             scriptScope.addStaticConstant(bindingName, painlessInstanceBinding.targetInstance);
         } else {
@@ -238,12 +239,12 @@ public class ECallLocal extends AExpression {
         }
 
         for (AExpression userArgumentNode : userCallLocalNode.getArgumentNodes()) {
-            irMemberCallNode.addArgumentNode(visitor.injectCast(userArgumentNode, scriptScope));
+            irInvokeCallMemberNode.addArgumentNode(visitor.injectCast(userArgumentNode, scriptScope));
         }
 
-        irMemberCallNode.setLocation(userCallLocalNode.getLocation());
-        irMemberCallNode.setExpressionType(scriptScope.getDecoration(userCallLocalNode, ValueType.class).getValueType());
+        irInvokeCallMemberNode.setLocation(userCallLocalNode.getLocation());
+        irInvokeCallMemberNode.setExpressionType(scriptScope.getDecoration(userCallLocalNode, ValueType.class).getValueType());
 
-        return irMemberCallNode;
+        return irInvokeCallMemberNode;
     }
 }

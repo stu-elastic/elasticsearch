@@ -22,12 +22,12 @@ package org.elasticsearch.painless.node;
 import org.elasticsearch.painless.Location;
 import org.elasticsearch.painless.ir.AccessNode;
 import org.elasticsearch.painless.ir.BlockNode;
-import org.elasticsearch.painless.ir.CallSubNode;
+import org.elasticsearch.painless.ir.InvokeCallNode;
 import org.elasticsearch.painless.ir.ConstantNode;
 import org.elasticsearch.painless.ir.FieldNode;
 import org.elasticsearch.painless.ir.IRNode;
-import org.elasticsearch.painless.ir.MemberFieldLoadNode;
-import org.elasticsearch.painless.ir.MemberFieldStoreNode;
+import org.elasticsearch.painless.ir.LoadFieldMemberNode;
+import org.elasticsearch.painless.ir.StoreFieldMemberNode;
 import org.elasticsearch.painless.ir.StatementExpressionNode;
 import org.elasticsearch.painless.ir.StaticNode;
 import org.elasticsearch.painless.lookup.PainlessMethod;
@@ -164,20 +164,20 @@ public class ERegex extends AExpression {
             BlockNode blockNode = scriptScope.getIRClassNode().getClinitBlockNode();
             blockNode.addStatementNode(irStatementExpressionNode);
 
-            MemberFieldStoreNode irMemberFieldStoreNode = new MemberFieldStoreNode();
-            irMemberFieldStoreNode.setLocation(userRegexNode.getLocation());
-            irMemberFieldStoreNode.setExpressionType(void.class);
-            irMemberFieldStoreNode.setFieldType(Pattern.class);
-            irMemberFieldStoreNode.setName(memberFieldName);
-            irMemberFieldStoreNode.setStatic(true);
+            StoreFieldMemberNode irStoreFieldMemberNode = new StoreFieldMemberNode();
+            irStoreFieldMemberNode.setLocation(userRegexNode.getLocation());
+            irStoreFieldMemberNode.setExpressionType(void.class);
+            irStoreFieldMemberNode.setFieldType(Pattern.class);
+            irStoreFieldMemberNode.setName(memberFieldName);
+            irStoreFieldMemberNode.setStatic(true);
 
-            irStatementExpressionNode.setExpressionNode(irMemberFieldStoreNode);
+            irStatementExpressionNode.setExpressionNode(irStoreFieldMemberNode);
 
             AccessNode irAccessNode = new AccessNode();
             irAccessNode.setLocation(userRegexNode.getLocation());
             irAccessNode.setExpressionType(Pattern.class);
 
-            irMemberFieldStoreNode.setChildNode(irAccessNode);
+            irStoreFieldMemberNode.setChildNode(irAccessNode);
 
             StaticNode irStaticNode = new StaticNode();
             irStaticNode.setLocation(userRegexNode.getLocation());
@@ -185,11 +185,11 @@ public class ERegex extends AExpression {
 
             irAccessNode.setLeftNode(irStaticNode);
 
-            CallSubNode callSubNode = new CallSubNode();
-            callSubNode.setLocation(userRegexNode.getLocation());
-            callSubNode.setExpressionType(Pattern.class);
-            callSubNode.setBox(Pattern.class);
-            callSubNode.setMethod(new PainlessMethod(
+            InvokeCallNode invokeCallNode = new InvokeCallNode();
+            invokeCallNode.setLocation(userRegexNode.getLocation());
+            invokeCallNode.setExpressionType(Pattern.class);
+            invokeCallNode.setBox(Pattern.class);
+            invokeCallNode.setMethod(new PainlessMethod(
                             Pattern.class.getMethod("compile", String.class, int.class),
                             Pattern.class,
                             Pattern.class,
@@ -200,31 +200,31 @@ public class ERegex extends AExpression {
                     )
             );
 
-            irAccessNode.setRightNode(callSubNode);
+            irAccessNode.setRightNode(invokeCallNode);
 
             ConstantNode irConstantNode = new ConstantNode();
             irConstantNode.setLocation(userRegexNode.getLocation());
             irConstantNode.setExpressionType(String.class);
             irConstantNode.setConstant(userRegexNode.getPattern());
 
-            callSubNode.addArgumentNode(irConstantNode);
+            invokeCallNode.addArgumentNode(irConstantNode);
 
             irConstantNode = new ConstantNode();
             irConstantNode.setLocation(userRegexNode.getLocation());
             irConstantNode.setExpressionType(int.class);
             irConstantNode.setConstant(scriptScope.getDecoration(userRegexNode, StandardConstant.class).getStandardConstant());
 
-            callSubNode.addArgumentNode(irConstantNode);
+            invokeCallNode.addArgumentNode(irConstantNode);
         } catch (Exception exception) {
             throw userRegexNode.createError(new IllegalStateException("illegal tree structure"));
         }
 
-        MemberFieldLoadNode irMemberFieldLoadNode = new MemberFieldLoadNode();
-        irMemberFieldLoadNode.setLocation(userRegexNode.getLocation());
-        irMemberFieldLoadNode.setExpressionType(Pattern.class);
-        irMemberFieldLoadNode.setName(memberFieldName);
-        irMemberFieldLoadNode.setStatic(true);
+        LoadFieldMemberNode irLoadFieldMemberNode = new LoadFieldMemberNode();
+        irLoadFieldMemberNode.setLocation(userRegexNode.getLocation());
+        irLoadFieldMemberNode.setExpressionType(Pattern.class);
+        irLoadFieldMemberNode.setName(memberFieldName);
+        irLoadFieldMemberNode.setStatic(true);
 
-        return irMemberFieldLoadNode;
+        return irLoadFieldMemberNode;
     }
 }

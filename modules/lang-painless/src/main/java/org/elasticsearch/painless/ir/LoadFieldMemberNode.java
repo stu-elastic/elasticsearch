@@ -21,46 +21,48 @@ package org.elasticsearch.painless.ir;
 
 import org.elasticsearch.painless.ClassWriter;
 import org.elasticsearch.painless.MethodWriter;
-import org.elasticsearch.painless.lookup.PainlessMethod;
 import org.elasticsearch.painless.symbol.WriteScope;
 
-public class CallSubNode extends ArgumentsNode {
+import static org.elasticsearch.painless.WriterConstants.CLASS_TYPE;
+
+/**
+ * Represents reading a value from a member field from
+ * the main class.
+ */
+public class LoadFieldMemberNode extends ExpressionNode {
 
     /* ---- begin node data ---- */
 
-    private PainlessMethod method;
-    private Class<?> box;
+    protected String name;
+    protected boolean isStatic;
 
-    public void setMethod(PainlessMethod method) {
-        this.method = method;
+    public void setName(String name) {
+        this.name = name;
     }
 
-    public PainlessMethod getMethod() {
-        return method;
+    public String getName() {
+        return name;
     }
 
-    public void setBox(Class<?> box) {
-        this.box = box;
+    public void setStatic(boolean isStatic) {
+        this.isStatic = isStatic;
     }
 
-    public Class<?> getBox() {
-        return box;
+    public boolean isStatic() {
+        return isStatic;
     }
 
     /* ---- end node data ---- */
 
     @Override
-    protected void write(ClassWriter classWriter, MethodWriter methodWriter, WriteScope writeScope) {
+    public void write(ClassWriter classWriter, MethodWriter methodWriter, WriteScope writeScope) {
         methodWriter.writeDebugInfo(location);
 
-        if (box.isPrimitive()) {
-            methodWriter.box(MethodWriter.getType(box));
+        if (isStatic) {
+            methodWriter.getStatic(CLASS_TYPE, name, MethodWriter.getType(getExpressionType()));
+        } else {
+            methodWriter.loadThis();
+            methodWriter.getField(CLASS_TYPE, name, MethodWriter.getType(getExpressionType()));
         }
-
-        for (ExpressionNode argumentNode : getArgumentNodes()) {
-            argumentNode.write(classWriter, methodWriter, writeScope);
-        }
-
-        methodWriter.invokeMethodCall(method);
     }
 }

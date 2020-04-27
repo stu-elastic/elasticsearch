@@ -23,13 +23,13 @@ import org.elasticsearch.painless.DefBootstrap;
 import org.elasticsearch.painless.Location;
 import org.elasticsearch.painless.ir.AccessNode;
 import org.elasticsearch.painless.ir.BlockNode;
-import org.elasticsearch.painless.ir.CallSubNode;
+import org.elasticsearch.painless.ir.InvokeCallNode;
 import org.elasticsearch.painless.ir.CastNode;
 import org.elasticsearch.painless.ir.ExpressionNode;
 import org.elasticsearch.painless.ir.FieldNode;
 import org.elasticsearch.painless.ir.FunctionNode;
 import org.elasticsearch.painless.ir.IRNode;
-import org.elasticsearch.painless.ir.MemberFieldLoadNode;
+import org.elasticsearch.painless.ir.LoadFieldMemberNode;
 import org.elasticsearch.painless.ir.ReturnNode;
 import org.elasticsearch.painless.ir.StaticNode;
 import org.elasticsearch.painless.ir.VariableNode;
@@ -163,10 +163,10 @@ public class DefaultIRTreeBuilderPhase implements UserTreeVisitor<ScriptScope, I
 
             irAccessNode.setLeftNode(staticNode);
 
-            CallSubNode callSubNode = new CallSubNode();
-            callSubNode.setLocation(internalLocation);
-            callSubNode.setExpressionType(CallSite.class);
-            callSubNode.setMethod(new PainlessMethod(
+            InvokeCallNode invokeCallNode = new InvokeCallNode();
+            invokeCallNode.setLocation(internalLocation);
+            invokeCallNode.setExpressionType(CallSite.class);
+            invokeCallNode.setMethod(new PainlessMethod(
                             DefBootstrap.class.getMethod("bootstrap",
                                     PainlessLookup.class,
                                     FunctionTable.class,
@@ -192,67 +192,67 @@ public class DefaultIRTreeBuilderPhase implements UserTreeVisitor<ScriptScope, I
                             null
                     )
             );
-            callSubNode.setBox(DefBootstrap.class);
+            invokeCallNode.setBox(DefBootstrap.class);
 
-            irAccessNode.setRightNode(callSubNode);
+            irAccessNode.setRightNode(invokeCallNode);
 
-            MemberFieldLoadNode memberFieldLoadNode = new MemberFieldLoadNode();
-            memberFieldLoadNode.setLocation(internalLocation);
-            memberFieldLoadNode.setExpressionType(PainlessLookup.class);
-            memberFieldLoadNode.setName("$DEFINITION");
-            memberFieldLoadNode.setStatic(true);
+            LoadFieldMemberNode loadFieldMemberNode = new LoadFieldMemberNode();
+            loadFieldMemberNode.setLocation(internalLocation);
+            loadFieldMemberNode.setExpressionType(PainlessLookup.class);
+            loadFieldMemberNode.setName("$DEFINITION");
+            loadFieldMemberNode.setStatic(true);
 
-            callSubNode.addArgumentNode(memberFieldLoadNode);
+            invokeCallNode.addArgumentNode(loadFieldMemberNode);
 
-            memberFieldLoadNode = new MemberFieldLoadNode();
-            memberFieldLoadNode.setLocation(internalLocation);
-            memberFieldLoadNode.setExpressionType(FunctionTable.class);
-            memberFieldLoadNode.setName("$FUNCTIONS");
-            memberFieldLoadNode.setStatic(true);
+            loadFieldMemberNode = new LoadFieldMemberNode();
+            loadFieldMemberNode.setLocation(internalLocation);
+            loadFieldMemberNode.setExpressionType(FunctionTable.class);
+            loadFieldMemberNode.setName("$FUNCTIONS");
+            loadFieldMemberNode.setStatic(true);
 
-            callSubNode.addArgumentNode(memberFieldLoadNode);
+            invokeCallNode.addArgumentNode(loadFieldMemberNode);
 
             VariableNode variableNode = new VariableNode();
             variableNode.setLocation(internalLocation);
             variableNode.setExpressionType(Lookup.class);
             variableNode.setName("methodHandlesLookup");
 
-            callSubNode.addArgumentNode(variableNode);
+            invokeCallNode.addArgumentNode(variableNode);
 
             variableNode = new VariableNode();
             variableNode.setLocation(internalLocation);
             variableNode.setExpressionType(String.class);
             variableNode.setName("name");
 
-            callSubNode.addArgumentNode(variableNode);
+            invokeCallNode.addArgumentNode(variableNode);
 
             variableNode = new VariableNode();
             variableNode.setLocation(internalLocation);
             variableNode.setExpressionType(MethodType.class);
             variableNode.setName("type");
 
-            callSubNode.addArgumentNode(variableNode);
+            invokeCallNode.addArgumentNode(variableNode);
 
             variableNode = new VariableNode();
             variableNode.setLocation(internalLocation);
             variableNode.setExpressionType(int.class);
             variableNode.setName("initialDepth");
 
-            callSubNode.addArgumentNode(variableNode);
+            invokeCallNode.addArgumentNode(variableNode);
 
             variableNode = new VariableNode();
             variableNode.setLocation(internalLocation);
             variableNode.setExpressionType(int.class);
             variableNode.setName("flavor");
 
-            callSubNode.addArgumentNode(variableNode);
+            invokeCallNode.addArgumentNode(variableNode);
 
             variableNode = new VariableNode();
             variableNode.setLocation(internalLocation);
             variableNode.setExpressionType(Object[].class);
             variableNode.setName("args");
 
-            callSubNode.addArgumentNode(variableNode);
+            invokeCallNode.addArgumentNode(variableNode);
         } catch (Exception exception) {
             throw new IllegalStateException(exception);
         }

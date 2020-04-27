@@ -21,8 +21,8 @@ package org.elasticsearch.painless.node;
 
 import org.elasticsearch.painless.Location;
 import org.elasticsearch.painless.ir.AccessNode;
-import org.elasticsearch.painless.ir.CallSubDefNode;
-import org.elasticsearch.painless.ir.CallSubNode;
+import org.elasticsearch.painless.ir.InvokeCallDefNode;
+import org.elasticsearch.painless.ir.InvokeCallNode;
 import org.elasticsearch.painless.ir.ExpressionNode;
 import org.elasticsearch.painless.ir.IRNode;
 import org.elasticsearch.painless.ir.NullSafeSubNode;
@@ -193,16 +193,16 @@ public class ECall extends AExpression {
         ValueType prefixValueType = scriptScope.getDecoration(userCallNode.getPrefixNode(), ValueType.class);
 
         if (prefixValueType != null && prefixValueType.getValueType() == def.class) {
-            CallSubDefNode irCallSubDefNode = new CallSubDefNode();
+            InvokeCallDefNode irInvokeCallDefNode = new InvokeCallDefNode();
 
             for (AExpression userArgumentNode : userCallNode.getArgumentNodes()) {
-                irCallSubDefNode.addArgumentNode((ExpressionNode)visitor.visit(userArgumentNode, scriptScope));
+                irInvokeCallDefNode.addArgumentNode((ExpressionNode)visitor.visit(userArgumentNode, scriptScope));
             }
 
-            irCallSubDefNode.setLocation(userCallNode.getLocation());
-            irCallSubDefNode.setExpressionType(scriptScope.getDecoration(userCallNode, ValueType.class).getValueType());
-            irCallSubDefNode.setName(userCallNode.getMethodName());
-            irExpressionNode = irCallSubDefNode;
+            irInvokeCallDefNode.setLocation(userCallNode.getLocation());
+            irInvokeCallDefNode.setExpressionType(scriptScope.getDecoration(userCallNode, ValueType.class).getValueType());
+            irInvokeCallDefNode.setName(userCallNode.getMethodName());
+            irExpressionNode = irInvokeCallDefNode;
         } else {
             Class<?> boxType;
 
@@ -212,17 +212,17 @@ public class ECall extends AExpression {
                 boxType = scriptScope.getDecoration(userCallNode.getPrefixNode(), StaticType.class).getStaticType();
             }
 
-            CallSubNode callSubNode = new CallSubNode();
+            InvokeCallNode invokeCallNode = new InvokeCallNode();
 
             for (AExpression userArgumentNode : userCallNode.getArgumentNodes()) {
-                callSubNode.addArgumentNode(visitor.injectCast(userArgumentNode, scriptScope));
+                invokeCallNode.addArgumentNode(visitor.injectCast(userArgumentNode, scriptScope));
             }
 
-            callSubNode.setLocation(userCallNode.getLocation());
-            callSubNode.setExpressionType(scriptScope.getDecoration(userCallNode, ValueType.class).getValueType());;
-            callSubNode.setMethod(scriptScope.getDecoration(userCallNode, StandardPainlessMethod.class).getStandardPainlessMethod());
-            callSubNode.setBox(boxType);
-            irExpressionNode = callSubNode;
+            invokeCallNode.setLocation(userCallNode.getLocation());
+            invokeCallNode.setExpressionType(scriptScope.getDecoration(userCallNode, ValueType.class).getValueType());;
+            invokeCallNode.setMethod(scriptScope.getDecoration(userCallNode, StandardPainlessMethod.class).getStandardPainlessMethod());
+            invokeCallNode.setBox(boxType);
+            irExpressionNode = invokeCallNode;
         }
 
         if (userCallNode.isNullSafe()) {
