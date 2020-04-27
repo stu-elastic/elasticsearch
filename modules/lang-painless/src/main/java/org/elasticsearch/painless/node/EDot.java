@@ -22,7 +22,7 @@ package org.elasticsearch.painless.node;
 import org.elasticsearch.painless.Location;
 import org.elasticsearch.painless.ir.ConstantNode;
 import org.elasticsearch.painless.ir.AccessNode;
-import org.elasticsearch.painless.ir.DotSubArrayLengthNode;
+import org.elasticsearch.painless.ir.LoadDotArrayLengthNode;
 import org.elasticsearch.painless.ir.DotSubDefNode;
 import org.elasticsearch.painless.ir.DotSubNode;
 import org.elasticsearch.painless.ir.DotSubShortcutNode;
@@ -364,10 +364,10 @@ public class EDot extends AExpression {
             ValueType prefixValueType = scriptScope.getDecoration(userDotNode.getPrefixNode(), ValueType.class);
 
             if (prefixValueType != null && prefixValueType.getValueType().isArray()) {
-                DotSubArrayLengthNode dotSubArrayLengthNode = new DotSubArrayLengthNode();
-                dotSubArrayLengthNode.setLocation(userDotNode.getLocation());
-                dotSubArrayLengthNode.setExpressionType(int.class);
-                irExpressionNode = dotSubArrayLengthNode;
+                LoadDotArrayLengthNode loadDotArrayLengthNode = new LoadDotArrayLengthNode();
+                loadDotArrayLengthNode.setLocation(userDotNode.getLocation());
+                loadDotArrayLengthNode.setExpressionType(int.class);
+                irExpressionNode = loadDotArrayLengthNode;
             } else if (prefixValueType != null && prefixValueType.getValueType() == def.class) {
                 DotSubDefNode dotSubDefNode = new DotSubDefNode();
                 dotSubDefNode.setLocation(userDotNode.getLocation());

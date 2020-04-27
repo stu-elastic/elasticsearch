@@ -167,7 +167,7 @@ public class ERegex extends AExpression {
             StoreFieldMemberNode irStoreFieldMemberNode = new StoreFieldMemberNode();
             irStoreFieldMemberNode.setLocation(userRegexNode.getLocation());
             irStoreFieldMemberNode.setExpressionType(void.class);
-            irStoreFieldMemberNode.setFieldType(Pattern.class);
+            irStoreFieldMemberNode.setStoreType(Pattern.class);
             irStoreFieldMemberNode.setName(memberFieldName);
             irStoreFieldMemberNode.setStatic(true);
 

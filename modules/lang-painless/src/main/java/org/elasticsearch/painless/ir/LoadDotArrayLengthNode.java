@@ -23,7 +23,7 @@ import org.elasticsearch.painless.ClassWriter;
 import org.elasticsearch.painless.MethodWriter;
 import org.elasticsearch.painless.symbol.WriteScope;
 
-public class DotSubArrayLengthNode extends ExpressionNode {
+public class LoadDotArrayLengthNode extends ExpressionNode {
 
     @Override
     protected void write(ClassWriter classWriter, MethodWriter methodWriter, WriteScope writeScope) {
