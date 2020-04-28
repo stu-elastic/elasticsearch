@@ -26,11 +26,11 @@ import org.elasticsearch.painless.symbol.WriteScope;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
 
-public class FlipCollectionIndexNode extends IndexNode {
+public class FlipCollectionIndexNode extends UnaryNode {
 
     @Override
     protected void write(ClassWriter classWriter, MethodWriter methodWriter, WriteScope writeScope) {
-        getIndexNode().write(classWriter, methodWriter, writeScope);
+        getChildNode().write(classWriter, methodWriter, writeScope);
 
         Label noFlip = new Label();
         methodWriter.dup();

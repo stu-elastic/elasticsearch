@@ -41,7 +41,8 @@ public class StoreDotShortcutNode extends StoreAccessNode {
     /* ---- end node data ---- */
 
     @Override
-    protected void store(ClassWriter classWriter, MethodWriter methodWriter, WriteScope writeScope) {
+    protected void write(ClassWriter classWriter, MethodWriter methodWriter, WriteScope writeScope) {
+        getAccessNode().write(classWriter, methodWriter, writeScope);
         methodWriter.writeDebugInfo(location);
         methodWriter.invokeMethodCall(setter);
         methodWriter.writePop(MethodWriter.getType(setter.returnType).getSize());

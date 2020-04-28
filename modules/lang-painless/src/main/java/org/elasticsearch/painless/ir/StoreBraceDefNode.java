@@ -22,31 +22,40 @@ package org.elasticsearch.painless.ir;
 import org.elasticsearch.painless.ClassWriter;
 import org.elasticsearch.painless.DefBootstrap;
 import org.elasticsearch.painless.MethodWriter;
+import org.elasticsearch.painless.lookup.PainlessLookupUtility;
+import org.elasticsearch.painless.lookup.def;
 import org.elasticsearch.painless.symbol.WriteScope;
 import org.objectweb.asm.Type;
 
 public class StoreBraceDefNode extends StoreAccessNode {
 
-    /* ---- begin tree structure ---- */
+    /* ---- begin node data ---- */
 
-    private ExpressionNode indexNode;
+    private Class<?> indexType;
 
-    public void setIndexNode(ExpressionNode indexNode) {
-        this.indexNode = indexNode;
+    public void setIndexType(Class<?> indexType) {
+        this.indexType = indexType;
     }
 
-    public ExpressionNode getIndexNode() {
-        return indexNode;
+    public Class<?> getIndexType() {
+        return indexType;
     }
 
-    /* ---- end tree structure ---- */
+    public String getIndexCanonicalTypeName() {
+        return PainlessLookupUtility.typeToCanonicalTypeName(indexType);
+    }
+
+    /* ---- end node data ---- */
 
     @Override
     protected void write(ClassWriter classWriter, MethodWriter methodWriter, WriteScope writeScope) {
-        getIndexNode().write(classWriter, methodWriter, writeScope);
+        getAccessNode().write(classWriter, methodWriter, writeScope);
         methodWriter.writeDebugInfo(location);
-        Type methodType = Type.getMethodType(Type.getType(void.class), Type.getType(Object.class),
-                MethodWriter.getType(getIndexNode().getExpressionType()), MethodWriter.getType(getExpressionType()));
+        Type methodType = Type.getMethodType(
+                MethodWriter.getType(void.class),
+                MethodWriter.getType(def.class),
+                MethodWriter.getType(indexType),
+                MethodWriter.getType(getStoreType()));
         methodWriter.invokeDefCall("arrayStore", methodType, DefBootstrap.ARRAY_STORE);
     }
 }

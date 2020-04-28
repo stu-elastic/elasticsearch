@@ -20,7 +20,7 @@
 package org.elasticsearch.painless.node;
 
 import org.elasticsearch.painless.Location;
-import org.elasticsearch.painless.ir.AccessNode;
+import org.elasticsearch.painless.ir.BinaryNode;
 import org.elasticsearch.painless.ir.InvokeCallDefNode;
 import org.elasticsearch.painless.ir.InvokeCallNode;
 import org.elasticsearch.painless.ir.ExpressionNode;
@@ -233,12 +233,12 @@ public class ECall extends AExpression {
             irExpressionNode = nullSafeSubNode;
         }
 
-        AccessNode irAccessNode = new AccessNode();
-        irAccessNode.setLeftNode((ExpressionNode)visitor.visit(userCallNode.getPrefixNode(), scriptScope));
-        irAccessNode.setRightNode(irExpressionNode);
-        irAccessNode.setLocation(irExpressionNode.getLocation());
-        irAccessNode.setExpressionType(irExpressionNode.getExpressionType());
+        BinaryNode irBinaryNode = new BinaryNode();
+        irBinaryNode.setLeftNode((ExpressionNode)visitor.visit(userCallNode.getPrefixNode(), scriptScope));
+        irBinaryNode.setRightNode(irExpressionNode);
+        irBinaryNode.setLocation(irExpressionNode.getLocation());
+        irBinaryNode.setExpressionType(irExpressionNode.getExpressionType());
 
-        return irAccessNode;
+        return irBinaryNode;
     }
 }

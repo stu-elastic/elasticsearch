@@ -33,6 +33,7 @@ import org.elasticsearch.painless.phase.DefaultIRTreeBuilderPhase;
 import org.elasticsearch.painless.phase.DefaultSemanticAnalysisPhase;
 import org.elasticsearch.painless.phase.UserTreeVisitor;
 import org.elasticsearch.painless.symbol.Decorations;
+import org.elasticsearch.painless.symbol.Decorations.Compound;
 import org.elasticsearch.painless.symbol.Decorations.CompoundType;
 import org.elasticsearch.painless.symbol.Decorations.Concatenate;
 import org.elasticsearch.painless.symbol.Decorations.DefOptimized;
@@ -217,6 +218,11 @@ public class EAssignment extends AExpression {
 
         Class<?> compoundType = scriptScope.hasDecoration(userAssignmentNode, CompoundType.class) ?
                 scriptScope.getDecoration(userAssignmentNode, CompoundType.class).getCompoundType() : null;
+
+        if (compoundType != null) {
+            scriptScope.setCondition(userAssignmentNode.getLeftNode(), Compound.class);
+        }
+
         PainlessCast upcast = scriptScope.hasDecoration(userAssignmentNode, UpcastPainlessCast.class) ?
                 scriptScope.getDecoration(userAssignmentNode, UpcastPainlessCast.class).getUpcastPainlessCast() : null;
         PainlessCast downcast = scriptScope.hasDecoration(userAssignmentNode, DowncastPainlessCast.class) ?

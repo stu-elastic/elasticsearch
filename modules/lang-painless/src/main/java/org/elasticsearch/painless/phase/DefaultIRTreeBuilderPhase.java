@@ -21,7 +21,7 @@ package org.elasticsearch.painless.phase;
 
 import org.elasticsearch.painless.DefBootstrap;
 import org.elasticsearch.painless.Location;
-import org.elasticsearch.painless.ir.AccessNode;
+import org.elasticsearch.painless.ir.BinaryNode;
 import org.elasticsearch.painless.ir.BlockNode;
 import org.elasticsearch.painless.ir.InvokeCallNode;
 import org.elasticsearch.painless.ir.CastNode;
@@ -151,17 +151,17 @@ public class DefaultIRTreeBuilderPhase implements UserTreeVisitor<ScriptScope, I
 
             blockNode.addStatementNode(returnNode);
 
-            AccessNode irAccessNode = new AccessNode();
-            irAccessNode.setLocation(internalLocation);
-            irAccessNode.setExpressionType(CallSite.class);
+            BinaryNode irBinaryNode = new BinaryNode();
+            irBinaryNode.setLocation(internalLocation);
+            irBinaryNode.setExpressionType(CallSite.class);
 
-            returnNode.setExpressionNode(irAccessNode);
+            returnNode.setExpressionNode(irBinaryNode);
 
             StaticNode staticNode = new StaticNode();
             staticNode.setLocation(internalLocation);
             staticNode.setExpressionType(DefBootstrap.class);
 
-            irAccessNode.setLeftNode(staticNode);
+            irBinaryNode.setLeftNode(staticNode);
 
             InvokeCallNode invokeCallNode = new InvokeCallNode();
             invokeCallNode.setLocation(internalLocation);
@@ -194,7 +194,7 @@ public class DefaultIRTreeBuilderPhase implements UserTreeVisitor<ScriptScope, I
             );
             invokeCallNode.setBox(DefBootstrap.class);
 
-            irAccessNode.setRightNode(invokeCallNode);
+            irBinaryNode.setRightNode(invokeCallNode);
 
             LoadFieldMemberNode loadFieldMemberNode = new LoadFieldMemberNode();
             loadFieldMemberNode.setLocation(internalLocation);

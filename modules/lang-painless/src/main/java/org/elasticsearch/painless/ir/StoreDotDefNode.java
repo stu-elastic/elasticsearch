@@ -22,6 +22,7 @@ package org.elasticsearch.painless.ir;
 import org.elasticsearch.painless.ClassWriter;
 import org.elasticsearch.painless.DefBootstrap;
 import org.elasticsearch.painless.MethodWriter;
+import org.elasticsearch.painless.lookup.def;
 import org.elasticsearch.painless.symbol.WriteScope;
 import org.objectweb.asm.Type;
 
@@ -42,10 +43,13 @@ public class StoreDotDefNode extends StoreAccessNode {
     /* ---- end node data ---- */
 
     @Override
-    protected void store(ClassWriter classWriter, MethodWriter methodWriter, WriteScope writeScope) {
+    protected void write(ClassWriter classWriter, MethodWriter methodWriter, WriteScope writeScope) {
+        getAccessNode().write(classWriter, methodWriter, writeScope);
         methodWriter.writeDebugInfo(location);
         Type methodType = Type.getMethodType(
-                Type.getType(void.class), Type.getType(Object.class), MethodWriter.getType(getExpressionType()));
+                MethodWriter.getType(void.class),
+                MethodWriter.getType(def.class),
+                MethodWriter.getType(getStoreType()));
         methodWriter.invokeDefCall(value, methodType, DefBootstrap.STORE);
     }
 }

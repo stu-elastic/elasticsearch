@@ -25,24 +25,10 @@ import org.elasticsearch.painless.symbol.WriteScope;
 
 public class StoreBraceNode extends StoreAccessNode {
 
-    /* ---- begin tree structure ---- */
-
-    private ExpressionNode indexNode;
-
-    public void setIndexNode(ExpressionNode indexNode) {
-        this.indexNode = indexNode;
-    }
-
-    public ExpressionNode getIndexNode() {
-        return indexNode;
-    }
-
-    /* ---- end tree structure ---- */
-
     @Override
     protected void write(ClassWriter classWriter, MethodWriter methodWriter, WriteScope writeScope) {
-        getIndexNode().write(classWriter, methodWriter, writeScope);
+        getAccessNode().write(classWriter, methodWriter, writeScope);
         methodWriter.writeDebugInfo(location);
-        methodWriter.arrayStore(MethodWriter.getType(getExpressionType()));
+        methodWriter.arrayStore(MethodWriter.getType(getStoreType()));
     }
 }

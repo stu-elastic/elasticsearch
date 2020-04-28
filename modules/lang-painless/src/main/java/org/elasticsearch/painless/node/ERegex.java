@@ -20,7 +20,7 @@
 package org.elasticsearch.painless.node;
 
 import org.elasticsearch.painless.Location;
-import org.elasticsearch.painless.ir.AccessNode;
+import org.elasticsearch.painless.ir.BinaryNode;
 import org.elasticsearch.painless.ir.BlockNode;
 import org.elasticsearch.painless.ir.InvokeCallNode;
 import org.elasticsearch.painless.ir.ConstantNode;
@@ -173,17 +173,17 @@ public class ERegex extends AExpression {
 
             irStatementExpressionNode.setExpressionNode(irStoreFieldMemberNode);
 
-            AccessNode irAccessNode = new AccessNode();
-            irAccessNode.setLocation(userRegexNode.getLocation());
-            irAccessNode.setExpressionType(Pattern.class);
+            BinaryNode irBinaryNode = new BinaryNode();
+            irBinaryNode.setLocation(userRegexNode.getLocation());
+            irBinaryNode.setExpressionType(Pattern.class);
 
-            irStoreFieldMemberNode.setChildNode(irAccessNode);
+            irStoreFieldMemberNode.setChildNode(irBinaryNode);
 
             StaticNode irStaticNode = new StaticNode();
             irStaticNode.setLocation(userRegexNode.getLocation());
             irStaticNode.setExpressionType(Pattern.class);
 
-            irAccessNode.setLeftNode(irStaticNode);
+            irBinaryNode.setLeftNode(irStaticNode);
 
             InvokeCallNode invokeCallNode = new InvokeCallNode();
             invokeCallNode.setLocation(userRegexNode.getLocation());
@@ -200,7 +200,7 @@ public class ERegex extends AExpression {
                     )
             );
 
-            irAccessNode.setRightNode(invokeCallNode);
+            irBinaryNode.setRightNode(invokeCallNode);
 
             ConstantNode irConstantNode = new ConstantNode();
             irConstantNode.setLocation(userRegexNode.getLocation());
