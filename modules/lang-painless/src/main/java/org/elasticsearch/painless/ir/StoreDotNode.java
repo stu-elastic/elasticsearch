@@ -25,7 +25,7 @@ import org.elasticsearch.painless.lookup.PainlessField;
 import org.elasticsearch.painless.symbol.WriteScope;
 import org.objectweb.asm.Type;
 
-public class StoreDotNode extends StoreNode {
+public class StoreDotNode extends StoreAccessNode {
 
     /* ---- begin node data ---- */
 
