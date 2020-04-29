@@ -300,6 +300,7 @@ public class EBrace extends AExpression {
             irFlipCollectionIndexNode.setLocation(userBraceNode.getIndexNode().getLocation());
             irFlipCollectionIndexNode.setExpressionType(int.class);
             irFlipCollectionIndexNode.setChildNode(irIndexNode);
+            irIndexNode = irFlipCollectionIndexNode;
 
             if (write || compound) {
                 StoreListShortcutNode irStoreListShortcutNode = new StoreListShortcutNode();

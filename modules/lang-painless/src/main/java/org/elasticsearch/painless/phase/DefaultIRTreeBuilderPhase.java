@@ -352,7 +352,7 @@ public class DefaultIRTreeBuilderPhase implements UserTreeVisitor<ScriptScope, I
                     dupNode.setDepth(0);
                     dupNode.setChildNode(irAccessNode);
 
-                    ((StoreAccessNode)irStoreNode).setAccessNode(irAccessNode);
+                    ((StoreAccessNode)irStoreNode).setAccessNode(dupNode);
                 }
 
                 BinaryMathNode binaryMathNode = new BinaryMathNode();
