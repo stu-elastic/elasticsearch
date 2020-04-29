@@ -253,9 +253,10 @@ public class EBrace extends AExpression {
                 irLoadNode = irLoadBraceNode;
             }
         } else if (prefixValueType == def.class) {
+            Class<?> indexType = scriptScope.getDecoration(userBraceNode.getIndexNode(), ValueType.class).getValueType();
             FlipDefIndexNode irFlipDefIndexNode = new FlipDefIndexNode();
             irFlipDefIndexNode.setLocation(userBraceNode.getIndexNode().getLocation());
-            irFlipDefIndexNode.setExpressionType(scriptScope.getDecoration(userBraceNode.getIndexNode(), ValueType.class).getValueType());
+            irFlipDefIndexNode.setExpressionType(indexType);
             irFlipDefIndexNode.setChildNode(irIndexNode);
             irIndexNode = irFlipDefIndexNode;
 
@@ -264,6 +265,7 @@ public class EBrace extends AExpression {
                 irStoreBraceNode.setLocation(location);
                 irStoreBraceNode.setExpressionType(read ? valueType : void.class);
                 irStoreBraceNode.setStoreType(valueType);
+                irStoreBraceNode.setIndexType(indexType);
                 irStoreNode = irStoreBraceNode;
             }
 
@@ -271,6 +273,7 @@ public class EBrace extends AExpression {
                 LoadBraceDefNode irLoadBraceDefNode = new LoadBraceDefNode();
                 irLoadBraceDefNode.setLocation(userBraceNode.getLocation());
                 irLoadBraceDefNode.setExpressionType(valueType);
+                irLoadBraceDefNode.setIndexType(indexType);
                 irLoadNode = irLoadBraceDefNode;
             }
         } else if (scriptScope.getCondition(userBraceNode, MapShortcut.class)) {

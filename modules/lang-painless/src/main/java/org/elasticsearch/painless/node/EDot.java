@@ -393,6 +393,7 @@ public class EDot extends AExpression {
                     StoreDotDefNode irStoreDotDefNode = new StoreDotDefNode();
                     irStoreDotDefNode.setLocation(location);
                     irStoreDotDefNode.setExpressionType(read ? valueType : void.class);
+                    irStoreDotDefNode.setStoreType(valueType);
                     irStoreDotDefNode.setValue(index);
                     irStoreNode = irStoreDotDefNode;
                 }

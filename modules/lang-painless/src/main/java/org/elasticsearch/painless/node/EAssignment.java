@@ -249,7 +249,7 @@ public class EAssignment extends AExpression {
             }
 
             if (read) {
-                int accessDepth = scriptScope.getDecoration(userAssignmentNode, AccessDepth.class).getAccessDepth();
+                int accessDepth = scriptScope.getDecoration(userAssignmentNode.getLeftNode(), AccessDepth.class).getAccessDepth();
 
                 DupNode irDupNode = new DupNode();
 
