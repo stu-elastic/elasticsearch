@@ -21,10 +21,10 @@ package org.elasticsearch.painless.node;
 
 import org.elasticsearch.painless.Location;
 import org.elasticsearch.painless.ir.BinaryNode;
-import org.elasticsearch.painless.ir.InvokeCallDefNode;
-import org.elasticsearch.painless.ir.InvokeCallNode;
 import org.elasticsearch.painless.ir.ExpressionNode;
 import org.elasticsearch.painless.ir.IRNode;
+import org.elasticsearch.painless.ir.InvokeCallDefNode;
+import org.elasticsearch.painless.ir.InvokeCallNode;
 import org.elasticsearch.painless.ir.NullSafeSubNode;
 import org.elasticsearch.painless.lookup.PainlessMethod;
 import org.elasticsearch.painless.lookup.def;

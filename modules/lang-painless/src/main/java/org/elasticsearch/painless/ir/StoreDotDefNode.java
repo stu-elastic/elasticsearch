@@ -45,6 +45,8 @@ public class StoreDotDefNode extends StoreAccessNode {
     @Override
     protected void write(ClassWriter classWriter, MethodWriter methodWriter, WriteScope writeScope) {
         getAccessNode().write(classWriter, methodWriter, writeScope);
+        getChildNode().write(classWriter, methodWriter, writeScope);
+
         methodWriter.writeDebugInfo(location);
         Type methodType = Type.getMethodType(
                 MethodWriter.getType(void.class),

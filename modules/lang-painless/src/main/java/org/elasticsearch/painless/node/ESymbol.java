@@ -22,12 +22,16 @@ package org.elasticsearch.painless.node;
 import org.elasticsearch.painless.Location;
 import org.elasticsearch.painless.ir.ExpressionNode;
 import org.elasticsearch.painless.ir.IRNode;
-import org.elasticsearch.painless.ir.StaticNode;
 import org.elasticsearch.painless.ir.LoadVariableNode;
+import org.elasticsearch.painless.ir.StaticNode;
+import org.elasticsearch.painless.ir.StoreNode;
+import org.elasticsearch.painless.ir.StoreVariableNode;
 import org.elasticsearch.painless.lookup.PainlessLookupUtility;
 import org.elasticsearch.painless.phase.DefaultIRTreeBuilderPhase;
 import org.elasticsearch.painless.phase.DefaultSemanticAnalysisPhase;
 import org.elasticsearch.painless.phase.UserTreeVisitor;
+import org.elasticsearch.painless.symbol.Decorations.AccessDepth;
+import org.elasticsearch.painless.symbol.Decorations.Compound;
 import org.elasticsearch.painless.symbol.Decorations.PartialCanonicalTypeName;
 import org.elasticsearch.painless.symbol.Decorations.Read;
 import org.elasticsearch.painless.symbol.Decorations.StaticType;
@@ -110,11 +114,36 @@ public class ESymbol extends AExpression {
             staticNode.setExpressionType(staticType);
             irExpressionNode = staticNode;
         } else if (scriptScope.hasDecoration(userSymbolNode, ValueType.class)) {
-            LoadVariableNode loadVariableNode = new LoadVariableNode();
-            loadVariableNode.setLocation(userSymbolNode.getLocation());
-            loadVariableNode.setExpressionType(scriptScope.getDecoration(userSymbolNode, ValueType.class).getValueType());
-            loadVariableNode.setName(userSymbolNode.getSymbol());
-            irExpressionNode = loadVariableNode;
+            boolean read = scriptScope.getCondition(userSymbolNode, Read.class);
+            boolean write = scriptScope.getCondition(userSymbolNode, Write.class);
+            boolean compound = scriptScope.getCondition(userSymbolNode, Compound.class);
+            Location location = userSymbolNode.getLocation();
+            String symbol = userSymbolNode.getSymbol();
+            Class<?> valueType = scriptScope.getDecoration(userSymbolNode, ValueType.class).getValueType();
+
+            StoreNode irStoreNode = null;
+            ExpressionNode irLoadNode = null;
+
+            if (write || compound) {
+                StoreVariableNode irStoreVariableNode = new StoreVariableNode();
+                irStoreVariableNode.setLocation(location);
+                irStoreVariableNode.setExpressionType(read ? valueType : void.class);
+                irStoreVariableNode.setStoreType(valueType);
+                irStoreVariableNode.setName(symbol);
+                irStoreNode = irStoreVariableNode;
+            }
+
+            if (write == false || compound) {
+                LoadVariableNode irLoadVariableNode = new LoadVariableNode();
+                irLoadVariableNode.setLocation(location);
+                irLoadVariableNode.setExpressionType(valueType);
+                irLoadVariableNode.setName(symbol);
+                irLoadNode = irLoadVariableNode;
+            }
+
+            scriptScope.putDecoration(userSymbolNode, new AccessDepth(0));
+            irExpressionNode = visitor.buildLoadStore(
+                    0, location, false, null, null, irLoadNode, irStoreNode);
         } else {
             throw userSymbolNode.createError(new IllegalStateException("illegal tree structure"));
         }

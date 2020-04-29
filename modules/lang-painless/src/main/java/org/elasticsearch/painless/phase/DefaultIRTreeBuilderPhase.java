@@ -21,8 +21,10 @@ package org.elasticsearch.painless.phase;
 
 import org.elasticsearch.painless.DefBootstrap;
 import org.elasticsearch.painless.Location;
+import org.elasticsearch.painless.ir.BinaryMathNode;
 import org.elasticsearch.painless.ir.BinaryNode;
 import org.elasticsearch.painless.ir.BlockNode;
+import org.elasticsearch.painless.ir.DupNode;
 import org.elasticsearch.painless.ir.InvokeCallNode;
 import org.elasticsearch.painless.ir.CastNode;
 import org.elasticsearch.painless.ir.ExpressionNode;
@@ -30,9 +32,12 @@ import org.elasticsearch.painless.ir.FieldNode;
 import org.elasticsearch.painless.ir.FunctionNode;
 import org.elasticsearch.painless.ir.IRNode;
 import org.elasticsearch.painless.ir.LoadFieldMemberNode;
+import org.elasticsearch.painless.ir.NullSafeSubNode;
 import org.elasticsearch.painless.ir.ReturnNode;
 import org.elasticsearch.painless.ir.StaticNode;
 import org.elasticsearch.painless.ir.LoadVariableNode;
+import org.elasticsearch.painless.ir.StoreAccessNode;
+import org.elasticsearch.painless.ir.StoreNode;
 import org.elasticsearch.painless.lookup.PainlessLookup;
 import org.elasticsearch.painless.lookup.PainlessMethod;
 import org.elasticsearch.painless.node.AExpression;
@@ -278,6 +283,89 @@ public class DefaultIRTreeBuilderPhase implements UserTreeVisitor<ScriptScope, I
         castNode.setChildNode(irExpressionNode);
 
         return castNode;
+    }
+
+    public ExpressionNode buildLoadStore(int accessDepth, Location location, boolean isNullSafe,
+            ExpressionNode irPrefixNode, ExpressionNode irIndexNode, ExpressionNode irLoadNode, StoreNode irStoreNode) {
+
+        ExpressionNode irExpressionNode;
+
+        if (irStoreNode == null) {
+            ExpressionNode irAccessNode;
+
+            if (irIndexNode == null) {
+                irAccessNode = irLoadNode;
+            } else {
+                BinaryNode irBinaryNode = new BinaryNode();
+                irBinaryNode.setLocation(location);
+                irBinaryNode.setExpressionType(irLoadNode.getExpressionType());
+                irBinaryNode.setLeftNode(irIndexNode);
+                irBinaryNode.setRightNode(irLoadNode);
+
+                irAccessNode = irBinaryNode;
+            }
+
+            if (isNullSafe) {
+                NullSafeSubNode nullSafeSubNode = new NullSafeSubNode();
+                nullSafeSubNode.setChildNode(irAccessNode);
+                nullSafeSubNode.setLocation(location);
+                nullSafeSubNode.setExpressionType(irAccessNode.getExpressionType());
+                irAccessNode = nullSafeSubNode;
+            }
+
+            if (irPrefixNode == null) {
+                irExpressionNode = irAccessNode;
+            } else {
+                BinaryNode irParentNode = new BinaryNode();
+                irParentNode.setLocation(location);
+                irParentNode.setExpressionType(irLoadNode.getExpressionType());
+                irParentNode.setLeftNode(irPrefixNode);
+                irParentNode.setRightNode(irAccessNode);
+
+                irExpressionNode = irParentNode;
+            }
+        } else {
+            ExpressionNode irAccessNode;
+
+            if (irIndexNode == null) {
+                irAccessNode = irPrefixNode;
+            } else {
+                BinaryNode irBinaryNode = new BinaryNode();
+                irBinaryNode.setLocation(location);
+                irBinaryNode.setExpressionType(void.class);
+                irBinaryNode.setLeftNode(irPrefixNode);
+                irBinaryNode.setRightNode(irIndexNode);
+
+                irAccessNode = irBinaryNode;
+            }
+
+            if (irLoadNode == null) {
+                if (irAccessNode != null) {
+                    ((StoreAccessNode)irStoreNode).setAccessNode(irAccessNode);
+                }
+            } else {
+                if (irAccessNode != null) {
+                    DupNode dupNode = new DupNode();
+                    dupNode.setLocation(location);
+                    dupNode.setExpressionType(void.class);
+                    dupNode.setSize(accessDepth);
+                    dupNode.setDepth(0);
+                    dupNode.setChildNode(irAccessNode);
+
+                    ((StoreAccessNode)irStoreNode).setAccessNode(irAccessNode);
+                }
+
+                BinaryMathNode binaryMathNode = new BinaryMathNode();
+                binaryMathNode.setLocation(location);
+                binaryMathNode.setLeftNode(irLoadNode);
+
+                irStoreNode.setChildNode(binaryMathNode);
+            }
+
+            irExpressionNode = irStoreNode;
+        }
+
+        return irExpressionNode;
     }
 
     @Override

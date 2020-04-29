@@ -21,12 +21,10 @@ package org.elasticsearch.painless.ir;
 
 
 import org.elasticsearch.painless.ClassWriter;
-import org.elasticsearch.painless.DefBootstrap;
 import org.elasticsearch.painless.MethodWriter;
 import org.elasticsearch.painless.Operation;
 import org.elasticsearch.painless.lookup.PainlessCast;
 import org.elasticsearch.painless.lookup.PainlessLookupUtility;
-import org.elasticsearch.painless.lookup.def;
 import org.elasticsearch.painless.symbol.WriteScope;
 
 public class AssignmentNode extends BinaryNode {
@@ -105,7 +103,7 @@ public class AssignmentNode extends BinaryNode {
 
     @Override
     protected void write(ClassWriter classWriter, MethodWriter methodWriter, WriteScope writeScope) {
-        methodWriter.writeDebugInfo(location);
+        /*methodWriter.writeDebugInfo(location);
 
         // For the case where the assignment represents a String concatenation
         // we must, depending on the Java version, write a StringBuilder or
@@ -202,6 +200,6 @@ public class AssignmentNode extends BinaryNode {
 
             // store the lhs's value from the stack in its respective variable/field/array
             getLeftNode().store(classWriter, methodWriter, writeScope);
-        }
+        }*/
     }
 }

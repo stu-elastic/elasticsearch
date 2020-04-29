@@ -21,11 +21,16 @@ package org.elasticsearch.painless.node;
 
 
 import org.elasticsearch.painless.AnalyzerCaster;
+import org.elasticsearch.painless.DefBootstrap;
 import org.elasticsearch.painless.Location;
+import org.elasticsearch.painless.MethodWriter;
 import org.elasticsearch.painless.Operation;
-import org.elasticsearch.painless.ir.AssignmentNode;
+import org.elasticsearch.painless.ir.BinaryMathNode;
+import org.elasticsearch.painless.ir.CastNode;
+import org.elasticsearch.painless.ir.DupNode;
 import org.elasticsearch.painless.ir.ExpressionNode;
 import org.elasticsearch.painless.ir.IRNode;
+import org.elasticsearch.painless.ir.StoreNode;
 import org.elasticsearch.painless.lookup.PainlessCast;
 import org.elasticsearch.painless.lookup.PainlessLookupUtility;
 import org.elasticsearch.painless.lookup.def;
@@ -33,6 +38,7 @@ import org.elasticsearch.painless.phase.DefaultIRTreeBuilderPhase;
 import org.elasticsearch.painless.phase.DefaultSemanticAnalysisPhase;
 import org.elasticsearch.painless.phase.UserTreeVisitor;
 import org.elasticsearch.painless.symbol.Decorations;
+import org.elasticsearch.painless.symbol.Decorations.AccessDepth;
 import org.elasticsearch.painless.symbol.Decorations.Compound;
 import org.elasticsearch.painless.symbol.Decorations.CompoundType;
 import org.elasticsearch.painless.symbol.Decorations.Concatenate;
@@ -216,31 +222,92 @@ public class EAssignment extends AExpression {
     public static IRNode visitDefaultIRTreeBuild(
             DefaultIRTreeBuilderPhase visitor, EAssignment userAssignmentNode, ScriptScope scriptScope) {
 
+        boolean read = scriptScope.getCondition(userAssignmentNode, Read.class);
         Class<?> compoundType = scriptScope.hasDecoration(userAssignmentNode, CompoundType.class) ?
                 scriptScope.getDecoration(userAssignmentNode, CompoundType.class).getCompoundType() : null;
 
+        StoreNode storeNode;
+        ExpressionNode valueNode = visitor.injectCast(userAssignmentNode.getRightNode(), scriptScope);
+
         if (compoundType != null) {
             scriptScope.setCondition(userAssignmentNode.getLeftNode(), Compound.class);
+            storeNode = (StoreNode)visitor.visit(userAssignmentNode.getLeftNode(), scriptScope);
+            BinaryMathNode irBinaryMathNode = (BinaryMathNode)storeNode.getChildNode();
+
+            PainlessCast downcast = scriptScope.hasDecoration(userAssignmentNode, DowncastPainlessCast.class) ?
+                    scriptScope.getDecoration(userAssignmentNode, DowncastPainlessCast.class).getDowncastPainlessCast() : null;
+
+            if (downcast == null) {
+                irBinaryMathNode.setExpressionType(storeNode.getStoreType());
+            } else {
+                CastNode irCastNode = new CastNode();
+                irCastNode.setLocation(irBinaryMathNode.getLocation());
+                irCastNode.setExpressionType(downcast.targetType);
+                irCastNode.setCast(downcast);
+                irCastNode.setChildNode(irBinaryMathNode);
+                storeNode.setChildNode(irCastNode);
+            }
+
+            if (read) {
+                int accessDepth = scriptScope.getDecoration(userAssignmentNode, AccessDepth.class).getAccessDepth();
+
+                DupNode irDupNode = new DupNode();
+
+                if (userAssignmentNode.postIfRead()) {
+                    ExpressionNode irLoadNode = irBinaryMathNode.getLeftNode();
+                    irDupNode.setLocation(irLoadNode.getLocation());
+                    irDupNode.setExpressionType(irLoadNode.getExpressionType());
+                    irDupNode.setSize(MethodWriter.getType(irLoadNode.getExpressionType()).getSize());
+                    irDupNode.setDepth(accessDepth);
+                    irDupNode.setChildNode(irLoadNode);
+                    irBinaryMathNode.setLeftNode(irDupNode);
+                } else {
+                    irDupNode.setLocation(storeNode.getLocation());
+                    irDupNode.setExpressionType(storeNode.getStoreType());
+                    irDupNode.setSize(MethodWriter.getType(storeNode.getExpressionType()).getSize());
+                    irDupNode.setDepth(accessDepth);
+                    irDupNode.setChildNode(storeNode.getChildNode());
+                    storeNode.setChildNode(irDupNode);
+                }
+            }
+
+            PainlessCast upcast = scriptScope.hasDecoration(userAssignmentNode, UpcastPainlessCast.class) ?
+                    scriptScope.getDecoration(userAssignmentNode, UpcastPainlessCast.class).getUpcastPainlessCast() : null;
+
+            if (upcast != null) {
+                ExpressionNode irLoadNode = irBinaryMathNode.getLeftNode();
+                CastNode irCastNode = new CastNode();
+                irCastNode.setLocation(irLoadNode.getLocation());
+                irCastNode.setExpressionType(upcast.targetType);
+                irCastNode.setCast(upcast);
+                irCastNode.setChildNode(irLoadNode);
+                irBinaryMathNode.setLeftNode(irCastNode);
+            }
+
+            irBinaryMathNode.setExpressionType(compoundType);
+            irBinaryMathNode.setBinaryType(compoundType);
+            irBinaryMathNode.setOperation(userAssignmentNode.getOperation());
+            irBinaryMathNode.setFlags(DefBootstrap.OPERATOR_COMPOUND_ASSIGNMENT);
+            irBinaryMathNode.setRightNode(valueNode);
+        } else {
+            storeNode = (StoreNode)visitor.visit(userAssignmentNode.getLeftNode(), scriptScope);
+
+            if (read) {
+                int accessDepth = scriptScope.getDecoration(userAssignmentNode.getLeftNode(), AccessDepth.class).getAccessDepth();
+
+                DupNode dupNode = new DupNode();
+                dupNode.setLocation(valueNode.getLocation());
+                dupNode.setExpressionType(valueNode.getExpressionType());
+                dupNode.setSize(MethodWriter.getType(valueNode.getExpressionType()).getSize());
+                dupNode.setDepth(accessDepth);
+                dupNode.setChildNode(valueNode);
+
+                valueNode = dupNode;
+            }
+
+            storeNode.setChildNode(valueNode);
         }
 
-        PainlessCast upcast = scriptScope.hasDecoration(userAssignmentNode, UpcastPainlessCast.class) ?
-                scriptScope.getDecoration(userAssignmentNode, UpcastPainlessCast.class).getUpcastPainlessCast() : null;
-        PainlessCast downcast = scriptScope.hasDecoration(userAssignmentNode, DowncastPainlessCast.class) ?
-                scriptScope.getDecoration(userAssignmentNode, DowncastPainlessCast.class).getDowncastPainlessCast() : null;
-
-        AssignmentNode irAssignmentNode = new AssignmentNode();
-        irAssignmentNode.setLeftNode((ExpressionNode)visitor.visit(userAssignmentNode.getLeftNode(), scriptScope));
-        irAssignmentNode.setRightNode(visitor.injectCast(userAssignmentNode.getRightNode(), scriptScope));
-        irAssignmentNode.setLocation(userAssignmentNode.getLocation());
-        irAssignmentNode.setExpressionType(scriptScope.getDecoration(userAssignmentNode, ValueType.class).getValueType());
-        irAssignmentNode.setCompoundType(compoundType);
-        irAssignmentNode.setPost(userAssignmentNode.postIfRead());
-        irAssignmentNode.setOperation(userAssignmentNode.getOperation());
-        irAssignmentNode.setRead(scriptScope.getCondition(userAssignmentNode, Read.class));
-        irAssignmentNode.setCat(scriptScope.getCondition(userAssignmentNode, Concatenate.class));
-        irAssignmentNode.setThere(upcast);
-        irAssignmentNode.setBack(downcast);
-
-        return irAssignmentNode;
+        return storeNode;
     }
 }

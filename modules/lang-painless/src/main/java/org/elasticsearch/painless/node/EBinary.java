@@ -20,6 +20,7 @@
 package org.elasticsearch.painless.node;
 
 import org.elasticsearch.painless.AnalyzerCaster;
+import org.elasticsearch.painless.DefBootstrap;
 import org.elasticsearch.painless.Location;
 import org.elasticsearch.painless.Operation;
 import org.elasticsearch.painless.ir.BinaryMathNode;
@@ -198,7 +199,11 @@ public class EBinary extends AExpression {
         irBinaryMathNode.setShiftType(shiftType);
         irBinaryMathNode.setOperation(userBinaryNode.getOperation());
         irBinaryMathNode.setCat(scriptScope.getCondition(userBinaryNode, Concatenate.class));
-        irBinaryMathNode.setOriginallyExplicit(scriptScope.getCondition(userBinaryNode, Explicit.class));
+
+        if (scriptScope.getCondition(userBinaryNode, Explicit.class)) {
+               irBinaryMathNode.setFlags(DefBootstrap.OPERATOR_EXPLICIT_CAST);
+        }
+
         irBinaryMathNode.setLeftNode(visitor.injectCast(userBinaryNode.getLeftNode(), scriptScope));
         irBinaryMathNode.setRightNode(visitor.injectCast(userBinaryNode.getRightNode(), scriptScope));
 
