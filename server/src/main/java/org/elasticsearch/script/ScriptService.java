@@ -584,19 +584,12 @@ public class ScriptService implements Closeable, ClusterStateApplier {
      * 2) context mode, if the context script cache is configured.  There is no general cache in this case.
      */
     static class CacheHolder {
-        final ScriptCache general;
         final Map<String, AtomicReference<ScriptCache>> contextCache;
-
-        CacheHolder(int cacheMaxSize, TimeValue cacheExpire, Tuple<Integer, TimeValue> maxCompilationRate, String contextRateSetting) {
-            contextCache = null;
-            general = new ScriptCache(cacheMaxSize, cacheExpire, maxCompilationRate, contextRateSetting);
-        }
 
         CacheHolder(Map<String, ScriptCache> context) {
             Map<String, AtomicReference<ScriptCache>> refs = new HashMap<>(context.size());
             context.forEach((k, v) -> refs.put(k, new AtomicReference<>(v)));
             contextCache = Collections.unmodifiableMap(refs);
-            general = null;
         }
 
         /**
@@ -604,9 +597,6 @@ public class ScriptService implements Closeable, ClusterStateApplier {
          * the given context. Returns null in context mode if the requested context does not exist.
          */
         ScriptCache get(String context) {
-            if (general != null) {
-                return general;
-            }
             AtomicReference<ScriptCache> ref = contextCache.get(context);
             if (ref == null) {
                 return null;
@@ -615,16 +605,10 @@ public class ScriptService implements Closeable, ClusterStateApplier {
         }
 
         ScriptStats stats() {
-            if (general != null) {
-                return general.stats();
-            }
             return ScriptStats.sum(contextCache.values().stream().map(AtomicReference::get).map(ScriptCache::stats)::iterator);
         }
 
         ScriptCacheStats cacheStats() {
-            if (general != null) {
-                return new ScriptCacheStats(general.stats());
-            }
             Map<String, ScriptStats> context = new HashMap<>(contextCache.size());
             for (String name: contextCache.keySet()) {
                 context.put(name, contextCache.get(name).get().stats());
@@ -636,9 +620,6 @@ public class ScriptService implements Closeable, ClusterStateApplier {
          * Update a single context cache if we're in the context cache mode otherwise no-op.
          */
         void set(String name, ScriptCache cache) {
-            if (general != null) {
-                return;
-            }
             AtomicReference<ScriptCache> ref = contextCache.get(name);
             assert ref != null : "expected script cache to exist for context [" + name + "]";
             ScriptCache oldCache = ref.get();
