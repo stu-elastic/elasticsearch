@@ -540,7 +540,7 @@ public class WhenThingsGoWrongTests extends ScriptTestCase {
         iae = expectScriptThrows(IllegalArgumentException.class, () -> exec("while (test0) {int x = 1;}"));
         assertEquals(iae.getMessage(), "cannot resolve symbol [test0]");
     }
-    
+
     public void testPartialType() {
         int dots = randomIntBetween(1, 5);
         StringBuilder builder = new StringBuilder("test0");
@@ -845,5 +845,9 @@ public class WhenThingsGoWrongTests extends ScriptTestCase {
         // while
         iae = expectScriptThrows(IllegalArgumentException.class, () -> exec("while (java.util.List) {java.util.List x = 1;}"));
         assertEquals(iae.getMessage(), "value required: instead found unexpected type [java.util.List]");
+    }
+
+    public void checkNullDef() {
+        exec("def foo = null; return foo > 100");
     }
 }

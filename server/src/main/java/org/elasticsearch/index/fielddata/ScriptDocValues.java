@@ -408,9 +408,7 @@ public abstract class ScriptDocValues<T> extends AbstractList<T> {
             values = grow(values, count);
         }
 
-        public boolean getValue() {
-            return get(0);
-        }
+        public boolean getValue() { return get(0); }
 
         @Override
         public Boolean get(int index) {
