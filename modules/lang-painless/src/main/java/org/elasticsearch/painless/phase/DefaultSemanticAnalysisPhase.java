@@ -20,9 +20,11 @@
 package org.elasticsearch.painless.phase;
 
 import org.elasticsearch.painless.AnalyzerCaster;
+import org.elasticsearch.painless.CompilerSettings;
 import org.elasticsearch.painless.FunctionRef;
 import org.elasticsearch.painless.Location;
 import org.elasticsearch.painless.Operation;
+import org.elasticsearch.painless.RegexChecker;
 import org.elasticsearch.painless.lookup.PainlessCast;
 import org.elasticsearch.painless.lookup.PainlessClassBinding;
 import org.elasticsearch.painless.lookup.PainlessConstructor;
@@ -2049,7 +2051,7 @@ public class DefaultSemanticAnalysisPhase extends UserTreeBaseVisitor<SemanticSc
                     "not a statement: regex constant [" + pattern + "] with flags [" + flags + "] not used"));
         }
 
-        if (semanticScope.getScriptScope().getCompilerSettings().areRegexesEnabled() == false) {
+        if (semanticScope.getScriptScope().getCompilerSettings().areRegexesEnabled() == CompilerSettings.RegexEnabled.FALSE) {
             throw userRegexNode.createError(new IllegalStateException("Regexes are disabled. Set [script.painless.regex.enabled] to [true] "
                     + "in elasticsearch.yaml to allow them. Be careful though, regexes break out of Painless's protection against deep "
                     + "recursion and long loops."));
@@ -2092,14 +2094,25 @@ public class DefaultSemanticAnalysisPhase extends UserTreeBaseVisitor<SemanticSc
             }
         }
 
+        Pattern p = null;
         try {
-            Pattern.compile(pattern, constant);
+            p = Pattern.compile(pattern, constant);
         } catch (PatternSyntaxException pse) {
             throw new Location(location.getSourceName(), location.getOffset() + 1 + pse.getIndex()).createError(
                     new IllegalArgumentException("invalid regular expression: " +
                             "could not compile regex constant [" + pattern + "] with flags [" + flags + "]", pse));
         }
 
+        if (semanticScope.getScriptScope().getCompilerSettings().areRegexesEnabled() == CompilerSettings.RegexEnabled.FALSE) {
+            Match m = checkBackReferences(p.pattern());
+            if (m != null) {
+                throw new Location(location.getSourceName(), location.getOffset() + 1 + m.start).createError(
+                    new IllegalArgumentException(
+                        "invalid regular expressions: found back references but back references are disabled " + m
+                    )
+                );
+            }
+        }
         semanticScope.putDecoration(userRegexNode, new ValueType(Pattern.class));
         semanticScope.putDecoration(userRegexNode, new StandardConstant(constant));
     }
@@ -2899,5 +2912,50 @@ public class DefaultSemanticAnalysisPhase extends UserTreeBaseVisitor<SemanticSc
         }
 
         semanticScope.putDecoration(userCallNode, new ValueType(valueType));
+    }
+
+    private static class Match {
+        int start, end;
+        String orig;
+        Match(int start, int end, String orig) {
+            this.start = start;
+            this.end = end;
+            this.orig = orig;
+        }
+
+        @Override
+        public String toString() {
+            return "start: [" + start + "], " +
+                "end: [" + end + "], " +
+                "match: [" + orig.substring(start, end+1) + "], " +
+                "original: [" + orig + "] " +
+                "context: [" + orig.substring(0, start) +
+                "[" + orig.substring(start, end+1) + "]" +
+                orig.substring(end+1) + "]";
+        }
+    }
+
+    private static Match checkBackReferences(String regex) {
+        boolean escape = false;
+        int start = 0;
+        for (int i = 0; i < regex.length(); i++) {
+            char c = regex.charAt(i);
+            if (c == '\\') {
+                if (escape ^= true) {
+                    start = i;
+                }
+            } else if (escape) {
+                // finds back refs even if
+                if (c >= '0' && c <= '9') {
+                    return new Match(start, i, regex);
+                } else if (c == 'k') {
+                    // \k must always be followed by <name>, so just capture \k
+                    return new Match(start, i, regex);
+                } else {
+                    escape = false;
+                }
+            }
+        }
+        return null;
     }
 }

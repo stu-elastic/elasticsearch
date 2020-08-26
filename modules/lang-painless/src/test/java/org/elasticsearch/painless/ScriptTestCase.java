@@ -92,7 +92,7 @@ public abstract class ScriptTestCase extends ESTestCase {
         if (picky) {
             CompilerSettings pickySettings = new CompilerSettings();
             pickySettings.setPicky(true);
-            pickySettings.setRegexesEnabled(CompilerSettings.REGEX_ENABLED.get(scriptEngineSettings()));
+            //pickySettings.setRegexesEnabled(CompilerSettings.REGEX_ENABLED.get(scriptEngineSettings()));
             Walker.buildPainlessTree(getTestName(), script, pickySettings);
         }
         // test actual script execution

@@ -22,6 +22,10 @@ package org.elasticsearch.painless;
 import org.elasticsearch.common.settings.Setting;
 import org.elasticsearch.common.settings.Setting.Property;
 
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
+
 /**
  * Settings to use when compiling a script.
  */
@@ -30,7 +34,8 @@ public final class CompilerSettings {
      * Are regexes enabled? This is a node level setting because regexes break out of painless's lovely sandbox and can cause stack
      * overflows and we can't analyze the regex to be sure it won't.
      */
-    public static final Setting<Boolean> REGEX_ENABLED = Setting.boolSetting("script.painless.regex.enabled", false, Property.NodeScope);
+    public static final Setting<String> REGEX_ENABLED = Setting.simpleString("script.painless.regex.enabled",
+        "disable-backref", RegexEnabled::validate, Property.NodeScope);
 
     /**
      * Constant to be used when specifying the maximum loop counter when compiling a script.
@@ -67,10 +72,10 @@ public final class CompilerSettings {
     private int initialCallSiteDepth = 0;
 
     /**
-     * Are regexes enabled? They are currently disabled by default because they break out of the loop counter and even fairly simple
-     * <strong>looking</strong> regexes can cause stack overflows.
+     * Are regexes enabled? Backreference are currently disabled by default because they make it easy to write regexes with exponential
+     * runtime.
      */
-    private boolean regexesEnabled = false;
+    private RegexEnabled regexesEnabled = RegexEnabled.BACKREF_DISABLED;
 
     /**
      * Returns the value for the cumulative total number of statements that can be made in all loops
@@ -123,10 +128,10 @@ public final class CompilerSettings {
     }
 
     /**
-     * Are regexes enabled? They are currently disabled by default because they break out of the loop counter and even fairly simple
-     * <strong>looking</strong> regexes can cause stack overflows.
+     * Are regexes enabled? They are enabled by default with back references disabled because it is easy to create an exponential pattern
+     * with back references
      */
-    public boolean areRegexesEnabled() {
+    public RegexEnabled areRegexesEnabled() {
         return regexesEnabled;
     }
 
@@ -134,7 +139,34 @@ public final class CompilerSettings {
      * Are regexes enabled? They are currently disabled by default because they break out of the loop counter and even fairly simple
      * <strong>looking</strong> regexes can cause stack overflows.
      */
-    public void setRegexesEnabled(boolean regexesEnabled) {
+    public void setRegexesEnabled(String regexesEnabled) {
+        this.regexesEnabled = RegexEnabled.validate(regexesEnabled);
+    }
+
+    public void setRegexesEnabled(RegexEnabled regexesEnabled) {
         this.regexesEnabled = regexesEnabled;
+    }
+
+    public enum RegexEnabled {
+        TRUE("true"),
+        FALSE("false"),
+        BACKREF_DISABLED("backref-disabled");
+
+        private final String str;
+
+        private RegexEnabled(String str) {
+            this.str = str;
+        }
+
+        public static RegexEnabled validate(String str) {
+            List<RegexEnabled> regexEnabledList = Arrays.asList(RegexEnabled.values());
+            for (RegexEnabled value : regexEnabledList) {
+                if (value.str.equals(str)) {
+                    return value;
+                }
+            }
+            throw new IllegalArgumentException("invalid regex enabled value [" + str + "] must be one of [" +
+                regexEnabledList.stream().map(r -> r.str).collect(Collectors.joining(", ")) + "]");
+        }
     }
 }
