@@ -310,7 +310,7 @@ public class DefaultSemanticAnalysisPhase extends UserTreeBaseVisitor<SemanticSc
                 semanticScope.replicateCondition(userStatementNode, userBlockNode, LoopEscape.class);
 
                 if (allEscape) {
-                    semanticScope.setCondition(userStatementNode, AllEscape.class);
+                    semanticScope.setCondition(userBlockNode, AllEscape.class);
                 }
             } else {
                 if (allEscape) {

@@ -40,6 +40,7 @@ import org.elasticsearch.index.fielddata.plain.SortedSetOrdinalsIndexFieldData;
 import org.elasticsearch.index.query.QueryShardContext;
 import org.elasticsearch.search.DocValueFormat;
 import org.elasticsearch.search.aggregations.support.CoreValuesSourceType;
+import org.elasticsearch.search.lookup.SearchLookup;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -48,6 +49,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 
 /** A {@link FieldMapper} for ip addresses. */
 public class IpFieldMapper extends ParametrizedFieldMapper {
@@ -66,14 +68,15 @@ public class IpFieldMapper extends ParametrizedFieldMapper {
 
         private final Parameter<Boolean> ignoreMalformed;
         private final Parameter<InetAddress> nullValue = new Parameter<>("null_value", false, () -> null,
-            (n, c, o) -> InetAddresses.forString(o.toString()), m -> toType(m).nullValue)
+            (n, c, o) -> o == null ? null : InetAddresses.forString(o.toString()), m -> toType(m).nullValue)
             .setSerializer((b, f, v) -> {
                 if (v == null) {
                     b.nullField(f);
                 } else {
                     b.field(f, InetAddresses.toAddrString(v));
                 }
-            }, NetworkAddress::format);
+            }, NetworkAddress::format)
+            .acceptsNull();
 
         private final Parameter<Map<String, String>> meta = Parameter.metaParam();
 
@@ -268,7 +271,7 @@ public class IpFieldMapper extends ParametrizedFieldMapper {
         }
 
         @Override
-        public IndexFieldData.Builder fielddataBuilder(String fullyQualifiedIndexName) {
+        public IndexFieldData.Builder fielddataBuilder(String fullyQualifiedIndexName, Supplier<SearchLookup> searchLookup) {
             failIfNoDocValues();
             return new SortedSetOrdinalsIndexFieldData.Builder(name(), IpScriptDocValues::new, CoreValuesSourceType.IP);
         }
