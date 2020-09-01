@@ -210,6 +210,7 @@ import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Pattern;
 
 public class DefaultUserTreeToIRTreePhase implements UserTreeVisitor<ScriptScope> {
@@ -243,6 +244,15 @@ public class DefaultUserTreeToIRTreePhase implements UserTreeVisitor<ScriptScope
 
         irClassNode.addFieldNode(irFieldNode);
 
+        // TODO(stu): add compiler settings here
+        irFieldNode = new FieldNode();
+        irFieldNode.setLocation(internalLocation);
+        irFieldNode.setModifiers(modifiers);
+        irFieldNode.setFieldType(Map.class);
+        irFieldNode.setName("$COMPILERSETTINGS");
+
+        irClassNode.addFieldNode(irFieldNode);
+
         // adds the bootstrap method required for dynamic binding for def type resolution
         internalLocation = new Location("$internal$injectDefBootstrapMethod", 0);
 
@@ -251,10 +261,11 @@ public class DefaultUserTreeToIRTreePhase implements UserTreeVisitor<ScriptScope
             irFunctionNode.setLocation(internalLocation);
             irFunctionNode.setReturnType(CallSite.class);
             irFunctionNode.setName("$bootstrapDef");
+            // TODO(stu): pass in parameters here
             irFunctionNode.getTypeParameters().addAll(
-                    Arrays.asList(Lookup.class, String.class, MethodType.class, int.class, int.class, Object[].class));
+                    Arrays.asList(Lookup.class, String.class, Map.class, MethodType.class, int.class, int.class, Object[].class));
             irFunctionNode.getParameterNames().addAll(
-                    Arrays.asList("methodHandlesLookup", "name", "type", "initialDepth", "flavor", "args"));
+                    Arrays.asList("methodHandlesLookup", "name", "compilerSettings", "type", "initialDepth", "flavor", "args"));
             irFunctionNode.setStatic(true);
             irFunctionNode.setVarArgs(true);
             irFunctionNode.setSynthetic(true);
@@ -331,6 +342,13 @@ public class DefaultUserTreeToIRTreePhase implements UserTreeVisitor<ScriptScope
             irLoadFieldMemberNode.setLocation(internalLocation);
             irLoadFieldMemberNode.setExpressionType(FunctionTable.class);
             irLoadFieldMemberNode.setName("$FUNCTIONS");
+            irLoadFieldMemberNode.setStatic(true);
+
+            // TODO(stu): copy for compiler settings
+            irLoadFieldMemberNode = new LoadFieldMemberNode();
+            irLoadFieldMemberNode.setLocation(internalLocation);
+            irLoadFieldMemberNode.setExpressionType(FunctionTable.class);
+            irLoadFieldMemberNode.setName("$COMPILERSETTINGS");
             irLoadFieldMemberNode.setStatic(true);
 
             invokeCallNode.addArgumentNode(irLoadFieldMemberNode);
