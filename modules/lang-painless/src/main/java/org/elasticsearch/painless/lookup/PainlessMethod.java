@@ -22,6 +22,9 @@ package org.elasticsearch.painless.lookup;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodType;
 import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -32,6 +35,7 @@ public class PainlessMethod {
     public final Class<?> targetClass;
     public final Class<?> returnType;
     public final List<Class<?>> typeParameters;
+    public final List<String> parameterNames;
     public final MethodHandle methodHandle;
     public final MethodType methodType;
     public final Map<Class<?>, Object> annotations;
@@ -46,6 +50,17 @@ public class PainlessMethod {
         this.methodHandle = methodHandle;
         this.methodType = methodType;
         this.annotations = annotations;
+
+        if (targetClass != javaMethod.getDeclaringClass()) {
+            // Augmented
+            this.parameterNames = Collections.emptyList();
+        } else {
+            Parameter[] parameters = javaMethod.getParameters();
+            this.parameterNames = new ArrayList<>(parameters.length);
+            for (Parameter p: parameters) {
+                this.parameterNames.add(p.getName());
+            }
+        }
     }
 
     @Override

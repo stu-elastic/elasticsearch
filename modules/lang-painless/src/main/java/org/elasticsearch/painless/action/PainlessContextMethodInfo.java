@@ -43,6 +43,7 @@ public class PainlessContextMethodInfo implements Writeable, ToXContentObject {
     public static final ParseField NAME = new ParseField("name");
     public static final ParseField RTN = new ParseField("return");
     public static final ParseField PARAMETERS = new ParseField("parameters");
+    public static final ParseField PARAMETER_NAMES = new ParseField("parameter_names");
 
     @SuppressWarnings("unchecked")
     private static final ConstructingObjectParser<PainlessContextMethodInfo, Void> PARSER = new ConstructingObjectParser<>(
@@ -52,7 +53,8 @@ public class PainlessContextMethodInfo implements Writeable, ToXContentObject {
                             (String)v[0],
                             (String)v[1],
                             (String)v[2],
-                            (List<String>)v[3]
+                            (List<String>)v[3],
+                            (List<String>)v[4]
                     )
     );
 
@@ -61,27 +63,31 @@ public class PainlessContextMethodInfo implements Writeable, ToXContentObject {
         PARSER.declareString(ConstructingObjectParser.constructorArg(), NAME);
         PARSER.declareString(ConstructingObjectParser.constructorArg(), RTN);
         PARSER.declareStringArray(ConstructingObjectParser.constructorArg(), PARAMETERS);
+        PARSER.declareStringArray(ConstructingObjectParser.constructorArg(), PARAMETER_NAMES);
     }
 
     private final String declaring;
     private final String name;
     private final String rtn;
     private final List<String> parameters;
+    private final List<String> parameterNames;
 
     public PainlessContextMethodInfo(PainlessMethod painlessMethod) {
         this(
                 painlessMethod.javaMethod.getDeclaringClass().getName(),
                 painlessMethod.javaMethod.getName(),
                 painlessMethod.returnType.getName(),
-                painlessMethod.typeParameters.stream().map(Class::getName).collect(Collectors.toList())
+                painlessMethod.typeParameters.stream().map(Class::getName).collect(Collectors.toList()),
+                painlessMethod.parameterNames
         );
     }
 
-    public PainlessContextMethodInfo(String declaring, String name, String rtn, List<String> parameters) {
+    public PainlessContextMethodInfo(String declaring, String name, String rtn, List<String> parameters, List<String> parameterNames) {
         this.declaring = Objects.requireNonNull(declaring);
         this.name = Objects.requireNonNull(name);
         this.rtn = Objects.requireNonNull(rtn);
         this.parameters = Collections.unmodifiableList(Objects.requireNonNull(parameters));
+        this.parameterNames = Collections.unmodifiableList(Objects.requireNonNull(parameterNames));
     }
 
     public PainlessContextMethodInfo(StreamInput in) throws IOException {
@@ -89,6 +95,7 @@ public class PainlessContextMethodInfo implements Writeable, ToXContentObject {
         name = in.readString();
         rtn = in.readString();
         parameters = Collections.unmodifiableList(in.readStringList());
+        parameterNames = Collections.unmodifiableList(in.readStringList());
     }
 
     @Override
@@ -97,6 +104,7 @@ public class PainlessContextMethodInfo implements Writeable, ToXContentObject {
         out.writeString(name);
         out.writeString(rtn);
         out.writeStringCollection(parameters);
+        out.writeStringCollection(parameterNames);
     }
 
     public static PainlessContextMethodInfo fromXContent(XContentParser parser) {
@@ -110,6 +118,7 @@ public class PainlessContextMethodInfo implements Writeable, ToXContentObject {
         builder.field(NAME.getPreferredName(), name);
         builder.field(RTN.getPreferredName(), rtn);
         builder.field(PARAMETERS.getPreferredName(), parameters);
+        builder.field(PARAMETER_NAMES.getPreferredName(), parameterNames);
         builder.endObject();
 
         return builder;
@@ -127,12 +136,13 @@ public class PainlessContextMethodInfo implements Writeable, ToXContentObject {
         return Objects.equals(declaring, that.declaring) &&
                 Objects.equals(name, that.name) &&
                 Objects.equals(rtn, that.rtn) &&
-                Objects.equals(parameters, that.parameters);
+                Objects.equals(parameters, that.parameters) &&
+                Objects.equals(parameterNames, that.parameterNames);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(declaring, name, rtn, parameters);
+        return Objects.hash(declaring, name, rtn, parameters, parameterNames);
     }
 
     @Override
@@ -142,6 +152,7 @@ public class PainlessContextMethodInfo implements Writeable, ToXContentObject {
                 ", name='" + name + '\'' +
                 ", rtn='" + rtn + '\'' +
                 ", parameters=" + parameters +
+                ", parameterNames=" + parameterNames +
                 '}';
     }
 
@@ -159,5 +170,9 @@ public class PainlessContextMethodInfo implements Writeable, ToXContentObject {
 
     public List<String> getParameters() {
         return parameters;
+    }
+
+    public List<String> getParameterNames() {
+        return parameterNames;
     }
 }
