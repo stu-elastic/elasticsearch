@@ -34305,7 +34305,12 @@
           "parameters": [
             "org.elasticsearch.painless.lookup.def",
             "org.elasticsearch.painless.lookup.def"
-          ]
+          ],
+          "parameterNames": [
+          	"key",
+          	"value"
+          ],
+          "javadoc": "Associates the specified value with the specified key in this map.\nIf the map previously contained a mapping for the key, the old\nvalue is replaced.\n\n@param key key with which the specified value is to be associated\n@param value value to be associated with the specified key\n@return the previous value associated with {@code key}, or\n        {@code null} if there was no mapping for {@code key}.\n        (A {@code null} return can also indicate that the map\n        previously associated {@code null} with {@code key}.)\n"
         },
         {
           "declaring": "java.util.Map",
