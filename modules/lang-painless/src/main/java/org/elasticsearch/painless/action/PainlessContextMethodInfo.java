@@ -72,8 +72,8 @@ public class PainlessContextMethodInfo implements Writeable, ToXContentObject {
         this(
                 painlessMethod.javaMethod.getDeclaringClass().getName(),
                 painlessMethod.javaMethod.getName(),
-                painlessMethod.returnType.getName(),
-                painlessMethod.typeParameters.stream().map(Class::getName).collect(Collectors.toList())
+                getClassName(painlessMethod.returnType),
+                painlessMethod.typeParameters.stream().map(PainlessContextMethodInfo::getClassName).collect(Collectors.toList())
         );
     }
 
@@ -159,5 +159,12 @@ public class PainlessContextMethodInfo implements Writeable, ToXContentObject {
 
     public List<String> getParameters() {
         return parameters;
+    }
+
+    private static String getClassName(Class<?> cls) {
+        if (cls.isArray()) {
+            return getClassName(cls.getComponentType()) + "[]";
+        }
+        return cls.getName();
     }
 }
