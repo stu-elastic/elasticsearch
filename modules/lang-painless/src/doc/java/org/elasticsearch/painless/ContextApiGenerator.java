@@ -21,6 +21,9 @@ package org.elasticsearch.painless;
 
 import org.elasticsearch.common.SuppressForbidden;
 import org.elasticsearch.common.io.PathUtils;
+import org.elasticsearch.common.xcontent.ToXContent;
+import org.elasticsearch.common.xcontent.XContentBuilder;
+import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.common.xcontent.XContentParser;
 import org.elasticsearch.common.xcontent.json.JsonXContent;
 import org.elasticsearch.core.internal.io.IOUtils;
@@ -32,6 +35,7 @@ import org.elasticsearch.painless.action.PainlessContextInfo;
 import org.elasticsearch.painless.action.PainlessContextInstanceBindingInfo;
 import org.elasticsearch.painless.action.PainlessContextMethodInfo;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.net.HttpURLConnection;
@@ -51,32 +55,70 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static org.elasticsearch.common.xcontent.ToXContent.EMPTY_PARAMS;
+import static org.elasticsearch.painless.action.PainlessContextClassInfo.NAME;
+import static org.elasticsearch.painless.action.PainlessContextInfo.INSTANCE_BINDINGS;
+
 public final class ContextApiGenerator {
 
     public static void main(String[] args) throws IOException {
+        // Every context
         List<PainlessContextInfo> contextInfos = getContextInfos();
+
+        // PainlessContextMethodInfo, PainlessContextClassBindingInfo, PainlessContextInstanceBindingInfo
         Set<Object> sharedStaticInfos = createSharedStatics(contextInfos);
         Set<PainlessContextClassInfo> sharedClassInfos = createSharedClasses(contextInfos);
 
+
         Path rootDir = resetRootDir();
 
-        List<Object> staticInfos = sortStaticInfos(Collections.emptySet(), new ArrayList<>(sharedStaticInfos));
-        List<PainlessContextClassInfo> classInfos = sortClassInfos(Collections.emptySet(), new ArrayList<>(sharedClassInfos));
-        Map<String, String> javaNamesToDisplayNames = getDisplayNames(classInfos);
+        Path json = rootDir.resolve("painless-common.json");
+        try (PrintStream jsonStream = new PrintStream(
+            Files.newOutputStream(json, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE),
+            false, StandardCharsets.UTF_8.name())) {
+
+            XContentBuilder builder = XContentFactory.jsonBuilder(jsonStream);
+            builder.startObject();
+            builder.field(PainlessContextInfo.CLASSES.getPreferredName(),
+                          sortClassInfos(Collections.emptySet(), new ArrayList<>(sharedClassInfos))
+            );
+            builder.endObject();
+            builder.flush();
+        }
+
+        //List<Object> staticInfos = sortStaticInfos(Collections.emptySet(), new ArrayList<>(sharedStaticInfos));
+        //List<PainlessContextClassInfo> classInfos = sortClassInfos(Collections.emptySet(), new ArrayList<>(sharedClassInfos));
+        //Map<String, String> javaNamesToDisplayNames = getDisplayNames(classInfos);
 
         Set<PainlessContextInfo> isSpecialized = new HashSet<>();
 
         for (PainlessContextInfo contextInfo : contextInfos) {
-            staticInfos = createContextStatics(contextInfo);
+            List<Object> staticInfos = createContextStatics(contextInfo);
             staticInfos = sortStaticInfos(sharedStaticInfos, staticInfos);
-            classInfos = sortClassInfos(sharedClassInfos, new ArrayList<>(contextInfo.getClasses()));
+            List<PainlessContextClassInfo> classInfos = sortClassInfos(sharedClassInfos, new ArrayList<>(contextInfo.getClasses()));
 
             if (staticInfos.isEmpty() == false || classInfos.isEmpty() == false) {
-                Path contextDir = createContextDir(rootDir, contextInfo);
-                isSpecialized.add(contextInfo);
-                javaNamesToDisplayNames = getDisplayNames(contextInfo.getClasses());
+                json = rootDir.resolve(getContextHeader(contextInfo) + ".json");
+                try (PrintStream jsonStream = new PrintStream(
+                    Files.newOutputStream(json, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE),
+                    false, StandardCharsets.UTF_8.name())) {
+
+                    XContentBuilder builder = XContentFactory.jsonBuilder(jsonStream);
+                    toXContent(builder, contextInfo, classInfos);
+                    builder.flush();
+                }
             }
         }
+    }
+
+    private static void toXContent(XContentBuilder builder, PainlessContextInfo info, List<PainlessContextClassInfo> classInfos) throws IOException {
+        builder.startObject();
+        builder.field(PainlessContextInfo.NAME.getPreferredName(), info.getName());
+        builder.field(PainlessContextInfo.CLASSES.getPreferredName(), classInfos);
+        builder.field(PainlessContextInfo.IMPORTED_METHODS.getPreferredName(), info.getImportedMethods());
+        builder.field(PainlessContextInfo.CLASS_BINDINGS.getPreferredName(), info.getClassBindings());
+        builder.field(PainlessContextInfo.INSTANCE_BINDINGS.getPreferredName(), info.getInstanceBindings());
+        builder.endObject();
     }
 
     @SuppressForbidden(reason = "retrieving data from an internal API not exposed as part of the REST client")
@@ -162,6 +204,12 @@ public final class ContextApiGenerator {
     }
 
     private static Path createContextDir(Path rootDir, PainlessContextInfo info) throws IOException {
+        Path contextDir = rootDir.resolve(getContextHeader(info) + ".json");
+
+        return contextDir;
+    }
+
+    private static Path createContextDir2(Path rootDir, PainlessContextInfo info) throws IOException {
         Path contextDir = rootDir.resolve(getContextHeader(info));
         Files.createDirectories(contextDir);
 
