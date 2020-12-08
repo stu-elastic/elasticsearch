@@ -21,9 +21,12 @@ package org.elasticsearch.painless.action;
 
 import org.elasticsearch.common.io.stream.Writeable;
 import org.elasticsearch.common.xcontent.XContentParser;
+import org.elasticsearch.painless.lookup.PainlessMethod;
 import org.elasticsearch.test.AbstractSerializingTestCase;
 
+import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class ContextInfoTests extends AbstractSerializingTestCase<PainlessContextInfo> {
@@ -120,7 +123,7 @@ public class ContextInfoTests extends AbstractSerializingTestCase<PainlessContex
                     randomAlphaOfLength(randomIntBetween(4, 10)),
                     parameters));
         }
-        
+
         int classBindingsSize = randomInt(3);
         List<PainlessContextClassBindingInfo> classBindings = new ArrayList<>(classBindingsSize);
         for (int classBinding = 0; classBinding < classBindingsSize; ++classBinding) {
@@ -152,7 +155,7 @@ public class ContextInfoTests extends AbstractSerializingTestCase<PainlessContex
                     randomAlphaOfLength(randomIntBetween(4, 10)),
                     parameters));
         }
-        
+
         return new PainlessContextInfo(randomAlphaOfLength(20),
                 classes, importedMethods, classBindings, instanceBindings);
     }
@@ -160,5 +163,16 @@ public class ContextInfoTests extends AbstractSerializingTestCase<PainlessContex
     @Override
     protected Writeable.Reader<PainlessContextInfo> instanceReader() {
         return PainlessContextInfo::new;
+    }
+
+    public void testMethodInfoArrayParameters() throws NoSuchMethodException {
+        Class<java.lang.Character> charClass = java.lang.Character.class;
+        Method codePointAt = charClass.getMethod("codePointAt", char[].class, int.class);
+        PainlessContextMethodInfo info = new PainlessContextMethodInfo(
+            new PainlessMethod(codePointAt, charClass, Object[].class, Arrays.asList(codePointAt.getParameterTypes()),
+            null, null, null)
+        );
+        assertEquals("char[]", info.getParameters().get(0));
+        assertEquals("java.lang.Object[]", info.getRtn());
     }
 }

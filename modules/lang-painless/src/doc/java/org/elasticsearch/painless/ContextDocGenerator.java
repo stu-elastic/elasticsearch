@@ -78,8 +78,11 @@ public final class ContextDocGenerator {
 
         Path sharedDir = createSharedDir(rootDir);
         List<Object> staticInfos = sortStaticInfos(Collections.emptySet(), new ArrayList<>(sharedStaticInfos));
-        List<PainlessContextClassInfo> classInfos = sortClassInfos(Collections.emptySet(), new ArrayList<>(sharedClassInfos));
-        Map<String, String> javaNamesToDisplayNames = getDisplayNames(classInfos);
+        List<PainlessContextClassInfo> classInfos = ContextWhitelistProcessor.sortClassInfos(
+            Collections.emptySet(),
+            new ArrayList<>(sharedClassInfos)
+        );
+        Map<String, String> javaNamesToDisplayNames = ContextWhitelistProcessor.getDisplayNames(classInfos);
         printSharedIndexPage(sharedDir, javaNamesToDisplayNames, staticInfos, classInfos);
         printSharedPackagesPages(sharedDir, javaNamesToDisplayNames, classInfos);
 
@@ -88,12 +91,12 @@ public final class ContextDocGenerator {
         for (PainlessContextInfo contextInfo : contextInfos) {
             staticInfos = createContextStatics(contextInfo);
             staticInfos = sortStaticInfos(sharedStaticInfos, staticInfos);
-            classInfos = sortClassInfos(sharedClassInfos, new ArrayList<>(contextInfo.getClasses()));
+            classInfos = ContextWhitelistProcessor.sortClassInfos(sharedClassInfos, new ArrayList<>(contextInfo.getClasses()));
 
             if (staticInfos.isEmpty() == false || classInfos.isEmpty() == false) {
                 Path contextDir = createContextDir(rootDir, contextInfo);
                 isSpecialized.add(contextInfo);
-                javaNamesToDisplayNames = getDisplayNames(contextInfo.getClasses());
+                javaNamesToDisplayNames = ContextWhitelistProcessor.getDisplayNames(contextInfo.getClasses());
                 printContextIndexPage(contextDir, javaNamesToDisplayNames, contextInfo, staticInfos, classInfos);
                 printContextPackagesPages(contextDir, javaNamesToDisplayNames, sharedClassInfos, contextInfo, classInfos);
             }
@@ -738,77 +741,5 @@ public final class ContextDocGenerator {
         });
 
         return staticInfos;
-    }
-
-    private static List<PainlessContextClassInfo> sortClassInfos(
-            Set<PainlessContextClassInfo> classExcludes, List<PainlessContextClassInfo> classInfos) {
-
-        classInfos = new ArrayList<>(classInfos);
-        classInfos.removeIf(v ->
-                "void".equals(v.getName())  || "boolean".equals(v.getName()) || "byte".equals(v.getName())   ||
-                "short".equals(v.getName()) || "char".equals(v.getName())    || "int".equals(v.getName())    ||
-                "long".equals(v.getName())  || "float".equals(v.getName())   || "double".equals(v.getName()) ||
-                "org.elasticsearch.painless.lookup.def".equals(v.getName())  ||
-                isInternalClass(v.getName()) || classExcludes.contains(v)
-        );
-
-        classInfos.sort((c1, c2) -> {
-            String n1 = c1.getName();
-            String n2 = c2.getName();
-            boolean i1 = c1.isImported();
-            boolean i2 = c2.isImported();
-
-            String p1 = n1.substring(0, n1.lastIndexOf('.'));
-            String p2 = n2.substring(0, n2.lastIndexOf('.'));
-
-            int compare = p1.compareTo(p2);
-
-            if (compare == 0) {
-                if (i1 && i2) {
-                    compare = n1.substring(n1.lastIndexOf('.') + 1).compareTo(n2.substring(n2.lastIndexOf('.') + 1));
-                } else if (i1 == false && i2 == false) {
-                    compare = n1.compareTo(n2);
-                } else {
-                    compare = Boolean.compare(i1, i2) * -1;
-                }
-            }
-
-            return compare;
-        });
-
-        return classInfos;
-    }
-
-    private static Map<String, String> getDisplayNames(List<PainlessContextClassInfo> classInfos) {
-        Map<String, String> javaNamesToDisplayNames = new HashMap<>();
-
-        for (PainlessContextClassInfo classInfo : classInfos) {
-            String className = classInfo.getName();
-
-            if (classInfo.isImported()) {
-                javaNamesToDisplayNames.put(className,
-                        className.substring(className.lastIndexOf('.') + 1).replace('$', '.'));
-            } else {
-                javaNamesToDisplayNames.put(className, className.replace('$', '.'));
-            }
-        }
-
-        return javaNamesToDisplayNames;
-    }
-
-    private static boolean isInternalClass(String javaName) {
-        return  javaName.equals("org.elasticsearch.script.ScoreScript") ||
-                javaName.equals("org.elasticsearch.xpack.sql.expression.function.scalar.geo.GeoShape") ||
-                javaName.equals("org.elasticsearch.xpack.sql.expression.function.scalar.whitelist.InternalSqlScriptUtils") ||
-                javaName.equals("org.elasticsearch.xpack.sql.expression.literal.IntervalDayTime") ||
-                javaName.equals("org.elasticsearch.xpack.sql.expression.literal.IntervalYearMonth") ||
-                javaName.equals("org.elasticsearch.xpack.eql.expression.function.scalar.whitelist.InternalEqlScriptUtils") ||
-                javaName.equals("org.elasticsearch.xpack.ql.expression.function.scalar.InternalQlScriptUtils") ||
-                javaName.equals("org.elasticsearch.xpack.ql.expression.function.scalar.whitelist.InternalQlScriptUtils") ||
-                javaName.equals("org.elasticsearch.script.ScoreScript$ExplanationHolder");
-    }
-
-    private ContextDocGenerator() {
-
     }
 }

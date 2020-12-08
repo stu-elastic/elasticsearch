@@ -80,22 +80,18 @@ public final class ContextApiGenerator {
             XContentBuilder builder = XContentFactory.jsonBuilder(jsonStream);
             builder.startObject();
             builder.field(PainlessContextInfo.CLASSES.getPreferredName(),
-                          sortClassInfos(Collections.emptySet(), new ArrayList<>(sharedClassInfos))
+                          ContextWhitelistProcessor.sortClassInfos(Collections.emptySet(), new ArrayList<>(sharedClassInfos))
             );
             builder.endObject();
             builder.flush();
         }
-
-        //List<Object> staticInfos = sortStaticInfos(Collections.emptySet(), new ArrayList<>(sharedStaticInfos));
-        //List<PainlessContextClassInfo> classInfos = sortClassInfos(Collections.emptySet(), new ArrayList<>(sharedClassInfos));
-        //Map<String, String> javaNamesToDisplayNames = getDisplayNames(classInfos);
 
         Set<PainlessContextInfo> isSpecialized = new HashSet<>();
 
         for (PainlessContextInfo contextInfo : contextInfos) {
             List<Object> staticInfos = createContextStatics(contextInfo);
             staticInfos = sortStaticInfos(sharedStaticInfos, staticInfos);
-            List<PainlessContextClassInfo> classInfos = sortClassInfos(sharedClassInfos, new ArrayList<>(contextInfo.getClasses()));
+            List<PainlessContextClassInfo> classInfos = ContextWhitelistProcessor.sortClassInfos(sharedClassInfos, new ArrayList<>(contextInfo.getClasses()));
 
             if (staticInfos.isEmpty() == false || classInfos.isEmpty() == false) {
                 json = rootDir.resolve(getContextHeader(contextInfo) + ".json");
@@ -201,187 +197,6 @@ public final class ContextApiGenerator {
         Files.createDirectories(rootDir);
 
         return rootDir;
-    }
-
-    private static Path createContextDir(Path rootDir, PainlessContextInfo info) throws IOException {
-        Path contextDir = rootDir.resolve(getContextHeader(info) + ".json");
-
-        return contextDir;
-    }
-
-    private static Path createContextDir2(Path rootDir, PainlessContextInfo info) throws IOException {
-        Path contextDir = rootDir.resolve(getContextHeader(info));
-        Files.createDirectories(contextDir);
-
-        return contextDir;
-    }
-
-    private static void printPackages(PrintStream packagesStream, String contextName, String contextHeader,
-            Map<String, String> javaNamesToDisplayNames, Set<PainlessContextClassInfo> excludes, List<PainlessContextClassInfo> classInfos)
-    {
-
-        String currentPackageName = null;
-
-        for (PainlessContextClassInfo classInfo : classInfos) {
-            if (excludes.contains(classInfo)) {
-                continue;
-            }
-
-            String classPackageName = classInfo.getName().substring(0, classInfo.getName().lastIndexOf('.'));
-
-            if (classPackageName.equals(currentPackageName) == false) {
-                currentPackageName = classPackageName;
-
-                packagesStream.println();
-                packagesStream.println("[role=\"exclude\",id=\"" + getPackageHeader(contextHeader, currentPackageName) + "\"]");
-                packagesStream.println("=== " + contextName + " API for package " + currentPackageName);
-                packagesStream.println("See the <<" + contextHeader + ", " + contextName + " API>> " +
-                        "for a high-level overview of all packages and classes.");
-            }
-
-            String className = getType(javaNamesToDisplayNames, classInfo.getName());
-            packagesStream.println();
-            packagesStream.println("[[" + getClassHeader(contextHeader, className) + "]]");
-            packagesStream.println("==== " + className + "");
-
-            for (PainlessContextFieldInfo fieldInfo : classInfo.getStaticFields()) {
-                printField(packagesStream, javaNamesToDisplayNames, true, fieldInfo);
-            }
-
-            for (PainlessContextMethodInfo methodInfo : classInfo.getStaticMethods()) {
-                printMethod(packagesStream, javaNamesToDisplayNames, true, methodInfo);
-            }
-
-            for (PainlessContextFieldInfo fieldInfo : classInfo.getFields()) {
-                printField(packagesStream, javaNamesToDisplayNames, false, fieldInfo);
-            }
-
-            for (PainlessContextConstructorInfo constructorInfo : classInfo.getConstructors()) {
-                printConstructor(packagesStream, javaNamesToDisplayNames, className, constructorInfo);
-            }
-
-            for (PainlessContextMethodInfo methodInfo : classInfo.getMethods()) {
-                printMethod(packagesStream, javaNamesToDisplayNames, false, methodInfo);
-            }
-
-            packagesStream.println();
-        }
-
-        packagesStream.println();
-    }
-
-    private static void printConstructor(
-            PrintStream stream, Map<String, String> javaNamesToDisplayNames,
-            String className, PainlessContextConstructorInfo constructorInfo) {
-
-        stream.print("* ");
-
-        if (constructorInfo.getDeclaring().startsWith("java.")) {
-            stream.print(getConstructorJavaDocLink(constructorInfo) + "[" + className + "]");
-        } else {
-            stream.print(className);
-        }
-
-        stream.print("(");
-
-        for (int parameterIndex = 0;
-             parameterIndex < constructorInfo.getParameters().size();
-             ++parameterIndex) {
-
-            stream.print(getType(javaNamesToDisplayNames, constructorInfo.getParameters().get(parameterIndex)));
-
-            if (parameterIndex + 1 < constructorInfo.getParameters().size()) {
-                stream.print(", ");
-            }
-        }
-
-        stream.println(")");
-    }
-
-    private static void printMethod(
-            PrintStream stream, Map<String, String> javaNamesToDisplayNames,
-            boolean isStatic, PainlessContextMethodInfo methodInfo) {
-
-        stream.print("* " + (isStatic ? "static " : ""));
-        stream.print(getType(javaNamesToDisplayNames, methodInfo.getRtn()) + " ");
-
-        if (methodInfo.getDeclaring().startsWith("java.")) {
-            stream.print(getMethodJavaDocLink(methodInfo) + "[" + methodInfo.getName() + "]");
-        } else {
-            stream.print(methodInfo.getName());
-        }
-
-        stream.print("(");
-
-        for (int parameterIndex = 0;
-             parameterIndex < methodInfo.getParameters().size();
-             ++parameterIndex) {
-
-            stream.print(getType(javaNamesToDisplayNames, methodInfo.getParameters().get(parameterIndex)));
-
-            if (parameterIndex + 1 < methodInfo.getParameters().size()) {
-                stream.print(", ");
-            }
-        }
-
-        stream.println(")");
-    }
-
-    private static void printClassBinding(
-            PrintStream stream, Map<String, String> javaNamesToDisplayNames, PainlessContextClassBindingInfo classBindingInfo) {
-
-        stream.print("* " + getType(javaNamesToDisplayNames, classBindingInfo.getRtn()) + " " + classBindingInfo.getName() + "(");
-
-        for (int parameterIndex = 0; parameterIndex < classBindingInfo.getParameters().size(); ++parameterIndex) {
-            // temporary fix to not print org.elasticsearch.script.ScoreScript parameter until
-            // class instance bindings are created and the information is appropriately added to the context info classes
-            if ("org.elasticsearch.script.ScoreScript".equals(
-                    getType(javaNamesToDisplayNames, classBindingInfo.getParameters().get(parameterIndex)))) {
-                continue;
-            }
-
-            stream.print(getType(javaNamesToDisplayNames, classBindingInfo.getParameters().get(parameterIndex)));
-
-            if (parameterIndex < classBindingInfo.getReadOnly()) {
-                stream.print(" *");
-            }
-
-            if (parameterIndex + 1 < classBindingInfo.getParameters().size()) {
-                stream.print(", ");
-            }
-        }
-
-        stream.println(")");
-    }
-
-    private static void printInstanceBinding(
-            PrintStream stream, Map<String, String> javaNamesToDisplayNames, PainlessContextInstanceBindingInfo instanceBindingInfo) {
-
-        stream.print("* " + getType(javaNamesToDisplayNames, instanceBindingInfo.getRtn()) + " " + instanceBindingInfo.getName() + "(");
-
-        for (int parameterIndex = 0; parameterIndex < instanceBindingInfo.getParameters().size(); ++parameterIndex) {
-            stream.print(getType(javaNamesToDisplayNames, instanceBindingInfo.getParameters().get(parameterIndex)));
-
-            if (parameterIndex + 1 < instanceBindingInfo.getParameters().size()) {
-                stream.print(", ");
-            }
-        }
-
-        stream.println(")");
-    }
-
-    private static void printField(
-            PrintStream stream, Map<String, String> javaNamesToDisplayNames,
-            boolean isStatic, PainlessContextFieldInfo fieldInfo) {
-
-        stream.print("* " + (isStatic ? "static " : ""));
-        stream.print(getType(javaNamesToDisplayNames, fieldInfo.getType()) + " ");
-
-        if (fieldInfo.getDeclaring().startsWith("java.")) {
-            stream.println(getFieldJavaDocLink(fieldInfo) + "[" + fieldInfo.getName() + "]");
-        } else {
-            stream.println(fieldInfo.getName());
-        }
     }
 
     private static String getType(Map<String, String> javaNamesToDisplayNames, String javaType) {
@@ -583,45 +398,6 @@ public final class ContextApiGenerator {
         });
 
         return staticInfos;
-    }
-
-    private static List<PainlessContextClassInfo> sortClassInfos(
-            Set<PainlessContextClassInfo> classExcludes, List<PainlessContextClassInfo> classInfos) {
-
-        classInfos = new ArrayList<>(classInfos);
-        classInfos.removeIf(v ->
-                "void".equals(v.getName())  || "boolean".equals(v.getName()) || "byte".equals(v.getName())   ||
-                "short".equals(v.getName()) || "char".equals(v.getName())    || "int".equals(v.getName())    ||
-                "long".equals(v.getName())  || "float".equals(v.getName())   || "double".equals(v.getName()) ||
-                "org.elasticsearch.painless.lookup.def".equals(v.getName())  ||
-                isInternalClass(v.getName()) || classExcludes.contains(v)
-        );
-
-        classInfos.sort((c1, c2) -> {
-            String n1 = c1.getName();
-            String n2 = c2.getName();
-            boolean i1 = c1.isImported();
-            boolean i2 = c2.isImported();
-
-            String p1 = n1.substring(0, n1.lastIndexOf('.'));
-            String p2 = n2.substring(0, n2.lastIndexOf('.'));
-
-            int compare = p1.compareTo(p2);
-
-            if (compare == 0) {
-                if (i1 && i2) {
-                    compare = n1.substring(n1.lastIndexOf('.') + 1).compareTo(n2.substring(n2.lastIndexOf('.') + 1));
-                } else if (i1 == false && i2 == false) {
-                    compare = n1.compareTo(n2);
-                } else {
-                    compare = Boolean.compare(i1, i2) * -1;
-                }
-            }
-
-            return compare;
-        });
-
-        return classInfos;
     }
 
     private static Map<String, String> getDisplayNames(List<PainlessContextClassInfo> classInfos) {
