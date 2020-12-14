@@ -203,9 +203,14 @@ public class ContextGeneratorCommon {
         public final List<PainlessInfoJson.Context> contexts;
 
         public final Map<String, String> javaNamesToDisplayNames;
+        public final Map<String, String> javaNamesToJavadoc;
+        public final Map<String, List<String>> javaNamesToArgs;
 
-        public PainlessInfos(List<PainlessContextInfo> contextInfos) {
+        public PainlessInfos(List<PainlessContextInfo> contextInfos, StdlibJavadocExtractor extractor) throws IOException {
             javaNamesToDisplayNames = getDisplayNames(contextInfos);
+
+            javaNamesToJavadoc = new HashMap<>();
+            javaNamesToArgs = new HashMap<>();
 
             Set<PainlessContextClassInfo> commonClassInfos = getCommon(contextInfos, PainlessContextInfo::getClasses);
             common = PainlessInfoJson.Class.fromInfos(sortClassInfos(commonClassInfos), javaNamesToDisplayNames);
@@ -219,6 +224,13 @@ public class ContextGeneratorCommon {
             contexts = contextInfos.stream()
                 .map(ctx -> new PainlessInfoJson.Context(ctx, commonClassInfos, javaNamesToDisplayNames))
                 .collect(Collectors.toList());
+
+            for (PainlessContextClassInfo info : commonClassInfos) {
+                extractor.getJavadoc(info.getName(), null);
+                for (PainlessContextMethodInfo method: info.getMethods()) {
+                    System.out.println("STU: " + info.getName() + ":" + method.getName());
+                }
+            }
         }
 
         private <T> Set<T> getCommon(List<PainlessContextInfo> contexts, Function<PainlessContextInfo,List<T>> getter) {

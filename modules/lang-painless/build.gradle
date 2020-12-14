@@ -40,6 +40,9 @@ dependencies {
   api 'org.ow2.asm:asm-commons:7.2'
   api 'org.ow2.asm:asm-analysis:7.2'
   api 'org.ow2.asm:asm:7.2'
+  // TODO(stu): this should be implementation
+  // https://github.com/javaparser/javaparser/blob/master/readme.md#setup
+  api 'com.github.javaparser:javaparser-core:3.18.0'
   api project('spi')
 }
 

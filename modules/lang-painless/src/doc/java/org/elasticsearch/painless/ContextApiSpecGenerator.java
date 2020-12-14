@@ -35,9 +35,13 @@ import java.nio.file.StandardOpenOption;
 import java.util.List;
 
 public class ContextApiSpecGenerator {
+    private static final String stdlibPath = "/home/stu/tmp/javastdlib/src/java.base";
     public static void main(String[] args) throws IOException {
         List<PainlessContextInfo> contexts = ContextGeneratorCommon.getContextInfos();
-        ContextGeneratorCommon.PainlessInfos infos = new ContextGeneratorCommon.PainlessInfos(contexts);
+
+        StdlibJavadocExtractor javadoc = new StdlibJavadocExtractor(stdlibPath);
+
+        ContextGeneratorCommon.PainlessInfos infos = new ContextGeneratorCommon.PainlessInfos(contexts, javadoc);
         Path rootDir = resetRootDir();
         Path json = rootDir.resolve("painless-common.json");
         try (PrintStream jsonStream = new PrintStream(
