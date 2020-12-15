@@ -213,7 +213,7 @@ public class ContextGeneratorCommon {
             javaNamesToArgs = new HashMap<>();
 
             Set<PainlessContextClassInfo> commonClassInfos = getCommon(contextInfos, PainlessContextInfo::getClasses);
-            common = PainlessInfoJson.Class.fromInfos(sortClassInfos(commonClassInfos), javaNamesToDisplayNames);
+            common = PainlessInfoJson.Class.fromInfos(sortClassInfos(commonClassInfos), javaNamesToDisplayNames, extractor);
 
             importedMethods = getCommon(contextInfos, PainlessContextInfo::getImportedMethods);
 
@@ -222,11 +222,17 @@ public class ContextGeneratorCommon {
             instanceBindings = getCommon(contextInfos, PainlessContextInfo::getInstanceBindings);
 
             contexts = contextInfos.stream()
-                .map(ctx -> new PainlessInfoJson.Context(ctx, commonClassInfos, javaNamesToDisplayNames))
+                .map(ctx -> new PainlessInfoJson.Context(ctx, commonClassInfos, javaNamesToDisplayNames, extractor))
                 .collect(Collectors.toList());
 
             for (PainlessContextClassInfo info : commonClassInfos) {
-                StdlibJavadocExtractor.ParsedJavaClass pj = extractor.getJavadoc(info.getName());
+                StdlibJavadocExtractor.ParsedJavaClass pj;
+                // TODO(stu): handle non-stdlib
+                if (info.getName().contains("elastic") == false && info.getName().contains("apache") == false) {
+                    pj = extractor.getJavadoc(info.getName());
+                } else {
+                    pj = new StdlibJavadocExtractor.ParsedJavaClass();
+                }
                 for (PainlessContextMethodInfo method: info.getMethods()) {
                     System.out.println("STU whitelist: " + info.getName() + ":" + method.getName());
                     System.out.println("STU javadoc: " + pj.getMethod(method.getName()));

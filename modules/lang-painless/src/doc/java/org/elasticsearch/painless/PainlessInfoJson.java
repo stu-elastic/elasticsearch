@@ -19,6 +19,7 @@
 
 package org.elasticsearch.painless;
 
+import org.elasticsearch.common.ParseField;
 import org.elasticsearch.common.xcontent.ToXContentObject;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.painless.action.PainlessContextClassBindingInfo;
@@ -32,6 +33,7 @@ import org.elasticsearch.painless.action.PainlessContextMethodInfo;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -46,13 +48,15 @@ public class PainlessInfoJson {
         public Context(
             PainlessContextInfo info,
             Set<PainlessContextClassInfo> commonClassInfos,
-            Map<String, String> javaNamesToDisplayNames
+            Map<String, String> javaNamesToDisplayNames,
+            StdlibJavadocExtractor extractor
         ) {
             this.name = info.getName();
             List<PainlessContextClassInfo> classInfos = ContextGeneratorCommon.excludeCommonClassInfos(commonClassInfos, info.getClasses());
             classInfos = ContextGeneratorCommon.sortClassInfos(classInfos);
-            this.classes = Class.fromInfos(classInfos, javaNamesToDisplayNames);
-            this.importedMethods = Method.fromInfos(info.getImportedMethods(), javaNamesToDisplayNames);
+            this.classes = Class.fromInfos(classInfos, javaNamesToDisplayNames, extractor);
+            // TODO(stu): handle no class for imported methods
+            this.importedMethods = Method.fromInfos(info.getImportedMethods(), javaNamesToDisplayNames, new StdlibJavadocExtractor.ParsedJavaClass());
             this.classBindings = info.getClassBindings();
             this.instanceBindings = info.getInstanceBindings();
         }
@@ -84,19 +88,35 @@ public class PainlessInfoJson {
         private final List<Field> staticFields;
         private final List<Field> fields;
 
-        public Class(PainlessContextClassInfo info, Map<String, String> javaNamesToDisplayNames) {
+        public Class(
+            PainlessContextClassInfo info,
+            Map<String, String> javaNamesToDisplayNames,
+            StdlibJavadocExtractor.ParsedJavaClass pj
+        ) {
             this.name = javaNamesToDisplayNames.get(info.getName());
             this.imported = info.isImported();
             this.constructors = Constructor.fromInfos(info.getConstructors(), javaNamesToDisplayNames);
-            this.staticMethods = Method.fromInfos(info.getStaticMethods(), javaNamesToDisplayNames);
-            this.methods = Method.fromInfos(info.getMethods(), javaNamesToDisplayNames);
+            this.staticMethods = Method.fromInfos(info.getStaticMethods(), javaNamesToDisplayNames, pj);
+            this.methods = Method.fromInfos(info.getMethods(), javaNamesToDisplayNames, pj);
             this.staticFields = Field.fromInfos(info.getStaticFields(), javaNamesToDisplayNames);
             this.fields = Field.fromInfos(info.getFields(), javaNamesToDisplayNames);
         }
 
-        public static List<Class> fromInfos(List<PainlessContextClassInfo> infos, Map<String, String> javaNamesToDisplayNames) {
+        public static List<Class> fromInfos(
+            List<PainlessContextClassInfo> infos,
+            Map<String, String> javaNamesToDisplayNames,
+            StdlibJavadocExtractor extractor
+        ) {
             return infos.stream()
-                .map(info -> new Class(info, javaNamesToDisplayNames))
+                .map(info -> {
+                    try {
+                        return new Class(info, javaNamesToDisplayNames, extractor.getJavadoc(info.getName()));
+                    } catch (IOException e) {
+                        System.out.println("STU failed: " + info.getName());
+                        return null;
+                    }
+                })
+                .filter(Objects::nonNull)
                 .collect(Collectors.toList());
         }
 
@@ -120,20 +140,27 @@ public class PainlessInfoJson {
         private final String declaring;
         private final String name;
         private final String rtn;
+        private final String javadoc;
         private final List<String> parameters;
+        public static final ParseField JAVADOC = new ParseField("javadoc");
 
-        public Method(PainlessContextMethodInfo info, Map<String, String> javaNamesToDisplayNames) {
+        public Method(PainlessContextMethodInfo info, Map<String, String> javaNamesToDisplayNames, String javadoc) {
             this.declaring = javaNamesToDisplayNames.get(info.getDeclaring());
             this.name = info.getName();
             this.rtn = ContextGeneratorCommon.getType(javaNamesToDisplayNames, info.getRtn());
+            this.javadoc = javadoc;
             this.parameters = info.getParameters().stream()
                 .map(p -> ContextGeneratorCommon.getType(javaNamesToDisplayNames, p))
                 .collect(Collectors.toList());
         }
 
-        public static List<Method> fromInfos(List<PainlessContextMethodInfo> infos, Map<String, String> javaNamesToDisplayNames) {
+        public static List<Method> fromInfos(
+            List<PainlessContextMethodInfo> infos,
+            Map<String, String> javaNamesToDisplayNames,
+            StdlibJavadocExtractor.ParsedJavaClass javadocs
+        ) {
             return infos.stream()
-                .map(m -> new Method(m, javaNamesToDisplayNames))
+                .map(m -> new Method(m, javaNamesToDisplayNames, javadocs.getMethod(m.getName())))
                 .collect(Collectors.toList());
         }
 
@@ -143,6 +170,9 @@ public class PainlessInfoJson {
             builder.field(PainlessContextMethodInfo.DECLARING.getPreferredName(), declaring);
             builder.field(PainlessContextMethodInfo.NAME.getPreferredName(), name);
             builder.field(PainlessContextMethodInfo.RTN.getPreferredName(), rtn);
+            if (javadoc != null) {
+                builder.field(JAVADOC.getPreferredName(), javadoc);
+            }
             builder.field(PainlessContextMethodInfo.PARAMETERS.getPreferredName(), parameters);
             builder.endObject();
 

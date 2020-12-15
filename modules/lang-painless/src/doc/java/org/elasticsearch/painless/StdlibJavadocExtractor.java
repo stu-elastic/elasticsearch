@@ -51,10 +51,12 @@ public class StdlibJavadocExtractor {
     }
 
     public ParsedJavaClass getJavadoc(String className) throws IOException {
-        CompilationUnit cu = StaticJavaParser.parse(openClassFile(className));
-        ClassFileVisitor visitor = new ClassFileVisitor();
         ParsedJavaClass pj = new ParsedJavaClass();
-        visitor.visit(cu, pj);
+        if (className.contains(".")) { // TODO(stu): handle primitives
+            ClassFileVisitor visitor = new ClassFileVisitor();
+            CompilationUnit cu = StaticJavaParser.parse(openClassFile(className));
+            visitor.visit(cu, pj);
+        }
         return pj;
     }
 
