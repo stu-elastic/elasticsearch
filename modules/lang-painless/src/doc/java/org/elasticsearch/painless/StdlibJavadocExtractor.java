@@ -39,7 +39,10 @@ public class StdlibJavadocExtractor {
     }
 
     private File openClassFile(String className) {
-        className = className.split("\\$", 1)[0];
+        int dollarPosition = className.indexOf("$");
+        if (dollarPosition >= 0) {
+            className = className.substring(0, dollarPosition);
+        }
         System.out.println("Stu className: " + className );
         String[] packages = className.split("\\.");
         String path = String.join("/", packages);
@@ -47,14 +50,31 @@ public class StdlibJavadocExtractor {
         return classPath.toFile();
     }
 
-    public String getJavadoc(String className, String methodName) throws IOException {
+    public ParsedJavaClass getJavadoc(String className) throws IOException {
         CompilationUnit cu = StaticJavaParser.parse(openClassFile(className));
         ClassFileVisitor visitor = new ClassFileVisitor();
-        visitor.visit(cu, null);
-        return null;
+        ParsedJavaClass pj = new ParsedJavaClass();
+        visitor.visit(cu, pj);
+        return pj;
     }
 
-    private static class ClassFileVisitor extends VoidVisitorAdapter<Void> {
+    public static class ParsedJavaClass {
+        private final Map<String, String> methods;
+
+        public ParsedJavaClass() {
+            methods = new HashMap<>();
+        }
+
+        public String getMethod(String name) {
+            return methods.get(name);
+        }
+
+        public void putMethod(String name, String javadoc) {
+            methods.put(name, javadoc);
+        }
+    }
+
+    private static class ClassFileVisitor extends VoidVisitorAdapter<ParsedJavaClass> {
         public Map<String, String> methods;
 
         public ClassFileVisitor() {
@@ -62,9 +82,9 @@ public class StdlibJavadocExtractor {
         }
 
         @Override
-        public void visit(MethodDeclaration n, Void arg) {
-            System.out.println("STU visit method: " + n.getName() );
-            methods.put(n.getNameAsString(), n.getJavadoc().toString());
+        public void visit(MethodDeclaration md, ParsedJavaClass parsed) {
+            System.out.println("STU visit method: " + md.getName() );
+            parsed.putMethod(md.getNameAsString(), md.getJavadoc().toString());
         }
     }
 }

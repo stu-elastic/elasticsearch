@@ -226,9 +226,10 @@ public class ContextGeneratorCommon {
                 .collect(Collectors.toList());
 
             for (PainlessContextClassInfo info : commonClassInfos) {
-                extractor.getJavadoc(info.getName(), null);
+                StdlibJavadocExtractor.ParsedJavaClass pj = extractor.getJavadoc(info.getName());
                 for (PainlessContextMethodInfo method: info.getMethods()) {
-                    System.out.println("STU: " + info.getName() + ":" + method.getName());
+                    System.out.println("STU whitelist: " + info.getName() + ":" + method.getName());
+                    System.out.println("STU javadoc: " + pj.getMethod(method.getName()));
                 }
             }
         }
