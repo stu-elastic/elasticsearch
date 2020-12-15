@@ -24,12 +24,16 @@ import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
 import org.elasticsearch.common.io.PathUtils;
+import org.elasticsearch.painless.action.PainlessContextMethodInfo;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 public class StdlibJavadocExtractor {
     private final Path root;
@@ -50,7 +54,7 @@ public class StdlibJavadocExtractor {
         return classPath.toFile();
     }
 
-    public ParsedJavaClass getJavadoc(String className) throws IOException {
+    public ParsedJavaClass parseClass(String className) throws IOException {
         ParsedJavaClass pj = new ParsedJavaClass();
         if (className.contains(".")) { // TODO(stu): handle primitives
             ClassFileVisitor visitor = new ClassFileVisitor();
@@ -61,32 +65,94 @@ public class StdlibJavadocExtractor {
     }
 
     public static class ParsedJavaClass {
-        private final Map<String, String> methods;
+        public Map<MethodSignature, ParsedMethod> methods;
 
         public ParsedJavaClass() {
             methods = new HashMap<>();
         }
 
-        public String getMethod(String name) {
-            return methods.get(name);
+        public ParsedMethod getMethod(PainlessContextMethodInfo info, Map<String, String> javaNamesToDisplayNames) {
+            return methods.get(MethodSignature.fromInfo(info, javaNamesToDisplayNames));
         }
 
-        public void putMethod(String name, String javadoc) {
-            methods.put(name, javadoc);
+        @Override
+        public String toString() {
+            return "ParsedJavaClass{" +
+                "methods=" + methods +
+                '}';
+        }
+
+        public void putMethod(MethodDeclaration declaration) {
+            methods.put(
+                MethodSignature.fromDeclaration(declaration),
+                new ParsedMethod(
+                    declaration.getJavadoc().toString(),
+                    declaration.getParameters()
+                        .stream()
+                        .map(p -> p.getName().asString())
+                        .collect(Collectors.toList())
+                )
+            );
+        }
+    }
+
+    public static class MethodSignature {
+        public final String name;
+        public final List<String> parameterTypes;
+
+        public MethodSignature(String name, List<String> parameterTypes) {
+            this.name = name;
+            this.parameterTypes = parameterTypes;
+        }
+
+        public static MethodSignature fromInfo(PainlessContextMethodInfo info,Map<String, String> javaNamesToDisplayNames) {
+            return new MethodSignature(
+                info.getName(),
+                // TODO(stu): does this handle everything?
+                info.getParameters().stream().map(javaNamesToDisplayNames::get).collect(Collectors.toList())
+            );
+        }
+
+        public static MethodSignature fromDeclaration(MethodDeclaration declaration) {
+            return new MethodSignature(
+                declaration.getNameAsString(),
+                declaration.getParameters()
+                    .stream()
+                    .map(p -> p.getType().asString())
+                    .collect(Collectors.toList())
+            );
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (!(o instanceof MethodSignature)) return false;
+            MethodSignature that = (MethodSignature) o;
+            return Objects.equals(name, that.name) &&
+                Objects.equals(parameterTypes, that.parameterTypes);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(name, parameterTypes);
+        }
+    }
+
+    public static class ParsedMethod {
+        public final String javadoc;
+        public final List<String> parameterNames;
+
+        public ParsedMethod(String javadoc, List<String> parameterNames) {
+            this.javadoc = javadoc;
+            this.parameterNames = parameterNames;
         }
     }
 
     private static class ClassFileVisitor extends VoidVisitorAdapter<ParsedJavaClass> {
-        public Map<String, String> methods;
-
-        public ClassFileVisitor() {
-            this.methods = new HashMap<>();
-        }
-
         @Override
-        public void visit(MethodDeclaration md, ParsedJavaClass parsed) {
-            System.out.println("STU visit method: " + md.getName() );
-            parsed.putMethod(md.getNameAsString(), md.getJavadoc().toString());
+        public void visit(MethodDeclaration methodDeclaration, ParsedJavaClass parsed) {
+            System.out.println("STU visit method: " + methodDeclaration.getName());
+            parsed.putMethod(methodDeclaration);
         }
     }
 }
