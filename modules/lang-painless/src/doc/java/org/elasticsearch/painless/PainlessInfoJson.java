@@ -100,8 +100,8 @@ public class PainlessInfoJson {
             this.constructors = Constructor.fromInfos(info.getConstructors(), javaNamesToDisplayNames);
             this.staticMethods = Method.fromInfos(info.getStaticMethods(), javaNamesToDisplayNames, pj);
             this.methods = Method.fromInfos(info.getMethods(), javaNamesToDisplayNames, pj);
-            this.staticFields = Field.fromInfos(info.getStaticFields(), javaNamesToDisplayNames);
-            this.fields = Field.fromInfos(info.getFields(), javaNamesToDisplayNames);
+            this.staticFields = Field.fromInfos(info.getStaticFields(), javaNamesToDisplayNames, pj);
+            this.fields = Field.fromInfos(info.getFields(), javaNamesToDisplayNames, pj);
         }
 
         public static List<Class> fromInfos(
@@ -233,16 +233,28 @@ public class PainlessInfoJson {
         private final String declaring;
         private final String name;
         private final String type;
+        private final String javadoc;
 
-        public Field(PainlessContextFieldInfo info, Map<String, String> javaNamesToDisplayNames) {
+        public static final ParseField JAVADOC = new ParseField("javadoc");
+
+        public Field(
+            PainlessContextFieldInfo info,
+            Map<String, String> javaNamesToDisplayNames,
+            StdlibJavadocExtractor.ParsedJavaClass pj
+        ) {
             this.declaring = javaNamesToDisplayNames.get(info.getDeclaring());
             this.name = info.getName();
             this.type = ContextGeneratorCommon.getType(javaNamesToDisplayNames, info.getType());
+            this.javadoc = pj.getField(name);
         }
 
-        public static List<Field> fromInfos(List<PainlessContextFieldInfo> infos, Map<String, String> javaNamesToDisplayNames) {
+        public static List<Field> fromInfos(
+            List<PainlessContextFieldInfo> infos,
+            Map<String, String> javaNamesToDisplayNames,
+            StdlibJavadocExtractor.ParsedJavaClass pj
+        ) {
             return infos.stream()
-                .map(f -> new Field(f, javaNamesToDisplayNames))
+                .map(f -> new Field(f, javaNamesToDisplayNames, pj))
                 .collect(Collectors.toList());
         }
 
@@ -252,6 +264,9 @@ public class PainlessInfoJson {
             builder.field(PainlessContextFieldInfo.DECLARING.getPreferredName(), declaring);
             builder.field(PainlessContextFieldInfo.NAME.getPreferredName(), name);
             builder.field(PainlessContextFieldInfo.TYPE.getPreferredName(), type);
+            if (javadoc != null) {
+                builder.field(JAVADOC.getPreferredName(), javadoc);
+            }
             builder.endObject();
 
             return builder;

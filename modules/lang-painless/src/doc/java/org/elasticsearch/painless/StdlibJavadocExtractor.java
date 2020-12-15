@@ -21,7 +21,10 @@ package org.elasticsearch.painless;
 
 import com.github.javaparser.StaticJavaParser;
 import com.github.javaparser.ast.CompilationUnit;
+import com.github.javaparser.ast.Modifier;
+import com.github.javaparser.ast.body.FieldDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
+import com.github.javaparser.ast.body.VariableDeclarator;
 import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
 import org.elasticsearch.common.io.PathUtils;
 import org.elasticsearch.painless.action.PainlessContextMethodInfo;
@@ -65,10 +68,12 @@ public class StdlibJavadocExtractor {
     }
 
     public static class ParsedJavaClass {
-        public Map<MethodSignature, ParsedMethod> methods;
+        public final Map<MethodSignature, ParsedMethod> methods;
+        public final Map<String, String> fields;
 
         public ParsedJavaClass() {
             methods = new HashMap<>();
+            fields = new HashMap<>();
         }
 
         public ParsedMethod getMethod(PainlessContextMethodInfo info, Map<String, String> javaNamesToDisplayNames) {
@@ -93,6 +98,16 @@ public class StdlibJavadocExtractor {
                         .collect(Collectors.toList())
                 )
             );
+        }
+
+        public String getField(String name) {
+            return fields.get(name);
+        }
+
+        public void putField(FieldDeclaration declaration) {
+            for (VariableDeclarator var : declaration.getVariables()) {
+                fields.put(var.getNameAsString(), declaration.getJavadoc().toString());
+            }
         }
     }
 
@@ -153,6 +168,15 @@ public class StdlibJavadocExtractor {
         public void visit(MethodDeclaration methodDeclaration, ParsedJavaClass parsed) {
             System.out.println("STU visit method: " + methodDeclaration.getName());
             parsed.putMethod(methodDeclaration);
+        }
+
+        @Override
+        public void visit(FieldDeclaration fieldDeclaration, ParsedJavaClass parsed) {
+            System.out.println("STU visit field: " + fieldDeclaration);
+            if (fieldDeclaration.hasModifier(Modifier.Keyword.PUBLIC) == false) {
+                return;
+            }
+            parsed.putField(fieldDeclaration);
         }
     }
 }
