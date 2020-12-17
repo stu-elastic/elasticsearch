@@ -22,6 +22,7 @@ package org.elasticsearch.painless;
 import com.github.javaparser.StaticJavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.Modifier;
+import com.github.javaparser.ast.body.ConstructorDeclaration;
 import com.github.javaparser.ast.body.FieldDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.body.VariableDeclarator;
@@ -32,6 +33,7 @@ import org.elasticsearch.painless.action.PainlessContextMethodInfo;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -50,7 +52,7 @@ public class StdlibJavadocExtractor {
         if (dollarPosition >= 0) {
             className = className.substring(0, dollarPosition);
         }
-        System.out.println("Stu className: " + className );
+        //System.out.println("Stu className: " + className );
         String[] packages = className.split("\\.");
         String path = String.join("/", packages);
         Path classPath = root.resolve(path + ".java");
@@ -70,10 +72,12 @@ public class StdlibJavadocExtractor {
     public static class ParsedJavaClass {
         public final Map<MethodSignature, ParsedMethod> methods;
         public final Map<String, String> fields;
+        public final Map<List<String>, ParsedMethod> constructors;
 
         public ParsedJavaClass() {
             methods = new HashMap<>();
             fields = new HashMap<>();
+            constructors = new HashMap<>();
         }
 
         public ParsedMethod getMethod(PainlessContextMethodInfo info, Map<String, String> javaNamesToDisplayNames) {
@@ -98,6 +102,43 @@ public class StdlibJavadocExtractor {
                         .collect(Collectors.toList())
                 )
             );
+        }
+
+        public void putConstructor(ConstructorDeclaration declaration) {
+            constructors.put(
+                declaration.getParameters().stream().map(p -> stripTypeParameters(p.getType().asString())).collect(Collectors.toList()),
+                new ParsedMethod(
+                    declaration.getJavadoc().toString(),
+                    declaration.getParameters()
+                        .stream()
+                        .map(p -> p.getName().asString())
+                        .collect(Collectors.toList())
+                )
+            );
+        }
+
+        private static String stripTypeParameters(String type) {
+            int start = 0;
+            int count = 0;
+            for (int i=0; i<type.length(); i++) {
+                char c = type.charAt(i);
+                if (c == '<') {
+                    if (start == 0) {
+                        start = i;
+                    }
+                    count++;
+                } else if (c == '>') {
+                    count--;
+                    if (count == 0) {
+                        return type.substring(0, start);
+                    }
+                }
+            }
+            return type;
+        }
+
+        public ParsedMethod getConstructor(List<String> parameters) {
+            return constructors.get(parameters);
         }
 
         public String getField(String name) {
@@ -166,17 +207,23 @@ public class StdlibJavadocExtractor {
     private static class ClassFileVisitor extends VoidVisitorAdapter<ParsedJavaClass> {
         @Override
         public void visit(MethodDeclaration methodDeclaration, ParsedJavaClass parsed) {
-            System.out.println("STU visit method: " + methodDeclaration.getName());
+            //System.out.println("STU visit method: " + methodDeclaration.getName());
             parsed.putMethod(methodDeclaration);
         }
 
         @Override
         public void visit(FieldDeclaration fieldDeclaration, ParsedJavaClass parsed) {
-            System.out.println("STU visit field: " + fieldDeclaration);
+            //System.out.println("STU visit field: " + fieldDeclaration);
             if (fieldDeclaration.hasModifier(Modifier.Keyword.PUBLIC) == false) {
                 return;
             }
             parsed.putField(fieldDeclaration);
+        }
+
+        @Override
+        public void visit(ConstructorDeclaration constructorDeclaration, ParsedJavaClass parsed) {
+            System.out.println("STU visit constructor :" + constructorDeclaration.getParameters() );
+            parsed.putConstructor(constructorDeclaration);
         }
     }
 }
