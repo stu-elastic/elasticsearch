@@ -174,6 +174,7 @@ public class StdlibJavadocExtractor {
                 declaration.getNameAsString(),
                 declaration.getParameters()
                     .stream()
+                    // TODO(stu): stripTypeParameters
                     .map(p -> p.getType().asString())
                     .collect(Collectors.toList())
             );
