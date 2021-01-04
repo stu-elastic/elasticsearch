@@ -56,6 +56,7 @@ import org.elasticsearch.env.Environment;
 import org.elasticsearch.env.NodeEnvironment;
 import org.elasticsearch.env.ShardLock;
 import org.elasticsearch.index.Index;
+import org.elasticsearch.index.IndexModule;
 import org.elasticsearch.index.IndexService;
 import org.elasticsearch.index.IndexSettings;
 import org.elasticsearch.index.VersionType;
@@ -603,7 +604,7 @@ public class IndexShardIT extends ESSingleNodeTestCase {
                     .addAggregation(AggregationBuilders.terms("foo_terms").field("foo.keyword")).get());
         logger.info("--> got an expected exception", e);
         assertThat(e.getCause(), notNullValue());
-        assertThat(e.getCause().getMessage(), containsString("[parent] Data too large, data for [<agg [foo_terms]>]"));
+        assertThat(e.getCause().getMessage(), containsString("[parent] Data too large, data for [preallocate[aggregations]]"));
 
         client().admin().cluster().prepareUpdateSettings()
                 .setTransientSettings(Settings.builder()
@@ -653,7 +654,8 @@ public class IndexShardIT extends ESSingleNodeTestCase {
                 Arrays.asList(listeners),
                 () -> {},
                 RetentionLeaseSyncer.EMPTY,
-                cbs);
+                cbs,
+                IndexModule.DEFAULT_SNAPSHOT_COMMIT_SUPPLIER);
     }
 
     private static ShardRouting getInitializingShardRouting(ShardRouting existingShardRouting) {
