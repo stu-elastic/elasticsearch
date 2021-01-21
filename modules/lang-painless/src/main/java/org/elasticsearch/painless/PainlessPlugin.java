@@ -146,6 +146,7 @@ public final class PainlessPlugin extends Plugin implements ScriptPlugin, Extens
 
     @Override
     public void loadExtensions(ExtensionLoader loader) {
+        // TODO(stu): this is loading the extensions
         loader.loadExtensions(PainlessExtension.class).stream()
             .flatMap(extension -> extension.getContextWhitelists().entrySet().stream())
             .forEach(entry -> {
