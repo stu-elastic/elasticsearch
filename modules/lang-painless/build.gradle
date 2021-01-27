@@ -87,6 +87,7 @@ sourceSets {
 dependencies {
   docImplementation project(':server')
   docImplementation project(':modules:lang-painless')
+  docImplementation 'com.github.javaparser:javaparser-symbol-solver-core:3.16.2'
 }
 
 testClusters {
@@ -100,7 +101,8 @@ tasks.register("generateContextDoc", DefaultTestClustersTask) {
   useCluster testClusters.generateContextCluster
   doFirst {
     project.javaexec {
-      main = 'org.elasticsearch.painless.ContextDocGenerator'
+      //main = 'org.elasticsearch.painless.ContextDocGenerator'
+      main = 'org.elasticsearch.painless.WhitelistDetailsJson'
       classpath = sourceSets.doc.runtimeClasspath
       systemProperty "cluster.uri", "${-> testClusters.generateContextCluster.singleNode().getAllHttpSocketURI().get(0)}"
     }.assertNormalExitValue()
