@@ -41,6 +41,7 @@ import java.util.stream.Collectors;
 public class JavadocExtractor {
 
     private final JavaClassResolver resolver;
+    private final Map<String, ParsedJavaClass> cache = new HashMap<>();
 
     private static final String GPLv2 = "* This code is free software; you can redistribute it and/or modify it"+
         "\n * under the terms of the GNU General Public License version 2 only, as"+
@@ -52,14 +53,18 @@ public class JavadocExtractor {
 
 
     public ParsedJavaClass parseClass(String className) throws IOException {
-        InputStream classStream = resolver.openClassFile(className);
-        ParsedJavaClass parsed = new ParsedJavaClass(GPLv2);
-        if (classStream == null) {
+        ParsedJavaClass parsed = cache.get(className);
+        if (parsed != null) {
             return parsed;
         }
-        ClassFileVisitor visitor = new ClassFileVisitor();
-        CompilationUnit cu = StaticJavaParser.parse(classStream);
-        visitor.visit(cu, parsed);
+        InputStream classStream = resolver.openClassFile(className);
+        parsed = new ParsedJavaClass(GPLv2);
+        if (classStream != null) {
+            ClassFileVisitor visitor = new ClassFileVisitor();
+            CompilationUnit cu = StaticJavaParser.parse(classStream);
+            visitor.visit(cu, parsed);
+            cache.put(className, parsed);
+        }
         return parsed;
     }
 
@@ -208,6 +213,10 @@ public class JavadocExtractor {
         public ParsedMethod(ParsedJavadoc javadoc, List<String> parameterNames) {
             this.javadoc = javadoc;
             this.parameterNames = parameterNames;
+        }
+
+        public boolean isEmpty() {
+            return (javadoc == null || javadoc.isEmpty()) && parameterNames.isEmpty();
         }
     }
 
