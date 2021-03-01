@@ -18,10 +18,13 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Function;
 
 import static java.util.Collections.unmodifiableList;
+import static java.util.Collections.unmodifiableSet;
 import static org.elasticsearch.painless.WriterConstants.NEEDS_PARAMETER_METHOD_TYPE;
 
 /**
@@ -38,6 +41,7 @@ public class ScriptClassInfo {
     private final List<Class<?>> getReturns;
     public final List<FunctionTable.LocalFunction> converters;
     public final FunctionTable.LocalFunction defConverter;
+    public final Set<String> globals;
 
     public ScriptClassInfo(PainlessLookup painlessLookup, Class<?> baseClass) {
         this.baseClass = baseClass;
@@ -47,6 +51,7 @@ public class ScriptClassInfo {
         List<org.objectweb.asm.commons.Method> needsMethods = new ArrayList<>();
         List<org.objectweb.asm.commons.Method> getMethods = new ArrayList<>();
         List<Class<?>> getReturns = new ArrayList<>();
+        Set<String> globals = new HashSet<>();
 
         Class<?> returnType = null;
         for (java.lang.reflect.Method m : baseClass.getMethods()) {
@@ -76,6 +81,7 @@ public class ScriptClassInfo {
 
                 getMethods.add(new org.objectweb.asm.commons.Method(m.getName(),
                     MethodType.methodType(m.getReturnType()).toMethodDescriptorString()));
+                globals.add(proxiedVariableName(m.getName()));
 
             }
         }
@@ -124,11 +130,13 @@ public class ScriptClassInfo {
         }
         for (int arg = 0; arg < types.length; arg++) {
             arguments.add(methodArgument(painlessLookup, types[arg], argumentNamesConstant[arg]));
+            globals.add(argumentNamesConstant[arg]);
         }
         this.executeArguments = unmodifiableList(arguments);
         this.needsMethods = unmodifiableList(needsMethods);
         this.getMethods = unmodifiableList(getMethods);
         this.getReturns = unmodifiableList(getReturns);
+        this.globals = unmodifiableSet(globals);
     }
 
     /**
@@ -180,6 +188,13 @@ public class ScriptClassInfo {
      */
     public List<Class<?>> getGetReturns() {
         return getReturns;
+    }
+
+    /**
+     * Arguments to execute and proxied variables.
+     */
+    public Set<String> getGlobals() {
+        return globals;
     }
 
     /**
@@ -242,5 +257,10 @@ public class ScriptClassInfo {
         } catch (IllegalArgumentException | IllegalAccessException e) {
             throw new IllegalArgumentException("Error trying to read [" + iface.getName() + "#ARGUMENTS]", e);
         }
+    }
+
+    private static String proxiedVariableName(String getMethodName) {
+        String parameterName = getMethodName.substring(3);
+        return Character.toLowerCase(parameterName.charAt(0)) + parameterName.substring(1);
     }
 }

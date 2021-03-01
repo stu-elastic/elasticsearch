@@ -220,7 +220,7 @@ public class DefaultSemanticAnalysisPhase extends UserTreeBaseVisitor<SemanticSc
                 scriptScope.getFunctionTable().getFunction(functionName, userFunctionNode.getCanonicalTypeNameParameters().size());
         Class<?> returnType = localFunction.getReturnType();
         List<Class<?>> typeParameters = localFunction.getTypeParameters();
-        FunctionScope functionScope = newFunctionScope(scriptScope, localFunction.getReturnType());
+        FunctionScope functionScope = newFunctionScope(scriptScope, localFunction.getReturnType(), localFunction.isInternal());
 
         for (int index = 0; index < localFunction.getTypeParameters().size(); ++index) {
             Class<?> typeParameter = localFunction.getTypeParameters().get(index);
@@ -237,7 +237,7 @@ public class DefaultSemanticAnalysisPhase extends UserTreeBaseVisitor<SemanticSc
         }
 
         functionScope.setCondition(userBlockNode, LastSource.class);
-        visit(userBlockNode, functionScope.newLocalScope());
+        visit(userBlockNode, functionScope.newLocalScope()); // TODO(stu): pass in here?
         boolean methodEscape = functionScope.getCondition(userBlockNode, MethodEscape.class);
         boolean isAutoReturnEnabled = userFunctionNode.isAutoReturnEnabled();
 
@@ -2403,6 +2403,24 @@ public class DefaultSemanticAnalysisPhase extends UserTreeBaseVisitor<SemanticSc
 
             Class<?> valueType = variable.getType();
             semanticScope.putDecoration(userSymbolNode, new ValueType(valueType));
+        } else if (semanticScope.getScriptScope().getScriptClassInfo().getGlobals().contains(symbol)) {
+            /*
+            if (read == false && write == false) {
+                throw userSymbolNode.createError(new IllegalArgumentException("not a statement: variable [" + symbol + "] not used"));
+            }
+
+            Location location = userSymbolNode.getLocation();
+            Variable variable = semanticScope.getVariable(location, symbol);
+
+            if (write && variable.isFinal()) {
+                throw userSymbolNode.createError(new IllegalArgumentException("Variable [" + variable.getName() + "] is read-only."));
+            }
+
+            Class<?> valueType = variable.getType();
+            // TODO(stu): add new decoration
+            semanticScope.putDecoration(userSymbolNode, new ValueType(valueType));
+             */
+            throw new IllegalStateException("TODO: handle globals");
         } else {
             semanticScope.putDecoration(userSymbolNode, new PartialCanonicalTypeName(symbol));
         }

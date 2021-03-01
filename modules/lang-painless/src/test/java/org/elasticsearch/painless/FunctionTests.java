@@ -8,6 +8,8 @@
 
 package org.elasticsearch.painless;
 
+import java.util.Map;
+
 import static org.hamcrest.Matchers.containsString;
 
 public class FunctionTests extends ScriptTestCase {

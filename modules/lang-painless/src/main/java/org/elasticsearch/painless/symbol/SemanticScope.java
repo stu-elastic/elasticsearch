@@ -80,10 +80,12 @@ public abstract class SemanticScope {
     public static class FunctionScope extends SemanticScope {
 
         protected final Class<?> returnType;
+        private final boolean isInternal;
 
-        public FunctionScope(ScriptScope scriptScope, Class<?> returnType) {
+        public FunctionScope(ScriptScope scriptScope, Class<?> returnType, boolean isInternal) {
             super(scriptScope, new HashSet<>());
             this.returnType = Objects.requireNonNull(returnType);
+            this.isInternal = isInternal;
         }
 
         @Override
@@ -121,6 +123,11 @@ public abstract class SemanticScope {
         public String getReturnCanonicalTypeName() {
             return PainlessLookupUtility.typeToCanonicalTypeName(returnType);
         }
+
+        @Override
+        public boolean isInternal() {
+            return isInternal;
+        }
     }
 
     /**
@@ -151,6 +158,11 @@ public abstract class SemanticScope {
             }
 
             return parent.isVariableDefined(name);
+        }
+
+        @Override
+        public boolean isInternal() {
+            return parent.isInternal();
         }
 
         /**
@@ -218,6 +230,11 @@ public abstract class SemanticScope {
             return parent.isVariableDefined(name);
         }
 
+        @Override
+        public boolean isInternal() {
+            return parent.isInternal();
+        }
+
         /**
          * Returns the requested variable by name if found within this scope.
          * Otherwise, requests the variable from the parent scope.
@@ -253,8 +270,8 @@ public abstract class SemanticScope {
      * Returns a new function scope as the top-level scope with the
      * specified return type.
      */
-    public static FunctionScope newFunctionScope(ScriptScope scriptScope, Class<?> returnType) {
-        return new FunctionScope(scriptScope, returnType);
+    public static FunctionScope newFunctionScope(ScriptScope scriptScope, Class<?> returnType, boolean isInternal) {
+        return new FunctionScope(scriptScope, returnType, isInternal);
     }
 
     protected final ScriptScope scriptScope;
@@ -325,6 +342,7 @@ public abstract class SemanticScope {
 
     public abstract Class<?> getReturnType();
     public abstract String getReturnCanonicalTypeName();
+    public abstract boolean isInternal();
 
     public Variable defineVariable(Location location, Class<?> type, String name, boolean isReadOnly) {
         if (isVariableDefined(name)) {

@@ -52,7 +52,7 @@ public class PainlessSemanticAnalysisPhase extends DefaultSemanticAnalysisPhase 
             LocalFunction localFunction =
                     scriptScope.getFunctionTable().getFunction(functionName, scriptClassInfo.getExecuteArguments().size());
             List<Class<?>> typeParameters = localFunction.getTypeParameters();
-            FunctionScope functionScope = newFunctionScope(scriptScope, localFunction.getReturnType());
+            FunctionScope functionScope = newFunctionScope(scriptScope, localFunction.getReturnType(), true);
 
             for (int i = 0; i < typeParameters.size(); ++i) {
                 Class<?> typeParameter = localFunction.getTypeParameters().get(i);
