@@ -556,6 +556,7 @@ public class DefaultUserTreeToIRTreePhase implements UserTreeVisitor<ScriptScope
 
     @Override
     public void visitFunction(SFunction userFunctionNode, ScriptScope scriptScope) {
+        // TODO(stu): if there's a global here we're gonna need to modify the parameter list
         String functionName = userFunctionNode.getFunctionName();
         int functionArity = userFunctionNode.getCanonicalTypeNameParameters().size();
         LocalFunction localFunction = scriptScope.getFunctionTable().getFunction(functionName, functionArity);
@@ -1465,6 +1466,8 @@ public class DefaultUserTreeToIRTreePhase implements UserTreeVisitor<ScriptScope
      */
     @Override
     public void visitSymbol(ESymbol userSymbolNode, ScriptScope scriptScope) {
+        // TODO(stu): if there's a global symbol, load it up.
+        // Assuming we're in execute, it must be part of existing variables
         ExpressionNode irExpressionNode;
 
         if (scriptScope.hasDecoration(userSymbolNode, StaticType.class)) {
@@ -1766,6 +1769,7 @@ public class DefaultUserTreeToIRTreePhase implements UserTreeVisitor<ScriptScope
 
     @Override
     public void visitCall(ECall userCallNode, ScriptScope scriptScope) {
+        // TODO(stu): if global push load onto stack
         ExpressionNode irExpressionNode;
 
         ValueType prefixValueType = scriptScope.getDecoration(userCallNode.getPrefixNode(), ValueType.class);

@@ -238,6 +238,7 @@ public class DefaultSemanticAnalysisPhase extends UserTreeBaseVisitor<SemanticSc
 
         functionScope.setCondition(userBlockNode, LastSource.class);
         visit(userBlockNode, functionScope.newLocalScope()); // TODO(stu): pass in here?
+        // TODO(stu): modify the function table here to say "need a global"
         boolean methodEscape = functionScope.getCondition(userBlockNode, MethodEscape.class);
         boolean isAutoReturnEnabled = userFunctionNode.isAutoReturnEnabled();
 
@@ -2404,22 +2405,25 @@ public class DefaultSemanticAnalysisPhase extends UserTreeBaseVisitor<SemanticSc
             Class<?> valueType = variable.getType();
             semanticScope.putDecoration(userSymbolNode, new ValueType(valueType));
         } else if (semanticScope.getScriptScope().getScriptClassInfo().getGlobals().contains(symbol)) {
-            /*
+            // This is fine in execute because we should have found it in the condition above
+            // in if(semanticScope.isVariableDefined(symbol))
+            // TODO(stu): somehow need to inform the containing function that we need a global here.  visitFunction then needs to
+            // modify the function table to add the global to the function table for this function.
             if (read == false && write == false) {
                 throw userSymbolNode.createError(new IllegalArgumentException("not a statement: variable [" + symbol + "] not used"));
             }
 
             Location location = userSymbolNode.getLocation();
-            Variable variable = semanticScope.getVariable(location, symbol);
+            // TODO(stu): fetch info on the global here.
+            Variable variable = null; // "getGlobal"
 
             if (write && variable.isFinal()) {
                 throw userSymbolNode.createError(new IllegalArgumentException("Variable [" + variable.getName() + "] is read-only."));
             }
 
             Class<?> valueType = variable.getType();
-            // TODO(stu): add new decoration
+            // TODO(stu): add new decoration of "global" + "ValueType"
             semanticScope.putDecoration(userSymbolNode, new ValueType(valueType));
-             */
             throw new IllegalStateException("TODO: handle globals");
         } else {
             semanticScope.putDecoration(userSymbolNode, new PartialCanonicalTypeName(symbol));

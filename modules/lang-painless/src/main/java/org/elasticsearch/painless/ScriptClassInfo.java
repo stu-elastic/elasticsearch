@@ -81,6 +81,7 @@ public class ScriptClassInfo {
 
                 getMethods.add(new org.objectweb.asm.commons.Method(m.getName(),
                     MethodType.methodType(m.getReturnType()).toMethodDescriptorString()));
+                // TODO(stu): variables with types here
                 globals.add(proxiedVariableName(m.getName()));
 
             }
@@ -136,6 +137,7 @@ public class ScriptClassInfo {
         this.needsMethods = unmodifiableList(needsMethods);
         this.getMethods = unmodifiableList(getMethods);
         this.getReturns = unmodifiableList(getReturns);
+        // TODO(stu): Make globals Variable, need types.
         this.globals = unmodifiableSet(globals);
     }
 
@@ -194,6 +196,7 @@ public class ScriptClassInfo {
      * Arguments to execute and proxied variables.
      */
     public Set<String> getGlobals() {
+        // TODO(stu): get the types here.
         return globals;
     }
 
