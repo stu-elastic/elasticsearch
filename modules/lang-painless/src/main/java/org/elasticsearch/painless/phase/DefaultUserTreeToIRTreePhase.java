@@ -556,6 +556,7 @@ public class DefaultUserTreeToIRTreePhase implements UserTreeVisitor<ScriptScope
 
     @Override
     public void visitFunction(SFunction userFunctionNode, ScriptScope scriptScope) {
+        // TODO(stu): mangle function name
         String functionName = userFunctionNode.getFunctionName();
         int functionArity = userFunctionNode.getCanonicalTypeNameParameters().size();
         LocalFunction localFunction = scriptScope.getFunctionTable().getFunction(functionName, functionArity);
@@ -1220,7 +1221,7 @@ public class DefaultUserTreeToIRTreePhase implements UserTreeVisitor<ScriptScope
                     scriptScope.getDecoration(callLocalNode, StandardPainlessClassBinding.class).getPainlessClassBinding();
             String bindingName = scriptScope.getNextSyntheticName("class_binding");
 
-            FieldNode irFieldNode = new FieldNode(callLocalNode.getLocation());
+            FieldNode irFieldNode = new FieldNode(callLocalNode.getLocation()); // TODO(stu): this is how we create a field node
             irFieldNode.attachDecoration(new IRDModifiers(Modifier.PRIVATE));
             irFieldNode.attachDecoration(new IRDFieldType(painlessClassBinding.javaConstructor.getDeclaringClass()));
             irFieldNode.attachDecoration(new IRDName(bindingName));
@@ -1465,6 +1466,7 @@ public class DefaultUserTreeToIRTreePhase implements UserTreeVisitor<ScriptScope
      */
     @Override
     public void visitSymbol(ESymbol userSymbolNode, ScriptScope scriptScope) {
+        // TODO(stu): am I member or local variable?
         ExpressionNode irExpressionNode;
 
         if (scriptScope.hasDecoration(userSymbolNode, StaticType.class)) {

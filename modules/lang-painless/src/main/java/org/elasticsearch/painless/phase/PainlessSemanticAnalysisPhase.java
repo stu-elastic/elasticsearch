@@ -52,20 +52,21 @@ public class PainlessSemanticAnalysisPhase extends DefaultSemanticAnalysisPhase 
             LocalFunction localFunction =
                     scriptScope.getFunctionTable().getFunction(functionName, scriptClassInfo.getExecuteArguments().size());
             List<Class<?>> typeParameters = localFunction.getTypeParameters();
+            // TODO(stu): Create class scope first
             FunctionScope functionScope = newFunctionScope(scriptScope, localFunction.getReturnType());
 
-            for (int i = 0; i < typeParameters.size(); ++i) {
+            for (int i = 0; i < typeParameters.size(); ++i) { // TODO(stu): these become globals
                 Class<?> typeParameter = localFunction.getTypeParameters().get(i);
                 String parameterName = scriptClassInfo.getExecuteArguments().get(i).getName();
-                functionScope.defineVariable(userFunctionNode.getLocation(), typeParameter, parameterName, false);
+                functionScope.defineVariable(userFunctionNode.getLocation(), typeParameter, parameterName, false); // TODO(stu): these are added to ClassScope
             }
 
-            for (int i = 0; i < scriptClassInfo.getGetMethods().size(); ++i) {
+            for (int i = 0; i < scriptClassInfo.getGetMethods().size(); ++i) { // TODO(stu): these become globals
                 Class<?> typeParameter = scriptClassInfo.getGetReturns().get(i);
                 org.objectweb.asm.commons.Method method = scriptClassInfo.getGetMethods().get(i);
                 String parameterName = method.getName().substring(3);
                 parameterName = Character.toLowerCase(parameterName.charAt(0)) + parameterName.substring(1);
-                functionScope.defineVariable(userFunctionNode.getLocation(), typeParameter, parameterName, false);
+                functionScope.defineVariable(userFunctionNode.getLocation(), typeParameter, parameterName, false); // TODO(stu): these are added to ClassScope
             }
 
             SBlock userBlockNode = userFunctionNode.getBlockNode();

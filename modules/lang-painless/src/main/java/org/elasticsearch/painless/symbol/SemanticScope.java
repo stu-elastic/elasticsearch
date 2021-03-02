@@ -71,6 +71,38 @@ public abstract class SemanticScope {
         }
     }
 
+    public static class ClassScope extends SemanticScope {
+        protected final Map<String, Class<?>> globals;
+        public ClassScope(ScriptScope scriptScope, Map<String, Class<?>> globals) {
+            super(scriptScope, new HashSet<>());
+            this.globals = Collections.unmodifiableMap(globals);
+        }
+
+        @Override
+        public boolean isVariableDefined(String name) {
+            return globals.containsKey(name);
+        }
+
+        @Override
+        public Class<?> getReturnType() {
+            throw new UnsupportedOperationException("ClassScope has no returnType");
+        }
+
+        @Override
+        public String getReturnCanonicalTypeName() {
+            throw new UnsupportedOperationException("ClassScope has no returnType");
+        }
+
+        @Override
+        public Variable getVariable(Location location, String name) {
+            return null;
+        }
+    }
+
+    // TODO(stu): add ClassScope with member variables.
+    // ClassScope takes in ScriptScope a'la current FunctionScope
+    // Lambda/block scopes are child scope, change FunctionScope into a child scope that looks at class scope
+
     /**
      * Created whenever a new user-defined or internally-defined function
      * is generated. This is considered a top-level scope and has no parent.
@@ -79,11 +111,13 @@ public abstract class SemanticScope {
      */
     public static class FunctionScope extends SemanticScope {
 
+        protected final SemanticScope parent;
         protected final Class<?> returnType;
 
-        public FunctionScope(ScriptScope scriptScope, Class<?> returnType) {
-            super(scriptScope, new HashSet<>());
+        public FunctionScope(SemanticScope parent, Class<?> returnType) {
+            super(parent.scriptScope, new HashSet<>());
             this.returnType = Objects.requireNonNull(returnType);
+            this.parent = Objects.requireNonNull(parent);
         }
 
         @Override

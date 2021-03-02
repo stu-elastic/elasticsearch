@@ -252,6 +252,7 @@ public class DefaultIRTreeToASMBytesPhase implements IRTreeVisitor<WriteScope> {
 
     @Override
     public void visitFunction(FunctionNode irFunctionNode, WriteScope writeScope) {
+        // TODO(stu): all functions are final methods, put # before
         int access = Opcodes.ACC_PUBLIC;
 
         if (irFunctionNode.hasCondition(IRCStatic.class)) {
