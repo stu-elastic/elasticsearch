@@ -34,8 +34,10 @@ public class ContextApiSpecGenerator {
         Path rootDir = resetRootDir();
         ContextGeneratorCommon.PainlessInfos infos;
         JavaClassFilesystemResolver jdksrc = getJdkSrc();
+        JavadocExtractor extractor = null;
         if (jdksrc != null) {
-            infos = new ContextGeneratorCommon.PainlessInfos(contexts, new JavadocExtractor(jdksrc));
+            extractor = new JavadocExtractor(jdksrc);
+            infos = new ContextGeneratorCommon.PainlessInfos(contexts, extractor);
         } else {
             infos = new ContextGeneratorCommon.PainlessInfos(contexts);
         }

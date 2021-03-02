@@ -35,25 +35,40 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class JavadocExtractor {
 
+    public enum LicenseType {
+        NONE(""),
+
+        GPLv2("This code is free software; you can redistribute it and/or" +
+            " modify it under the terms of the GNU General Public License version 2 only, as published" +
+            " by the Free Software Foundation."),
+
+        ESv2("Copyright Elasticsearch B.V. and/or licensed to Elasticsearch" +
+            " B.V. under one or more contributor license agreements. Licensed under the Elastic License 2.0" +
+            " and the Server Side Public License, v 1; you may not use this file except in compliance with," +
+            " at your election, the Elastic License 2.0 or the Server Side Public License, v 1.");
+
+        private final String snippet;
+        private static final Pattern LICENSE_CLEANUP = Pattern.compile("\\s*\n\\s*\\*");
+
+        LicenseType(String snippet) {
+            this.snippet = snippet;
+        }
+
+        boolean matches(String comment) {
+            return snippet.contains(
+                LICENSE_CLEANUP.matcher(comment).replaceAll("").trim()
+            );
+        }
+    }
+
     private final JavaClassResolver resolver;
     private final Map<String, ParsedJavaClass> cache = new HashMap<>();
-
-    private static final String GPLv2 = "This code is free software; you can redistribute it and/or" +
-        " modify it under the terms of the GNU General Public License version 2 only, as published" +
-        " by the Free Software Foundation.";
-
-    private static final String ESv2 = "Copyright Elasticsearch B.V. and/or licensed to Elasticsearch" +
-        " B.V. under one or more contributor license agreements. Licensed under the Elastic License 2.0" +
-        " and the Server Side Public License, v 1; you may not use this file except in compliance with," +
-        " at your election, the Elastic License 2.0 or the Server Side Public License, v 1.";
-
-    private static final String[] LICENSES = new String[]{GPLv2, ESv2};
+    private final Map<LicenseType, String> licenses = new HashMap<>();
 
     public JavadocExtractor(JavaClassResolver resolver) {
         this.resolver = resolver;
@@ -66,46 +81,67 @@ public class JavadocExtractor {
             return parsed;
         }
         InputStream classStream = resolver.openClassFile(className);
-        parsed = new ParsedJavaClass();
+        parsed = new ParsedJavaClass(className);
         if (classStream != null) {
             ClassFileVisitor visitor = new ClassFileVisitor();
             CompilationUnit cu = StaticJavaParser.parse(classStream);
             visitor.visit(cu, parsed);
-            cache.put(className, parsed);
+            put(parsed);
         }
         return parsed;
     }
 
-    public static class ParsedJavaClass {
-        private static final Pattern LICENSE_CLEANUP = Pattern.compile("\\s*\n\\s*\\*");
+    private void put(ParsedJavaClass parsed) {
+        if (parsed.license == null || parsed.licenseType == LicenseType.NONE) {
+            return;
+        }
 
+        String license = licenses.get(parsed.licenseType);
+        if (license == null) {
+            licenses.put(parsed.licenseType, parsed.license);
+        } else if (license.equals(parsed.license) == false){
+            throw new IllegalStateException("Two of the same licenses for [" + parsed.licenseType + "]. " +
+                "\n[" + license + "]\nis not the same as [" + parsed.name + "]\n[" + parsed.license + "]");
+        }
+        // No need to keep the full text around.
+        parsed.license = "";
+        cache.put(parsed.name, parsed);
+    }
+
+    public static class ParsedJavaClass {
+        public final String name;
         public final Map<MethodSignature, ParsedMethod> methods;
         public final Map<String, String> fields;
         public final Map<List<String>, ParsedMethod> constructors;
-        private final String[] licenses;
-        private boolean valid = false;
-        private boolean validated = false;
+        private LicenseType licenseType = LicenseType.NONE;
+        private String license;
 
-        public ParsedJavaClass(String ... licenses) {
+        public ParsedJavaClass(String name) {
+            this.name = name;
             methods = new HashMap<>();
             fields = new HashMap<>();
             constructors = new HashMap<>();
-            if (licenses.length > 0) {
-                this.licenses = licenses;
-            } else {
-                this.licenses = LICENSES;
+        }
+
+        public void validateLicense(Comment license) {
+            if (this.license != null) {
+                throw new IllegalStateException("Cannot double validate the license");
+            }
+            if (license == null) {
+                throw new IllegalStateException("Must be licensed");
+            }
+            this.license = license.getContent();
+
+            for (LicenseType licenseType: LicenseType.values()) {
+                if (licenseType.matches(this.license)) {
+                    this.licenseType = licenseType;
+                    return;
+                }
             }
         }
 
-        public void validateLicense(Optional<Comment> license) {
-            if (validated) {
-                throw new IllegalStateException("Cannot double validate the license");
-            }
-            String header = license.map(c -> LICENSE_CLEANUP.matcher(c.getContent()).replaceAll("").trim()).orElse("");
-            for (String validLicense : licenses) {
-                valid |= header.contains(validLicense);
-            }
-            validated = true;
+        private boolean invalidLicense() {
+            return licenseType == LicenseType.NONE;
         }
 
         public ParsedMethod getMethod(String name, List<String> parameterTypes) {
@@ -132,7 +168,7 @@ public class JavadocExtractor {
         }
 
         public void putMethod(MethodDeclaration declaration) {
-            if (valid == false) {
+            if (invalidLicense()) {
                 return;
             }
             methods.put(
@@ -148,7 +184,7 @@ public class JavadocExtractor {
         }
 
         public void putConstructor(ConstructorDeclaration declaration) {
-            if (valid == false) {
+            if (invalidLicense()) {
                 return;
             }
             constructors.put(
@@ -172,7 +208,7 @@ public class JavadocExtractor {
         }
 
         public void putField(FieldDeclaration declaration) {
-            if (valid == false) {
+            if (invalidLicense()) {
                 return;
             }
             for (VariableDeclarator var : declaration.getVariables()) {
@@ -361,7 +397,7 @@ public class JavadocExtractor {
     private static class ClassFileVisitor extends VoidVisitorAdapter<ParsedJavaClass> {
         @Override
         public void visit(CompilationUnit compilationUnit, ParsedJavaClass parsed) {
-            parsed.validateLicense(compilationUnit.getComment());
+            compilationUnit.getComment().ifPresent(parsed::validateLicense);
             super.visit(compilationUnit, parsed);
         }
 
