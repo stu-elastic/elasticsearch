@@ -35,4 +35,5 @@ class java.lang.String {
 
 static_import {
   int exampleAddInts(int, int) from_class org.elasticsearch.example.painlesswhitelist.ExampleStaticMethodClass
+  org.elasticsearch.painless.api.Field field(String) from_class org.elasticsearch.painless.api.FieldBuilder
 }
