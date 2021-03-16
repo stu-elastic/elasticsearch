@@ -13,6 +13,7 @@ import org.elasticsearch.painless.lookup.PainlessLookupUtility;
 import org.elasticsearch.painless.node.ANode;
 import org.elasticsearch.painless.symbol.Decorator.Condition;
 import org.elasticsearch.painless.symbol.Decorator.Decoration;
+import org.elasticsearch.painless.symbol.FunctionTable.LocalFunction;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -43,11 +44,13 @@ public abstract class SemanticScope {
         protected final Class<?> type;
         protected final String name;
         protected final boolean isFinal;
+        protected final boolean isGlobal;
 
-        public Variable(Class<?> type, String name, boolean isFinal) {
+        public Variable(Class<?> type, String name, boolean isFinal, boolean isGlobal) {
             this.type = Objects.requireNonNull(type);
             this.name = Objects.requireNonNull(name);
             this.isFinal = isFinal;
+            this.isGlobal = isGlobal;
         }
 
         public Class<?> getType() {
@@ -66,16 +69,20 @@ public abstract class SemanticScope {
             return name;
         }
 
+        public boolean isGlobal() {
+            return isGlobal;
+        }
+
         public boolean isFinal() {
             return isFinal;
         }
     }
 
     public static class ClassScope extends SemanticScope {
-        protected final Map<String, Class<?>> globals;
-        public ClassScope(ScriptScope scriptScope, Map<String, Class<?>> globals) {
+        protected final Map<String, Variable> globals;
+        public ClassScope(ScriptScope scriptScope) {
             super(scriptScope, new HashSet<>());
-            this.globals = Collections.unmodifiableMap(globals);
+            this.globals = new HashMap<>();
         }
 
         @Override
@@ -84,8 +91,8 @@ public abstract class SemanticScope {
         }
 
         @Override
-        public Class<?> getReturnType() {
-            throw new UnsupportedOperationException("ClassScope has no returnType");
+        public LocalFunction getLocalFunction() {
+            throw new UnsupportedOperationException("ClassScope has no localFunction");
         }
 
         @Override
@@ -95,7 +102,19 @@ public abstract class SemanticScope {
 
         @Override
         public Variable getVariable(Location location, String name) {
-            return null;
+            return globals.get(name);
+        }
+
+        @Override
+        public Variable defineVariable(Location location, Class<?> type, String name, boolean isReadOnly) {
+            if (isVariableDefined(name)) {
+                throw location.createError(new IllegalArgumentException("variable [" + name + "] is already defined"));
+            }
+
+            Variable variable = new Variable(type, name, isReadOnly, true);
+            globals.put(name, variable);
+
+            return variable;
         }
     }
 
@@ -112,17 +131,17 @@ public abstract class SemanticScope {
     public static class FunctionScope extends SemanticScope {
 
         protected final SemanticScope parent;
-        protected final Class<?> returnType;
+        protected final LocalFunction localFunction;
 
-        public FunctionScope(SemanticScope parent, Class<?> returnType) {
+        public FunctionScope(SemanticScope parent, LocalFunction localFunction) {
             super(parent.scriptScope, new HashSet<>());
-            this.returnType = Objects.requireNonNull(returnType);
+            this.localFunction = Objects.requireNonNull(localFunction);
             this.parent = Objects.requireNonNull(parent);
         }
 
         @Override
         public boolean isVariableDefined(String name) {
-            return variables.containsKey(name);
+            return variables.containsKey(name) || parent.isVariableDefined(name);
         }
 
         /**
@@ -138,22 +157,26 @@ public abstract class SemanticScope {
             Variable variable = variables.get(name);
 
             if (variable == null) {
-                throw location.createError(new IllegalArgumentException("variable [" + name + "] is not defined"));
+                variable = parent.getVariable(location, name);
+            } else {
+                usedVariables.add(name);
             }
 
-            usedVariables.add(name);
+            if (variable == null) {
+                throw location.createError(new IllegalArgumentException("variable [" + name + "] is not defined"));
+            }
 
             return variable;
         }
 
         @Override
-        public Class<?> getReturnType() {
-            return returnType;
+        public LocalFunction getLocalFunction() {
+            return localFunction;
         }
 
         @Override
         public String getReturnCanonicalTypeName() {
-            return PainlessLookupUtility.typeToCanonicalTypeName(returnType);
+            return PainlessLookupUtility.typeToCanonicalTypeName(localFunction.returnType);
         }
     }
 
@@ -169,13 +192,11 @@ public abstract class SemanticScope {
     public static class LambdaScope extends SemanticScope {
 
         protected final SemanticScope parent;
-        protected final Class<?> returnType;
         protected final Set<Variable> captures = new HashSet<>();
 
-        protected LambdaScope(SemanticScope parent, Class<?> returnType) {
+        protected LambdaScope(SemanticScope parent) {
             super(parent.scriptScope, parent.usedVariables);
             this.parent = parent;
-            this.returnType = returnType;
         }
 
         @Override
@@ -202,7 +223,7 @@ public abstract class SemanticScope {
 
             if (variable == null) {
                 variable = parent.getVariable(location, name);
-                variable = new Variable(variable.getType(), variable.getName(), true);
+                variable = new Variable(variable.getType(), variable.getName(), true, variable.isGlobal());
                 captures.add(variable);
             } else {
                 usedVariables.add(name);
@@ -212,13 +233,13 @@ public abstract class SemanticScope {
         }
 
         @Override
-        public Class<?> getReturnType() {
-            return returnType;
+        public LocalFunction getLocalFunction() {
+            return parent.getLocalFunction();
         }
 
         @Override
         public String getReturnCanonicalTypeName() {
-            return PainlessLookupUtility.typeToCanonicalTypeName(returnType);
+            return PainlessLookupUtility.typeToCanonicalTypeName(parent.getLocalFunction().returnType);
         }
 
         public Set<Variable> getCaptures() {
@@ -273,8 +294,8 @@ public abstract class SemanticScope {
         }
 
         @Override
-        public Class<?> getReturnType() {
-            return parent.getReturnType();
+        public LocalFunction getLocalFunction() {
+            return parent.getLocalFunction();
         }
 
         @Override
@@ -284,11 +305,10 @@ public abstract class SemanticScope {
     }
 
     /**
-     * Returns a new function scope as the top-level scope with the
-     * specified return type.
+     * Returns a new function scope with the specified return type.
      */
-    public static FunctionScope newFunctionScope(ScriptScope scriptScope, Class<?> returnType) {
-        return new FunctionScope(scriptScope, returnType);
+    public static FunctionScope newFunctionScope(ClassScope classScope, LocalFunction localFunction) {
+        return new FunctionScope(classScope, localFunction);
     }
 
     protected final ScriptScope scriptScope;
@@ -305,8 +325,8 @@ public abstract class SemanticScope {
      * Returns a new lambda scope with the current scope as
      * its parent and the specified return type.
      */
-    public LambdaScope newLambdaScope(Class<?> returnType) {
-        return new LambdaScope(this, returnType);
+    public LambdaScope newLambdaScope() {
+        return new LambdaScope(this);
     }
 
     /**
@@ -357,15 +377,19 @@ public abstract class SemanticScope {
         return scriptScope.replicate(originalNode.getIdentifier(), targetNode.getIdentifier(), type);
     }
 
-    public abstract Class<?> getReturnType();
+    public abstract LocalFunction getLocalFunction();
     public abstract String getReturnCanonicalTypeName();
+
+    public Class<?> getReturnType() {
+        return getLocalFunction().returnType;
+    }
 
     public Variable defineVariable(Location location, Class<?> type, String name, boolean isReadOnly) {
         if (isVariableDefined(name)) {
             throw location.createError(new IllegalArgumentException("variable [" + name + "] is already defined"));
         }
 
-        Variable variable = new Variable(type, name, isReadOnly);
+        Variable variable = new Variable(type, name, isReadOnly, false);
         variables.put(name, variable);
 
         return variable;

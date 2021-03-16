@@ -337,6 +337,13 @@ public class IRDecorations {
         }
     }
 
+    /** inject script reference */
+    public static class IRCInjectScript implements IRCondition {
+        private IRCInjectScript() {
+
+        }
+    }
+
     /** describes the maximum number of loop iterations possible in a method */
     public static class IRDMaxLoopCounter extends IRDecoration<Integer> {
 

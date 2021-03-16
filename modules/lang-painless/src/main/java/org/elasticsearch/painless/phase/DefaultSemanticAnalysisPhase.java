@@ -128,6 +128,7 @@ import org.elasticsearch.painless.symbol.SemanticScope;
 import org.elasticsearch.painless.symbol.SemanticScope.FunctionScope;
 import org.elasticsearch.painless.symbol.SemanticScope.LambdaScope;
 import org.elasticsearch.painless.symbol.SemanticScope.Variable;
+import org.elasticsearch.script.Script;
 
 import java.lang.reflect.Modifier;
 import java.time.ZonedDateTime;
@@ -205,8 +206,9 @@ public class DefaultSemanticAnalysisPhase extends UserTreeBaseVisitor<SemanticSc
      * Visits a class.
      */
     public void visitClass(SClass userClassNode, ScriptScope scriptScope) {
+        SemanticScope.ClassScope classScope = new SemanticScope.ClassScope(scriptScope);
         for (SFunction userFunctionNode : userClassNode.getFunctionNodes()) {
-            visitFunction(userFunctionNode, scriptScope);
+            visitFunction(userFunctionNode, classScope);
         }
     }
 
@@ -214,13 +216,14 @@ public class DefaultSemanticAnalysisPhase extends UserTreeBaseVisitor<SemanticSc
      * Visits a function and defines variables for each parameter.
      * Checks: control flow, type validation
      */
-    public void visitFunction(SFunction userFunctionNode, ScriptScope scriptScope) {
+    public void visitFunction(SFunction userFunctionNode, SemanticScope.ClassScope classScope) {
         String functionName = userFunctionNode.getFunctionName();
+        ScriptScope scriptScope = classScope.getScriptScope();
         LocalFunction localFunction =
                 scriptScope.getFunctionTable().getFunction(functionName, userFunctionNode.getCanonicalTypeNameParameters().size());
         Class<?> returnType = localFunction.getReturnType();
         List<Class<?>> typeParameters = localFunction.getTypeParameters();
-        FunctionScope functionScope = newFunctionScope(scriptScope, localFunction.getReturnType());
+        FunctionScope functionScope = newFunctionScope(classScope, localFunction);
 
         for (int index = 0; index < localFunction.getTypeParameters().size(); ++index) {
             Class<?> typeParameter = localFunction.getTypeParameters().get(index);
@@ -2177,7 +2180,7 @@ public class DefaultSemanticAnalysisPhase extends UserTreeBaseVisitor<SemanticSc
 
         Location location = userLambdaNode.getLocation();
         List<String> parameterNames = userLambdaNode.getParameterNames();
-        LambdaScope lambdaScope = semanticScope.newLambdaScope(returnType);
+        LambdaScope lambdaScope = semanticScope.newLambdaScope();
 
         for (int index = 0; index < typeParameters.size(); ++index) {
             Class<?> type = typeParameters.get(index);
@@ -2390,6 +2393,7 @@ public class DefaultSemanticAnalysisPhase extends UserTreeBaseVisitor<SemanticSc
 
             semanticScope.putDecoration(userSymbolNode, new StaticType(staticType));
         } else if (semanticScope.isVariableDefined(symbol)) {
+            // TODO(stu): tell us that the variable is global or not? (also move this to PainlessSemanticAnalysisPhase)
             if (read == false && write == false) {
                 throw userSymbolNode.createError(new IllegalArgumentException("not a statement: variable [" + symbol + "] not used"));
             }

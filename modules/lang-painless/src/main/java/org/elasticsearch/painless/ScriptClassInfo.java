@@ -18,7 +18,9 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 
 import static java.util.Collections.unmodifiableList;
@@ -38,9 +40,14 @@ public class ScriptClassInfo {
     private final List<Class<?>> getReturns;
     public final List<FunctionTable.LocalFunction> converters;
     public final FunctionTable.LocalFunction defConverter;
+    public final Map<String, Class<?>> globals;
+
+    public final static String MAIN_METHOD = "execute";
 
     public ScriptClassInfo(PainlessLookup painlessLookup, Class<?> baseClass) {
         this.baseClass = baseClass;
+        // TODO(stu): move info from PainlessSemanticAnalysisPhase.visitFunction (if execute) into globals.
+        this.globals = new HashMap<>();
 
         // Find the main method and the uses$argName methods
         java.lang.reflect.Method executeMethod = null;
@@ -53,7 +60,7 @@ public class ScriptClassInfo {
             if (m.isDefault()) {
                 continue;
             }
-            if (m.getName().equals("execute")) {
+            if (m.getName().equals(MAIN_METHOD)) {
                 if (executeMethod == null) {
                     executeMethod = m;
                     returnType = m.getReturnType();
@@ -180,6 +187,13 @@ public class ScriptClassInfo {
      */
     public List<Class<?>> getGetReturns() {
         return getReturns;
+    }
+
+    /**
+     * The global variables: execute arguments and proxied variables (eg `getDoc` -> `doc`).
+     */
+    public Map<String, Class<?>> getGlobals() {
+        return globals;
     }
 
     /**

@@ -556,7 +556,6 @@ public class DefaultUserTreeToIRTreePhase implements UserTreeVisitor<ScriptScope
 
     @Override
     public void visitFunction(SFunction userFunctionNode, ScriptScope scriptScope) {
-        // TODO(stu): mangle function name
         String functionName = userFunctionNode.getFunctionName();
         int functionArity = userFunctionNode.getCanonicalTypeNameParameters().size();
         LocalFunction localFunction = scriptScope.getFunctionTable().getFunction(functionName, functionArity);
@@ -1466,7 +1465,6 @@ public class DefaultUserTreeToIRTreePhase implements UserTreeVisitor<ScriptScope
      */
     @Override
     public void visitSymbol(ESymbol userSymbolNode, ScriptScope scriptScope) {
-        // TODO(stu): am I member or local variable?
         ExpressionNode irExpressionNode;
 
         if (scriptScope.hasDecoration(userSymbolNode, StaticType.class)) {
@@ -1561,6 +1559,7 @@ public class DefaultUserTreeToIRTreePhase implements UserTreeVisitor<ScriptScope
 
                 accessDepth = 1;
             } else if (scriptScope.hasDecoration(userDotNode, StandardPainlessField.class)) {
+                // TODO(stu): this loads a field, this gets copied to painless version of visit symbol.
                 PainlessField painlessField =
                         scriptScope.getDecoration(userDotNode, StandardPainlessField.class).getStandardPainlessField();
 
@@ -1580,6 +1579,7 @@ public class DefaultUserTreeToIRTreePhase implements UserTreeVisitor<ScriptScope
                 }
 
                 accessDepth = 1;
+                // To here.
             } else if (scriptScope.getCondition(userDotNode, Shortcut.class)) {
                 if (write || compound) {
                     StoreDotShortcutNode irStoreDotShortcutNode = new StoreDotShortcutNode(location);

@@ -18,6 +18,7 @@ import org.elasticsearch.painless.phase.DefaultIRTreeToASMBytesPhase;
 import org.elasticsearch.painless.phase.DefaultStaticConstantExtractionPhase;
 import org.elasticsearch.painless.phase.DefaultStringConcatenationOptimizationPhase;
 import org.elasticsearch.painless.phase.DocFieldsPhase;
+import org.elasticsearch.painless.phase.PainlessIRTreeToASMBytesPhase;
 import org.elasticsearch.painless.phase.PainlessSemanticAnalysisPhase;
 import org.elasticsearch.painless.phase.PainlessSemanticHeaderPhase;
 import org.elasticsearch.painless.phase.PainlessUserTreeToIRTreePhase;
@@ -218,7 +219,7 @@ final class Compiler {
         new DefaultStringConcatenationOptimizationPhase().visitClass(classNode, null);
         new DefaultConstantFoldingOptimizationPhase().visitClass(classNode, null);
         new DefaultStaticConstantExtractionPhase().visitClass(classNode, scriptScope);
-        new DefaultIRTreeToASMBytesPhase().visitScript(classNode);
+        new PainlessIRTreeToASMBytesPhase().visitScript(classNode);
         byte[] bytes = classNode.getBytes();
 
         try {
@@ -256,7 +257,7 @@ final class Compiler {
         new DefaultConstantFoldingOptimizationPhase().visitClass(classNode, null);
         new DefaultStaticConstantExtractionPhase().visitClass(classNode, scriptScope);
         classNode.setDebugStream(debugStream);
-        new DefaultIRTreeToASMBytesPhase().visitScript(classNode);
+        new PainlessIRTreeToASMBytesPhase().visitScript(classNode);
 
         return classNode.getBytes();
     }

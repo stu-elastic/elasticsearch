@@ -9,6 +9,7 @@
 package org.elasticsearch.painless.phase;
 
 import org.elasticsearch.painless.Location;
+import org.elasticsearch.painless.MethodWriter;
 import org.elasticsearch.painless.PainlessError;
 import org.elasticsearch.painless.PainlessExplainError;
 import org.elasticsearch.painless.ScriptClassInfo;
@@ -28,20 +29,35 @@ import org.elasticsearch.painless.ir.LoadFieldMemberNode;
 import org.elasticsearch.painless.ir.LoadVariableNode;
 import org.elasticsearch.painless.ir.NullNode;
 import org.elasticsearch.painless.ir.ReturnNode;
+import org.elasticsearch.painless.ir.StatementExpressionNode;
 import org.elasticsearch.painless.ir.StaticNode;
+import org.elasticsearch.painless.ir.StoreFieldMemberNode;
+import org.elasticsearch.painless.ir.StoreVariableNode;
 import org.elasticsearch.painless.ir.ThrowNode;
 import org.elasticsearch.painless.ir.TryNode;
+import org.elasticsearch.painless.ir.UnaryNode;
+import org.elasticsearch.painless.lookup.$this;
 import org.elasticsearch.painless.lookup.PainlessLookup;
 import org.elasticsearch.painless.lookup.PainlessMethod;
 import org.elasticsearch.painless.node.AStatement;
+import org.elasticsearch.painless.node.ESymbol;
+import org.elasticsearch.painless.node.SClass;
 import org.elasticsearch.painless.node.SExpression;
 import org.elasticsearch.painless.node.SFunction;
 import org.elasticsearch.painless.node.SReturn;
+import org.elasticsearch.painless.symbol.Decorations;
+import org.elasticsearch.painless.symbol.Decorations.AccessDepth;
 import org.elasticsearch.painless.symbol.Decorations.Converter;
+import org.elasticsearch.painless.symbol.Decorations.Compound;
+import org.elasticsearch.painless.symbol.Decorations.Read;
+import org.elasticsearch.painless.symbol.Decorations.StaticType;
+import org.elasticsearch.painless.symbol.Decorations.Write;
 import org.elasticsearch.painless.symbol.Decorations.IRNodeDecoration;
 import org.elasticsearch.painless.symbol.Decorations.MethodEscape;
 import org.elasticsearch.painless.symbol.FunctionTable.LocalFunction;
+import org.elasticsearch.painless.symbol.IRDecorations;
 import org.elasticsearch.painless.symbol.IRDecorations.IRCAllEscape;
+import org.elasticsearch.painless.symbol.IRDecorations.IRCInjectScript;
 import org.elasticsearch.painless.symbol.IRDecorations.IRCStatic;
 import org.elasticsearch.painless.symbol.IRDecorations.IRCSynthetic;
 import org.elasticsearch.painless.symbol.IRDecorations.IRDConstant;
@@ -55,6 +71,7 @@ import org.elasticsearch.painless.symbol.IRDecorations.IRDModifiers;
 import org.elasticsearch.painless.symbol.IRDecorations.IRDName;
 import org.elasticsearch.painless.symbol.IRDecorations.IRDParameterNames;
 import org.elasticsearch.painless.symbol.IRDecorations.IRDReturnType;
+import org.elasticsearch.painless.symbol.IRDecorations.IRDStoreType;
 import org.elasticsearch.painless.symbol.IRDecorations.IRDSymbol;
 import org.elasticsearch.painless.symbol.IRDecorations.IRDTypeParameters;
 import org.elasticsearch.painless.symbol.ScriptScope;
@@ -72,6 +89,74 @@ import java.util.Map;
 public class PainlessUserTreeToIRTreePhase extends DefaultUserTreeToIRTreePhase {
 
     @Override
+    public void visitClass(SClass userClassNode, ScriptScope scriptScope) {
+        super.visitClass(userClassNode, scriptScope);
+        Location internalLocation = new Location("$internal$visitClass", 0);
+        for (Map.Entry<String,Class<?>> entry : scriptScope.getScriptClassInfo().getGlobals().entrySet()) {
+            FieldNode irFieldNode = new FieldNode(internalLocation);
+            irFieldNode.attachDecoration(new IRDFieldType(entry.getValue()));
+            irFieldNode.attachDecoration(new IRDName(entry.getKey()));
+            irClassNode.addFieldNode(irFieldNode);
+        }
+    }
+
+
+
+    /**
+     * This handles both load and store for symbol accesses as necessary. This uses buildLoadStore to
+     * stub out the appropriate load and store ir nodes.
+     *
+     * @param userSymbolNode
+     * @param scriptScope
+     */
+    @Override
+    public void visitSymbol(ESymbol userSymbolNode, ScriptScope scriptScope) {
+        // TODO(stu): handle lookup of global
+        ExpressionNode irExpressionNode;
+
+        if (scriptScope.hasDecoration(userSymbolNode, StaticType.class)) {
+            Class<?> staticType = scriptScope.getDecoration(userSymbolNode, StaticType.class).getStaticType();
+            StaticNode staticNode = new StaticNode(userSymbolNode.getLocation());
+            staticNode.attachDecoration(new IRDExpressionType(staticType));
+            irExpressionNode = staticNode;
+        } else if (scriptScope.hasDecoration(userSymbolNode, Decorations.ValueType.class)) {
+            // TODO(stu): if global here, need to load if we're in execute.
+            // Otherwise, we need to load the first parameter.
+            boolean read = scriptScope.getCondition(userSymbolNode, Read.class);
+            boolean write = scriptScope.getCondition(userSymbolNode, Write.class);
+            boolean compound = scriptScope.getCondition(userSymbolNode, Compound.class);
+            Location location = userSymbolNode.getLocation();
+            String symbol = userSymbolNode.getSymbol();
+            Class<?> valueType = scriptScope.getDecoration(userSymbolNode, Decorations.ValueType.class).getValueType();
+
+            UnaryNode irStoreNode = null;
+            ExpressionNode irLoadNode = null;
+
+            if (write || compound) {
+                StoreVariableNode irStoreVariableNode = new StoreVariableNode(location);
+                irStoreVariableNode.attachDecoration(new IRDExpressionType(read ? valueType : void.class));
+                irStoreVariableNode.attachDecoration(new IRDStoreType(valueType));
+                irStoreVariableNode.attachDecoration(new IRDName(symbol));
+                irStoreNode = irStoreVariableNode;
+            }
+
+            if (write == false || compound) {
+                LoadVariableNode irLoadVariableNode = new LoadVariableNode(location);
+                irLoadVariableNode.attachDecoration(new IRDExpressionType(valueType));
+                irLoadVariableNode.attachDecoration(new IRDName(symbol));
+                irLoadNode = irLoadVariableNode;
+            }
+
+            scriptScope.putDecoration(userSymbolNode, new AccessDepth(0));
+            irExpressionNode = buildLoadStore(0, location, false, null, null, irLoadNode, irStoreNode);
+        } else {
+            throw userSymbolNode.createError(new IllegalStateException("illegal tree structure"));
+        }
+
+        scriptScope.putDecoration(userSymbolNode, new IRNodeDecoration(irExpressionNode));
+    }
+
+    @Override
     public void visitFunction(SFunction userFunctionNode, ScriptScope scriptScope) {
         String functionName = userFunctionNode.getFunctionName();
 
@@ -80,7 +165,7 @@ public class PainlessUserTreeToIRTreePhase extends DefaultUserTreeToIRTreePhase 
         // to convert get methods into local variables for those
         // that are used and adds additional sandboxing by wrapping
         // the main "execute" block with several exceptions.
-        if ("execute".equals(functionName)) {
+        if (ScriptClassInfo.MAIN_METHOD.equals(functionName)) {
             ScriptClassInfo scriptClassInfo = scriptScope.getScriptClassInfo();
             LocalFunction localFunction =
                     scriptScope.getFunctionTable().getFunction(functionName, scriptClassInfo.getExecuteArguments().size());
@@ -131,13 +216,20 @@ public class PainlessUserTreeToIRTreePhase extends DefaultUserTreeToIRTreePhase 
 
             List<String> parameterNames = new ArrayList<>(scriptClassInfo.getExecuteArguments().size());
 
+            FunctionNode irFunctionNode = new FunctionNode(userFunctionNode.getLocation());
+
             for (MethodArgument methodArgument : scriptClassInfo.getExecuteArguments()) {
                 parameterNames.add(methodArgument.getName());
+                // Arguments to execute become "global" member variables
+                FieldNode irFieldNode = new FieldNode(new Location("$internal$execute", 0));
+                irFieldNode.attachDecoration(new IRDModifiers(Opcodes.ACC_PUBLIC));
+                irFieldNode.attachDecoration(new IRDFieldType(methodArgument.getClazz()));
+                irFieldNode.attachDecoration(new IRDName(methodArgument.getName()));
+                irClassNode.addFieldNode(irFieldNode);
             }
 
-            FunctionNode irFunctionNode = new FunctionNode(userFunctionNode.getLocation());
             irFunctionNode.setBlockNode(irBlockNode);
-            irFunctionNode.attachDecoration(new IRDName("execute"));
+            irFunctionNode.attachDecoration(new IRDName(ScriptClassInfo.MAIN_METHOD));
             irFunctionNode.attachDecoration(new IRDReturnType(returnType));
             irFunctionNode.attachDecoration(new IRDTypeParameters(new ArrayList<>(localFunction.getTypeParameters())));
             irFunctionNode.attachDecoration(new IRDParameterNames(new ArrayList<>(parameterNames)));
@@ -151,6 +243,7 @@ public class PainlessUserTreeToIRTreePhase extends DefaultUserTreeToIRTreePhase 
             scriptScope.putDecoration(userFunctionNode, new IRNodeDecoration(irFunctionNode));
         } else {
             super.visitFunction(userFunctionNode, scriptScope);
+            scriptScope.getDecoration(userFunctionNode, IRNodeDecoration.class).getIRNode().attachCondition(IRCInjectScript.class);
         }
     }
 
@@ -274,16 +367,27 @@ public class PainlessUserTreeToIRTreePhase extends DefaultUserTreeToIRTreePhase 
             if (scriptScope.getUsedVariables().contains(name)) {
                 Class<?> returnType = scriptScope.getScriptClassInfo().getGetReturns().get(i);
 
-                DeclarationNode irDeclarationNode = new DeclarationNode(internalLocation);
-                irDeclarationNode.attachDecoration(new IRDName(name));
-                irDeclarationNode.attachDecoration(new IRDDeclarationType(returnType));
-                irBlockNode.getStatementsNodes().add(0, irDeclarationNode);
+                // gets proxied variables become "global" members
+                FieldNode irFieldNode = new FieldNode(internalLocation);
+                irFieldNode.attachDecoration(new IRDName(name));
+                irFieldNode.attachDecoration(new IRDDeclarationType(returnType));
+                irClassNode.addFieldNode(irFieldNode);
 
                 InvokeCallMemberNode irInvokeCallMemberNode = new InvokeCallMemberNode(internalLocation);
                 irInvokeCallMemberNode.attachDecoration(new IRDExpressionType(returnType));
                 irInvokeCallMemberNode.attachDecoration(new IRDFunction(new LocalFunction(
                         getMethod.getName(), returnType, Collections.emptyList(), true, false)));
-                irDeclarationNode.setExpressionNode(irInvokeCallMemberNode);
+
+                // Store the value in the member everytime the gets method is called
+                StoreFieldMemberNode irStoreFieldMemberNode = new StoreFieldMemberNode(internalLocation);
+                irStoreFieldMemberNode.attachDecoration(new IRDName(name));
+                irStoreFieldMemberNode.attachDecoration(new IRDStoreType(returnType));
+                irStoreFieldMemberNode.setChildNode(irInvokeCallMemberNode);
+
+                StatementExpressionNode irStatementExpressionNode = new StatementExpressionNode(internalLocation);
+                irStatementExpressionNode.attachDecoration(new IRDExpressionType(void.class));
+                irStatementExpressionNode.setExpressionNode(irStoreFieldMemberNode);
+                irBlockNode.addStatementNode(irStatementExpressionNode);
             }
         }
     }

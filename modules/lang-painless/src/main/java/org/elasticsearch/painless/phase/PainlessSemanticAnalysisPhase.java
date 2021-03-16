@@ -16,7 +16,9 @@ import org.elasticsearch.painless.lookup.PainlessLookupUtility;
 import org.elasticsearch.painless.lookup.def;
 import org.elasticsearch.painless.node.AExpression;
 import org.elasticsearch.painless.node.AStatement;
+import org.elasticsearch.painless.node.ESymbol;
 import org.elasticsearch.painless.node.SBlock;
+import org.elasticsearch.painless.node.SClass;
 import org.elasticsearch.painless.node.SExpression;
 import org.elasticsearch.painless.node.SFunction;
 import org.elasticsearch.painless.node.SReturn;
@@ -27,12 +29,16 @@ import org.elasticsearch.painless.symbol.Decorations.Internal;
 import org.elasticsearch.painless.symbol.Decorations.LastSource;
 import org.elasticsearch.painless.symbol.Decorations.LoopEscape;
 import org.elasticsearch.painless.symbol.Decorations.MethodEscape;
+import org.elasticsearch.painless.symbol.Decorations.PartialCanonicalTypeName;
 import org.elasticsearch.painless.symbol.Decorations.Read;
+import org.elasticsearch.painless.symbol.Decorations.StaticType;
 import org.elasticsearch.painless.symbol.Decorations.TargetType;
+import org.elasticsearch.painless.symbol.Decorations.Write;
 import org.elasticsearch.painless.symbol.FunctionTable.LocalFunction;
 import org.elasticsearch.painless.symbol.ScriptScope;
 import org.elasticsearch.painless.symbol.SemanticScope;
 import org.elasticsearch.painless.symbol.SemanticScope.FunctionScope;
+import org.elasticsearch.painless.symbol.SemanticScope.Variable;
 
 import java.util.List;
 
@@ -44,31 +50,48 @@ public class PainlessSemanticAnalysisPhase extends DefaultSemanticAnalysisPhase 
     protected String functionName = "";
 
     @Override
-    public void visitFunction(SFunction userFunctionNode, ScriptScope scriptScope) {
-        functionName = userFunctionNode.getFunctionName();
+    public void visitClass(SClass userClassNode, ScriptScope scriptScope) {
+        SemanticScope.ClassScope classScope = new SemanticScope.ClassScope(scriptScope);
+        for (SFunction userFunctionNode : userClassNode.getFunctionNodes()) {
+            // Hit execute first to capture the globals
+            if (ScriptClassInfo.MAIN_METHOD.equals(userFunctionNode.getFunctionName())) {
+                visitFunction(userFunctionNode, classScope);
+                break;
+            }
+        }
+        for (SFunction userFunctionNode : userClassNode.getFunctionNodes()) {
+            if (ScriptClassInfo.MAIN_METHOD.equals(userFunctionNode.getFunctionName()) == false) {
+                visitFunction(userFunctionNode, classScope);
+            }
+        }
+    }
 
-        if ("execute".equals(functionName)) {
+    @Override
+    public void visitFunction(SFunction userFunctionNode, SemanticScope.ClassScope classScope) {
+        functionName = userFunctionNode.getFunctionName();
+        ScriptScope scriptScope = classScope.getScriptScope();
+
+        if (ScriptClassInfo.MAIN_METHOD.equals(functionName)) {
             ScriptClassInfo scriptClassInfo = scriptScope.getScriptClassInfo();
             LocalFunction localFunction =
                     scriptScope.getFunctionTable().getFunction(functionName, scriptClassInfo.getExecuteArguments().size());
             List<Class<?>> typeParameters = localFunction.getTypeParameters();
-            // TODO(stu): Create class scope first
-            FunctionScope functionScope = newFunctionScope(scriptScope, localFunction.getReturnType());
 
-            for (int i = 0; i < typeParameters.size(); ++i) { // TODO(stu): these become globals
+            for (int i = 0; i < typeParameters.size(); ++i) {
                 Class<?> typeParameter = localFunction.getTypeParameters().get(i);
                 String parameterName = scriptClassInfo.getExecuteArguments().get(i).getName();
-                functionScope.defineVariable(userFunctionNode.getLocation(), typeParameter, parameterName, false); // TODO(stu): these are added to ClassScope
+                classScope.defineVariable(userFunctionNode.getLocation(), typeParameter, parameterName, false);
             }
 
-            for (int i = 0; i < scriptClassInfo.getGetMethods().size(); ++i) { // TODO(stu): these become globals
+            for (int i = 0; i < scriptClassInfo.getGetMethods().size(); ++i) {
                 Class<?> typeParameter = scriptClassInfo.getGetReturns().get(i);
                 org.objectweb.asm.commons.Method method = scriptClassInfo.getGetMethods().get(i);
                 String parameterName = method.getName().substring(3);
                 parameterName = Character.toLowerCase(parameterName.charAt(0)) + parameterName.substring(1);
-                functionScope.defineVariable(userFunctionNode.getLocation(), typeParameter, parameterName, false); // TODO(stu): these are added to ClassScope
+                classScope.defineVariable(userFunctionNode.getLocation(), typeParameter, parameterName, false);
             }
 
+            FunctionScope functionScope = newFunctionScope(classScope, localFunction);
             SBlock userBlockNode = userFunctionNode.getBlockNode();
 
             if (userBlockNode.getStatementNodes().isEmpty()) {
@@ -87,7 +110,7 @@ public class PainlessSemanticAnalysisPhase extends DefaultSemanticAnalysisPhase 
 
             scriptScope.setUsedVariables(functionScope.getUsedVariables());
         } else {
-            super.visitFunction(userFunctionNode, scriptScope);
+            super.visitFunction(userFunctionNode, classScope);
         }
 
         functionName = "";
@@ -118,7 +141,7 @@ public class PainlessSemanticAnalysisPhase extends DefaultSemanticAnalysisPhase 
         if (rtn) {
             semanticScope.putDecoration(userStatementNode, new TargetType(rtnType));
             semanticScope.setCondition(userStatementNode, Internal.class);
-            if ("execute".equals(functionName)) {
+            if (ScriptClassInfo.MAIN_METHOD.equals(functionName)) {
                 decorateWithCastForReturn(userStatementNode, userExpressionNode, semanticScope,
                     semanticScope.getScriptScope().getScriptClassInfo());
             } else {
@@ -153,7 +176,7 @@ public class PainlessSemanticAnalysisPhase extends DefaultSemanticAnalysisPhase 
             semanticScope.putDecoration(userValueNode, new TargetType(semanticScope.getReturnType()));
             semanticScope.setCondition(userValueNode, Internal.class);
             checkedVisit(userValueNode, semanticScope);
-            if ("execute".equals(functionName)) {
+            if (ScriptClassInfo.MAIN_METHOD.equals(functionName)) {
                 decorateWithCastForReturn(userValueNode, userReturnNode, semanticScope,
                     semanticScope.getScriptScope().getScriptClassInfo());
             } else {
@@ -164,6 +187,53 @@ public class PainlessSemanticAnalysisPhase extends DefaultSemanticAnalysisPhase 
         semanticScope.setCondition(userReturnNode, MethodEscape.class);
         semanticScope.setCondition(userReturnNode, LoopEscape.class);
         semanticScope.setCondition(userReturnNode, AllEscape.class);
+    }
+
+    /**
+     * Visits a symbol expression which covers static types, partial canonical types,
+     * and variables.
+     * Checks: type checking, type resolution, variable resolution
+     */
+    @Override
+    public void visitSymbol(ESymbol userSymbolNode, SemanticScope semanticScope) {
+        boolean read = semanticScope.getCondition(userSymbolNode, Read.class);
+        boolean write = semanticScope.getCondition(userSymbolNode, Write.class);
+        String symbol = userSymbolNode.getSymbol();
+        Class<?> staticType = semanticScope.getScriptScope().getPainlessLookup().canonicalTypeNameToType(symbol);
+
+        if (staticType != null)  {
+            if (write) {
+                throw userSymbolNode.createError(new IllegalArgumentException("invalid assignment: " +
+                    "cannot write a value to a static type [" + PainlessLookupUtility.typeToCanonicalTypeName(staticType) + "]"));
+            }
+
+            if (read == false) {
+                throw userSymbolNode.createError(new IllegalArgumentException("not a statement: " +
+                    "static type [" + PainlessLookupUtility.typeToCanonicalTypeName(staticType) + "] not used"));
+            }
+
+            semanticScope.putDecoration(userSymbolNode, new StaticType(staticType));
+        } else if (semanticScope.isVariableDefined(symbol)) {
+            // TODO(stu): tell us that the variable is global or not? (also move this to PainlessSemanticAnalysisPhase)
+            if (read == false && write == false) {
+                throw userSymbolNode.createError(new IllegalArgumentException("not a statement: variable [" + symbol + "] not used"));
+            }
+
+            Location location = userSymbolNode.getLocation();
+            Variable variable = semanticScope.getVariable(location, symbol);
+
+            if (write && variable.isFinal()) {
+                throw userSymbolNode.createError(new IllegalArgumentException("Variable [" + variable.getName() + "] is read-only."));
+            }
+
+            Class<?> valueType = variable.getType();
+            semanticScope.putDecoration(userSymbolNode, new Decorations.ValueType(valueType));
+            semanticScope.putDecoration(userSymbolNode, new Decorations.GlobalMember(
+                ScriptClassInfo.MAIN_METHOD.equals(semanticScope.getLocalFunction().getFunctionName()))
+            );
+        } else {
+            semanticScope.putDecoration(userSymbolNode, new PartialCanonicalTypeName(symbol));
+        }
     }
 
     /**
