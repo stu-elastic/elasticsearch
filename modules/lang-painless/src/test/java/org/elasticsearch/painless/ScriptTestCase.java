@@ -11,8 +11,11 @@ package org.elasticsearch.painless;
 import junit.framework.AssertionFailedError;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.painless.antlr.Walker;
+import org.elasticsearch.painless.phase.UserTreeVisitor;
 import org.elasticsearch.painless.spi.Whitelist;
 import org.elasticsearch.painless.spi.WhitelistLoader;
+import org.elasticsearch.painless.symbol.ScriptScope;
+import org.elasticsearch.painless.toxcontent.UserTreeToXContent;
 import org.elasticsearch.script.ScriptContext;
 import org.elasticsearch.script.ScriptException;
 import org.elasticsearch.test.ESTestCase;
@@ -59,7 +62,26 @@ public abstract class ScriptTestCase extends ESTestCase {
     }
 
     /** Compiles and returns the result of {@code script} */
+    /*
+    TODO(stu): overriden
     public Object exec(String script) {
+        return exec(script, null, true);
+    }
+     */
+
+    public Object exec(String script) {
+        UserTreeVisitor<ScriptScope> semantic = new UserTreeToXContent();
+        UserTreeVisitor<ScriptScope> ir = new UserTreeToXContent();
+        try {
+            Debugger.phases(script, semantic, ir, null);
+            System.out.println("----------Semantic----------");
+            System.out.println(semantic);
+            System.out.println("----------IR----------");
+            System.out.println(ir);
+        } catch (RuntimeException err) {
+            System.out.println("err [" + err.getMessage() + "]");
+        }
+
         return exec(script, null, true);
     }
 

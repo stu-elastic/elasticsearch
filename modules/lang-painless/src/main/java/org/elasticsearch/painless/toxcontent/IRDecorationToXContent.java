@@ -12,5 +12,4 @@ package org.elasticsearch.painless.toxcontent;
 
 public class IRDecorationToXContent {
 
-
 }

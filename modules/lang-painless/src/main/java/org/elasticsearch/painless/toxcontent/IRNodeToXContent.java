@@ -88,383 +88,546 @@ public class IRNodeToXContent {
     static final class Fields {
         static final String NODE = "node";
         static final String LOCATION = "location";
+        static final String LEFT = "left";
+        static final String RIGHT = "right";
     }
 
     public static void toXContent(BinaryImplNode irNode, XContentBuilderWrapper builder) {
         start(irNode, builder);
+        toXContentAbstract((BinaryNode) irNode, builder);
         end(irNode, builder);
     }
 
     public static void toXContent(BinaryMathNode irNode, XContentBuilderWrapper builder) {
         start(irNode, builder);
+        toXContentAbstract((BinaryNode) irNode, builder);
         end(irNode, builder);
     }
 
     public static void toXContent(BlockNode irNode, XContentBuilderWrapper builder) {
         start(irNode, builder);
+        if (irNode.getStatementsNodes().isEmpty() == false) {
+            builder.startArray("statements");
+            for (StatementNode statementNode : irNode.getStatementsNodes()) {
+                toXContent(statementNode, builder);
+            }
+            builder.endArray();
+        }
         end(irNode, builder);
     }
 
     public static void toXContent(BooleanNode irNode, XContentBuilderWrapper builder) {
         start(irNode, builder);
+        toXContentAbstract((BinaryNode) irNode, builder);
         end(irNode, builder);
     }
 
     public static void toXContent(BreakNode irNode, XContentBuilderWrapper builder) {
-        start(irNode, builder);
-        end(irNode, builder);
+        terminal(irNode, builder);
     }
 
     public static void toXContent(CastNode irNode, XContentBuilderWrapper builder) {
         start(irNode, builder);
+        builder.field("expression");
+        toXContent(irNode.getChildNode(), builder);
         end(irNode, builder);
     }
 
     public static void toXContent(CatchNode irNode, XContentBuilderWrapper builder) {
         start(irNode, builder);
+        builder.field("block");
+        toXContent(irNode.getBlockNode(), builder);
         end(irNode, builder);
     }
 
     public static void toXContent(ClassNode irNode, XContentBuilderWrapper builder) {
         start(irNode, builder);
+        if (irNode.getFieldsNodes().isEmpty() == false) {
+            builder.startArray("fields");
+            for (FieldNode field : irNode.getFieldsNodes()) {
+                toXContent(field, builder);
+            }
+            builder.endArray();
+        }
+
+        if (irNode.getFunctionsNodes().isEmpty() == false) {
+            builder.startArray("functions");
+            for (FunctionNode function : irNode.getFunctionsNodes()) {
+                toXContent(function, builder);
+            }
+            builder.endArray();
+        }
+        builder.field("clinitBlock");
+        toXContent(irNode.getClinitBlockNode(), builder);
         end(irNode, builder);
     }
 
     public static void toXContent(ComparisonNode irNode, XContentBuilderWrapper builder) {
         start(irNode, builder);
+        toXContentAbstract((BinaryNode) irNode, builder);
         end(irNode, builder);
     }
 
     public static void toXContent(ConditionalNode irNode, XContentBuilderWrapper builder) {
         start(irNode, builder);
+
+        if (irNode.getConditionNode() != null) {
+            builder.field("condition");
+            toXContent(irNode.getConditionNode(), builder);
+        }
+
+        toXContentAbstract((BinaryNode) irNode, builder);
+
         end(irNode, builder);
     }
 
     public static void toXContent(ConstantNode irNode, XContentBuilderWrapper builder) {
-        start(irNode, builder);
-        end(irNode, builder);
+        terminal(irNode, builder);
     }
 
     public static void toXContent(ContinueNode irNode, XContentBuilderWrapper builder) {
-        start(irNode, builder);
-        end(irNode, builder);
+        terminal(irNode, builder);
     }
 
     public static void toXContent(DeclarationBlockNode irNode, XContentBuilderWrapper builder) {
         start(irNode, builder);
+        if (irNode.getDeclarationsNodes().isEmpty() == false) {
+            builder.startArray("declarations");
+            for (DeclarationNode declaration : irNode.getDeclarationsNodes()) {
+                toXContent(declaration, builder);
+            }
+            builder.endArray();
+        }
         end(irNode, builder);
     }
 
     public static void toXContent(DeclarationNode irNode, XContentBuilderWrapper builder) {
         start(irNode, builder);
+        if (irNode.getExpressionNode() == null) {
+            builder.field("expression");
+            toXContent(irNode.getExpressionNode(), builder);
+        }
         end(irNode, builder);
     }
 
     public static void toXContent(DefInterfaceReferenceNode irNode, XContentBuilderWrapper builder) {
-        start(irNode, builder);
-        end(irNode, builder);
+        terminal(irNode, builder);
     }
 
     public static void toXContent(DoWhileLoopNode irNode, XContentBuilderWrapper builder) {
         start(irNode, builder);
+        toXContentAbstract((ConditionNode) irNode, builder);
         end(irNode, builder);
     }
 
     public static void toXContent(DupNode irNode, XContentBuilderWrapper builder) {
-        start(irNode, builder);
-        end(irNode, builder);
+        terminal(irNode, builder);
     }
 
     public static void toXContent(ElvisNode irNode, XContentBuilderWrapper builder) {
         start(irNode, builder);
+        toXContentAbstract((BinaryNode) irNode, builder);
         end(irNode, builder);
     }
 
     public static void toXContent(FieldNode irNode, XContentBuilderWrapper builder) {
-        start(irNode, builder);
-        end(irNode, builder);
+        terminal(irNode, builder);
     }
 
     public static void toXContent(FlipArrayIndexNode irNode, XContentBuilderWrapper builder) {
         start(irNode, builder);
+        toXContent((UnaryNode) irNode, builder);
         end(irNode, builder);
     }
 
     public static void toXContent(FlipCollectionIndexNode irNode, XContentBuilderWrapper builder) {
         start(irNode, builder);
+        toXContent((UnaryNode) irNode, builder);
         end(irNode, builder);
     }
 
     public static void toXContent(FlipDefIndexNode irNode, XContentBuilderWrapper builder) {
         start(irNode, builder);
+        toXContent((UnaryNode) irNode, builder);
         end(irNode, builder);
     }
 
     public static void toXContent(ForEachLoopNode irNode, XContentBuilderWrapper builder) {
         start(irNode, builder);
+        if (irNode.getConditionNode() != null) {
+            builder.field("condition");
+            toXContent(irNode.getConditionNode(), builder);
+        }
         end(irNode, builder);
     }
 
     public static void toXContent(ForEachSubArrayNode irNode, XContentBuilderWrapper builder) {
         start(irNode, builder);
+        toXContentAbstract((ConditionNode) irNode, builder);
         end(irNode, builder);
     }
 
     public static void toXContent(ForEachSubIterableNode irNode, XContentBuilderWrapper builder) {
         start(irNode, builder);
+        toXContentAbstract((ConditionNode) irNode, builder);
         end(irNode, builder);
     }
 
     public static void toXContent(ForLoopNode irNode, XContentBuilderWrapper builder) {
         start(irNode, builder);
+        if (irNode.getInitializerNode() != null) {
+            builder.startArray("initializer");
+            toXContent(irNode.getInitializerNode(), builder);
+            builder.endArray();
+        }
+
+        if (irNode.getConditionNode() != null) {
+            builder.startArray("condition");
+            toXContent(irNode.getConditionNode(), builder);
+            builder.endArray();
+        }
+
+        if (irNode.getAfterthoughtNode() != null) {
+            builder.startArray("afterthought");
+            toXContent(irNode.getAfterthoughtNode(), builder);
+            builder.endArray();
+        }
+
+        if (irNode.getBlockNode() != null) {
+            builder.field("block");
+            toXContent(irNode.getBlockNode(), builder);
+        }
+
         end(irNode, builder);
     }
 
     public static void toXContent(FunctionNode irNode, XContentBuilderWrapper builder) {
         start(irNode, builder);
+        builder.field("block");
+        toXContent(irNode.getBlockNode(), builder);
         end(irNode, builder);
     }
 
     public static void toXContent(IfElseNode irNode, XContentBuilderWrapper builder) {
         start(irNode, builder);
+        toXContentAbstract((ConditionNode) irNode, builder);
+
+        if (irNode.getElseBlockNode() != null) {
+            builder.field("else");
+            toXContent(irNode.getElseBlockNode(), builder);
+        }
         end(irNode, builder);
     }
 
     public static void toXContent(IfNode irNode, XContentBuilderWrapper builder) {
         start(irNode, builder);
+        toXContentAbstract((ConditionNode) irNode, builder);
         end(irNode, builder);
     }
 
     public static void toXContent(InstanceofNode irNode, XContentBuilderWrapper builder) {
         start(irNode, builder);
+        toXContent((UnaryNode) irNode, builder);
         end(irNode, builder);
     }
 
     public static void toXContent(InvokeCallDefNode irNode, XContentBuilderWrapper builder) {
         start(irNode, builder);
+        toXContentAbstract((ArgumentsNode) irNode, builder);
         end(irNode, builder);
     }
 
     public static void toXContent(InvokeCallMemberNode irNode, XContentBuilderWrapper builder) {
         start(irNode, builder);
+        toXContentAbstract((ArgumentsNode) irNode, builder);
         end(irNode, builder);
     }
 
     public static void toXContent(InvokeCallNode irNode, XContentBuilderWrapper builder) {
         start(irNode, builder);
+        if (irNode.getMethod() != null) {
+            builder.field("method");
+            DecorationToXContent.toXContent(irNode.getMethod(), builder);
+        }
+        if (irNode.getBox() != null) {
+            builder.field("box", irNode.getBox().getSimpleName());
+        }
+        toXContentAbstract((ArgumentsNode) irNode, builder);
         end(irNode, builder);
     }
 
     public static void toXContent(ListInitializationNode irNode, XContentBuilderWrapper builder) {
         start(irNode, builder);
+        toXContentAbstract((ArgumentsNode) irNode, builder);
         end(irNode, builder);
     }
 
     public static void toXContent(LoadBraceDefNode irNode, XContentBuilderWrapper builder) {
-        start(irNode, builder);
-        end(irNode, builder);
+        terminal(irNode, builder);
     }
 
     public static void toXContent(LoadBraceNode irNode, XContentBuilderWrapper builder) {
-        start(irNode, builder);
-        end(irNode, builder);
+        terminal(irNode, builder);
     }
 
     public static void toXContent(LoadDotArrayLengthNode irNode, XContentBuilderWrapper builder) {
-        start(irNode, builder);
-        end(irNode, builder);
+        terminal(irNode, builder);
     }
 
     public static void toXContent(LoadDotDefNode irNode, XContentBuilderWrapper builder) {
-        start(irNode, builder);
-        end(irNode, builder);
+        terminal(irNode, builder);
     }
 
     public static void toXContent(LoadDotNode irNode, XContentBuilderWrapper builder) {
-        start(irNode, builder);
-        end(irNode, builder);
+        terminal(irNode, builder);
     }
 
     public static void toXContent(LoadDotShortcutNode irNode, XContentBuilderWrapper builder) {
-        start(irNode, builder);
-        end(irNode, builder);
+        terminal(irNode, builder);
     }
 
     public static void toXContent(LoadFieldMemberNode irNode, XContentBuilderWrapper builder) {
-        start(irNode, builder);
-        end(irNode, builder);
+        terminal(irNode, builder);
     }
 
     public static void toXContent(LoadListShortcutNode irNode, XContentBuilderWrapper builder) {
-        start(irNode, builder);
-        end(irNode, builder);
+        terminal(irNode, builder);
     }
 
     public static void toXContent(LoadMapShortcutNode irNode, XContentBuilderWrapper builder) {
-        start(irNode, builder);
-        end(irNode, builder);
+        terminal(irNode, builder);
     }
 
     public static void toXContent(LoadVariableNode irNode, XContentBuilderWrapper builder) {
-        start(irNode, builder);
-        end(irNode, builder);
+        terminal(irNode, builder);
     }
 
     public static void toXContent(MapInitializationNode irNode, XContentBuilderWrapper builder) {
         start(irNode, builder);
+        if (irNode.getKeyNodes().isEmpty() == false) {
+            builder.startArray("keys");
+            for (ExpressionNode expression : irNode.getKeyNodes()) {
+                // TODO(stu): shouldn't have to upcast this
+                toXContent((IRNode) expression, builder);
+            }
+            builder.endArray();
+        }
+
+        if (irNode.getValueNodes().isEmpty() == false) {
+            builder.startArray("values");
+            for (ExpressionNode expression : irNode.getValueNodes()) {
+                // TODO(stu): shouldn't have to upcast this
+                toXContent((IRNode) expression, builder);
+            }
+            builder.endArray();
+        }
         end(irNode, builder);
     }
 
     public static void toXContent(NewArrayNode irNode, XContentBuilderWrapper builder) {
         start(irNode, builder);
+        toXContentAbstract((ArgumentsNode) irNode, builder);
         end(irNode, builder);
     }
 
     public static void toXContent(NewObjectNode irNode, XContentBuilderWrapper builder) {
         start(irNode, builder);
+        toXContentAbstract((ArgumentsNode) irNode, builder);
         end(irNode, builder);
     }
 
     public static void toXContent(NullNode irNode, XContentBuilderWrapper builder) {
-        start(irNode, builder);
-        end(irNode, builder);
+        terminal(irNode, builder);
     }
 
     public static void toXContent(NullSafeSubNode irNode, XContentBuilderWrapper builder) {
         start(irNode, builder);
+        toXContentAbstract((UnaryNode) irNode, builder);
         end(irNode, builder);
     }
 
     public static void toXContent(ReturnNode irNode, XContentBuilderWrapper builder) {
         start(irNode, builder);
+        if (irNode.getExpressionNode() != null) {
+            builder.field("expression");
+            toXContent(irNode.getExpressionNode(), builder);
+        }
         end(irNode, builder);
     }
 
     public static void toXContent(StatementExpressionNode irNode, XContentBuilderWrapper builder) {
         start(irNode, builder);
+        if (irNode.getExpressionNode() != null) {
+            builder.field("expression");
+            // TODO(stu): shouldn't have to upcast this
+            toXContent((IRNode) irNode.getExpressionNode(), builder);
+        }
         end(irNode, builder);
     }
 
     public static void toXContent(StaticNode irNode, XContentBuilderWrapper builder) {
-        start(irNode, builder);
-        end(irNode, builder);
+        terminal(irNode, builder);
     }
 
     public static void toXContent(StoreBraceDefNode irNode, XContentBuilderWrapper builder) {
         start(irNode, builder);
+        toXContentAbstract((UnaryNode) irNode, builder);
         end(irNode, builder);
     }
 
     public static void toXContent(StoreBraceNode irNode, XContentBuilderWrapper builder) {
         start(irNode, builder);
+        toXContentAbstract((UnaryNode) irNode, builder);
         end(irNode, builder);
     }
 
     public static void toXContent(StoreDotDefNode irNode, XContentBuilderWrapper builder) {
         start(irNode, builder);
+        toXContentAbstract((UnaryNode) irNode, builder);
         end(irNode, builder);
     }
 
     public static void toXContent(StoreDotNode irNode, XContentBuilderWrapper builder) {
         start(irNode, builder);
+        toXContentAbstract((UnaryNode) irNode, builder);
         end(irNode, builder);
     }
 
     public static void toXContent(StoreDotShortcutNode irNode, XContentBuilderWrapper builder) {
         start(irNode, builder);
+        toXContentAbstract((UnaryNode) irNode, builder);
         end(irNode, builder);
     }
 
     public static void toXContent(StoreFieldMemberNode irNode, XContentBuilderWrapper builder) {
         start(irNode, builder);
+        toXContentAbstract((UnaryNode) irNode, builder);
         end(irNode, builder);
     }
 
     public static void toXContent(StoreListShortcutNode irNode, XContentBuilderWrapper builder) {
         start(irNode, builder);
+        toXContentAbstract((UnaryNode) irNode, builder);
         end(irNode, builder);
     }
 
     public static void toXContent(StoreMapShortcutNode irNode, XContentBuilderWrapper builder) {
         start(irNode, builder);
+        toXContentAbstract((UnaryNode) irNode, builder);
         end(irNode, builder);
     }
 
     public static void toXContent(StoreVariableNode irNode, XContentBuilderWrapper builder) {
         start(irNode, builder);
+        toXContentAbstract((UnaryNode) irNode, builder);
         end(irNode, builder);
     }
 
     public static void toXContent(StringConcatenationNode irNode, XContentBuilderWrapper builder) {
         start(irNode, builder);
+        toXContentAbstract((ArgumentsNode) irNode, builder);
         end(irNode, builder);
     }
 
     public static void toXContent(ThrowNode irNode, XContentBuilderWrapper builder) {
+        // TODO(stu): implement
         start(irNode, builder);
+        if (irNode.getExpressionNode() != null) {
+            builder.field("expression");
+            // TODO(stu): check this upcast
+            toXContent((IRNode) irNode.getExpressionNode(), builder);
+        }
         end(irNode, builder);
     }
 
     public static void toXContent(TryNode irNode, XContentBuilderWrapper builder) {
         start(irNode, builder);
+        if (irNode.getBlockNode() != null) {
+            builder.field("block");
+            toXContent(irNode.getBlockNode(), builder);
+        }
+        if (irNode.getCatchNodes().isEmpty() == false) {
+            builder.startArray("catches");
+            for (CatchNode catchNode : irNode.getCatchNodes()) {
+                toXContent(catchNode, builder);
+            }
+            builder.endArray();
+        }
         end(irNode, builder);
     }
 
     public static void toXContent(TypedCaptureReferenceNode irNode, XContentBuilderWrapper builder) {
-        start(irNode, builder);
-        end(irNode, builder);
+        terminal(irNode, builder);
     }
 
     public static void toXContent(TypedInterfaceReferenceNode irNode, XContentBuilderWrapper builder) {
-        start(irNode, builder);
-        end(irNode, builder);
+        terminal(irNode, builder);
     }
 
     public static void toXContent(UnaryMathNode irNode, XContentBuilderWrapper builder) {
         start(irNode, builder);
+        toXContentAbstract((UnaryNode) irNode, builder);
         end(irNode, builder);
     }
 
    public static void toXContent(WhileLoopNode irNode, XContentBuilderWrapper builder) {
         start(irNode, builder);
+        toXContentAbstract((ConditionNode) irNode, builder);
         end(irNode, builder);
     }
 
 
     // abstracts
-    public static void toXContent(ArgumentsNode irNode, XContentBuilderWrapper builder) {
-        start(irNode, builder);
-        end(irNode, builder);
+    private static void toXContentAbstract(ArgumentsNode irNode, XContentBuilderWrapper builder) {
+        if (irNode.getArgumentNodes().isEmpty() == false) {
+            builder.startArray("arguments");
+            for (ExpressionNode expression : irNode.getArgumentNodes()) {
+                toXContent((IRNode) expression, builder);
+            }
+            builder.endArray();
+        }
     }
 
-    public static void toXContent(BinaryNode irNode, XContentBuilderWrapper builder) {
-        start(irNode, builder);
-        end(irNode, builder);
+    private static void toXContentAbstract(BinaryNode irNode, XContentBuilderWrapper builder) {
+        builder.startArray(Fields.LEFT);
+        toXContent(irNode.getLeftNode(), builder);
+        builder.endArray();
+
+        builder.startArray(Fields.RIGHT);
+        toXContent(irNode.getRightNode(), builder);
+        builder.endArray();
     }
 
-    public static void toXContent(ConditionNode irNode, XContentBuilderWrapper builder) {
-        start(irNode, builder);
-        end(irNode, builder);
+    private static void toXContentAbstract(ConditionNode irNode, XContentBuilderWrapper builder) {
+        if (irNode.getConditionNode() != null) {
+            builder.field("condition");
+            toXContent(irNode.getConditionNode(), builder);
+        }
+
+        if (irNode.getBlockNode() != null) {
+            builder.field("block");
+            toXContent(irNode.getBlockNode(), builder);
+        }
     }
 
-    public static void toXContent(UnaryNode irNode, XContentBuilderWrapper builder) {
-        start(irNode, builder);
-        end(irNode, builder);
+    private static void toXContentAbstract(UnaryNode irNode, XContentBuilderWrapper builder) {
+        if (irNode.getChildNode() != null) {
+            builder.field("child");
+            toXContent(irNode.getChildNode(), builder);
+        }
     }
 
-    public static void toXContent(ExpressionNode irNode, XContentBuilderWrapper builder) {
-
-        start(irNode, builder);
-        end(irNode, builder);
+    private static void toXContentAbstract(ExpressionNode irNode, XContentBuilderWrapper builder) {
+        // TODO(stu): this should never be used, all expression nodes should be handled by their child class version
+        throw new IllegalStateException("should be implemented in child [" + irNode.getClass().getSimpleName() + "]");
     }
 
     public static void toXContent(StatementNode irNode, XContentBuilderWrapper builder) {
-        start(irNode, builder);
-        end(irNode, builder);
+        terminal(irNode, builder);
     }
 
     public static void toXContent(IRNode irNode, XContentBuilderWrapper builder) {
-        if (irNode instanceof BinaryMathNode) {;
+        if (irNode instanceof BinaryMathNode) {
             toXContent((BinaryMathNode) irNode, builder);
         } else if (irNode instanceof BinaryImplNode) {
             toXContent((BinaryImplNode) irNode, builder);
@@ -601,9 +764,11 @@ public class IRNodeToXContent {
         } else if (irNode instanceof WhileLoopNode) {
             toXContent((WhileLoopNode) irNode, builder);
         } else if (irNode instanceof ArgumentsNode) { // abstracts
-            toXContent((ArgumentsNode) irNode, builder);
+            toXContentAbstract((ArgumentsNode) irNode, builder);
         } else if (irNode instanceof BinaryNode) {
-            toXContent((BinaryNode) irNode, builder);
+            start(irNode, builder);
+            toXContentAbstract((BinaryNode) irNode, builder);
+            end(irNode, builder);
         } else if (irNode instanceof ConditionNode) {
             toXContent((ConditionNode) irNode, builder);
         } else if (irNode instanceof UnaryNode) {
@@ -618,7 +783,10 @@ public class IRNodeToXContent {
         }
     }
 
-    private static int count = 0;
+    private static void terminal(IRNode irNode, XContentBuilderWrapper builder) {
+        start(irNode, builder);
+        end(irNode, builder);
+    }
 
     private static void start(IRNode irNode, XContentBuilderWrapper builder) {
         builder.startObject();
