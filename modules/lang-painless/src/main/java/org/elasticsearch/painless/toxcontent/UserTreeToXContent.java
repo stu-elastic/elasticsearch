@@ -73,7 +73,7 @@ import java.util.stream.Collectors;
  * Serialize the user tree
  */
 public class UserTreeToXContent extends UserTreeBaseVisitor<ScriptScope> {
-    public final XContentBuilderWrapper builder;
+    private final XContentBuilderWrapper builder;
 
     public UserTreeToXContent(XContentBuilder builder) {
         this.builder = new XContentBuilderWrapper(Objects.requireNonNull(builder));
@@ -676,7 +676,7 @@ public class UserTreeToXContent extends UserTreeBaseVisitor<ScriptScope> {
                     .collect(Collectors.toList());
 
             for (Class<? extends Decoration> dkey : dkeys) {
-                DecorationToXContent.ToXContent(decorations.get(dkey), builder);
+                DecorationToXContent.toXContent(decorations.get(dkey), builder);
             }
             builder.endArray();
         }
