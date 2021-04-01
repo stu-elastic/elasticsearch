@@ -14,8 +14,8 @@ import org.elasticsearch.painless.toxcontent.UserTreeToXContent;
 
 public class UserFunctionTests extends ScriptTestCase {
     public void testZeroArgumentUserFunction() {
-        String source = "def twofive() { return 25; } twofive()";
-        assertEquals(25, exec(source));
+        String source = "def twofive(int i) { return 25 + i; } int j = 23; twofive(j)";
+        assertEquals(48, exec(source));
         UserTreeVisitor<ScriptScope> semantic = new UserTreeToXContent();
         UserTreeVisitor<ScriptScope> ir = new UserTreeToXContent();
         Debugger.phases(source, semantic, ir, null);

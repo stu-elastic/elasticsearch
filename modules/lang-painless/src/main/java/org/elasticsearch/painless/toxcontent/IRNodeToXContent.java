@@ -84,6 +84,10 @@ import org.elasticsearch.painless.ir.UnaryMathNode;
 import org.elasticsearch.painless.ir.UnaryNode;
 import org.elasticsearch.painless.ir.WhileLoopNode;
 
+import java.util.Comparator;
+import java.util.List;
+import java.util.stream.Collectors;
+
 public class IRNodeToXContent {
     static final class Fields {
         static final String NODE = "node";
@@ -795,6 +799,27 @@ public class IRNodeToXContent {
     }
 
     private static void end(IRNode irNode, XContentBuilderWrapper builder) {
+        List<Class<? extends IRNode.IRCondition>> conditions = irNode.getAllConditions();
+        if (conditions.isEmpty() == false) {
+            builder.field(
+                UserTreeToXContent.Fields.CONDITIONS,
+                conditions.stream().map(Class::getSimpleName).sorted().collect(Collectors.toList())
+            );
+        }
+        List<IRNode.IRDecoration<?>> decorations = irNode.getAllDecorations().stream().sorted(new Comparator<IRNode.IRDecoration<?>>() {
+            @Override
+            public int compare(IRNode.IRDecoration<?> o1, IRNode.IRDecoration<?> o2) {
+                return o1.getClass().getSimpleName().compareTo(o2.getClass().getSimpleName());
+            }
+        }).collect(Collectors.toList());
+
+        if (decorations.isEmpty() == false) {
+            builder.startArray(UserTreeToXContent.Fields.DECORATIONS);
+            for (IRNode.IRDecoration<?> decoration : decorations) {
+                IRDecorationToXContent.visitIRDecoration(decoration, builder);
+            }
+            builder.endArray();
+        }
         builder.endObject();
     }
 }

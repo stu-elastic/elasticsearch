@@ -262,9 +262,7 @@ public class DecorationToXContent {
         builder.endObject();
     }
 
-    public static void toXContent(ReferenceDecoration referenceDecoration, XContentBuilderWrapper builder) {
-        start(referenceDecoration, builder);
-        FunctionRef ref = referenceDecoration.getReference();
+    public static void toXContent(FunctionRef ref, XContentBuilderWrapper builder) {
         builder.field("interfaceMethodName", ref.interfaceMethodName);
 
         builder.field("interfaceMethodType");
@@ -292,6 +290,11 @@ public class DecorationToXContent {
 
         builder.field("factoryMethodType");
         toXContent(ref.factoryMethodType, builder);
+    }
+
+    public static void toXContent(ReferenceDecoration referenceDecoration, XContentBuilderWrapper builder) {
+        start(referenceDecoration, builder);
+        toXContent(referenceDecoration.getReference(), builder);
         builder.endObject();
     }
 
