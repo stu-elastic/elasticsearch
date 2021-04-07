@@ -8,6 +8,12 @@
 
 package org.elasticsearch.painless;
 
+/*
+import org.elasticsearch.painless.phase.UserTreeVisitor;
+import org.elasticsearch.painless.symbol.ScriptScope;
+import org.elasticsearch.painless.toxcontent.UserTreeToXContent;
+ */
+
 public class UserFunctionTests extends ScriptTestCase {
     public void testZeroArgumentUserFunction() {
         String source = "def twofive() { return 25; } twofive()";

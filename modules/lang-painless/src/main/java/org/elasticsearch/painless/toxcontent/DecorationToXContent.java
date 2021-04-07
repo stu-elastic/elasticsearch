@@ -81,131 +81,131 @@ public class DecorationToXContent {
         static final String METHOD = "method";
     }
 
-    public static void ToXContent(TargetType targetType, XContentBuilderWrapper builder) {
+    public static void toXContent(TargetType targetType, XContentBuilderWrapper builder) {
         start(targetType, builder);
         builder.field(Fields.TYPE, targetType.getTargetType().getSimpleName());
         builder.endObject();
     }
 
-    public static void ToXContent(ValueType valueType, XContentBuilderWrapper builder) {
+    public static void toXContent(ValueType valueType, XContentBuilderWrapper builder) {
         start(valueType, builder);
         builder.field(Fields.TYPE, valueType.getValueType().getSimpleName());
         builder.endObject();
     }
 
-    public static void ToXContent(StaticType staticType, XContentBuilderWrapper builder) {
+    public static void toXContent(StaticType staticType, XContentBuilderWrapper builder) {
         start(staticType, builder);
         builder.field(Fields.TYPE, staticType.getStaticType().getSimpleName());
         builder.endObject();
     }
 
-    public static void ToXContent(PartialCanonicalTypeName partialCanonicalTypeName, XContentBuilderWrapper builder) {
+    public static void toXContent(PartialCanonicalTypeName partialCanonicalTypeName, XContentBuilderWrapper builder) {
         start(partialCanonicalTypeName, builder);
         builder.field(Fields.TYPE, partialCanonicalTypeName.getPartialCanonicalTypeName());
         builder.endObject();
     }
 
-    public static void ToXContent(ExpressionPainlessCast expressionPainlessCast, XContentBuilderWrapper builder) {
+    public static void toXContent(ExpressionPainlessCast expressionPainlessCast, XContentBuilderWrapper builder) {
         start(expressionPainlessCast, builder);
         builder.field(Fields.CAST);
-        ToXContent(expressionPainlessCast.getExpressionPainlessCast(), builder);
+        toXContent(expressionPainlessCast.getExpressionPainlessCast(), builder);
         builder.endObject();
     }
 
-    public static void ToXContent(SemanticVariable semanticVariable, XContentBuilderWrapper builder) {
+    public static void toXContent(SemanticVariable semanticVariable, XContentBuilderWrapper builder) {
         start(semanticVariable, builder);
         builder.field("variable");
-        ToXContent(semanticVariable.getSemanticVariable(), builder);
+        toXContent(semanticVariable.getSemanticVariable(), builder);
         builder.endObject();
     }
 
-    public static void ToXContent(IterablePainlessMethod iterablePainlessMethod, XContentBuilderWrapper builder) {
+    public static void toXContent(IterablePainlessMethod iterablePainlessMethod, XContentBuilderWrapper builder) {
         start(iterablePainlessMethod, builder);
         builder.field(Fields.METHOD);
-        ToXContent(iterablePainlessMethod.getIterablePainlessMethod(), builder);
+        toXContent(iterablePainlessMethod.getIterablePainlessMethod(), builder);
         builder.endObject();
     }
 
-    public static void ToXContent(UnaryType unaryType, XContentBuilderWrapper builder) {
+    public static void toXContent(UnaryType unaryType, XContentBuilderWrapper builder) {
         start(unaryType, builder);
         builder.field(Fields.TYPE, unaryType.getUnaryType().getSimpleName());
         builder.endObject();
     }
 
-    public static void ToXContent(BinaryType binaryType, XContentBuilderWrapper builder) {
+    public static void toXContent(BinaryType binaryType, XContentBuilderWrapper builder) {
         start(binaryType, builder);
         builder.field(Fields.TYPE, binaryType.getBinaryType().getSimpleName());
         builder.endObject();
     }
 
-    public static void ToXContent(ShiftType shiftType, XContentBuilderWrapper builder) {
+    public static void toXContent(ShiftType shiftType, XContentBuilderWrapper builder) {
         start(shiftType, builder);
         builder.field(Fields.TYPE, shiftType.getShiftType().getSimpleName());
         builder.endObject();
     }
 
-    public static void ToXContent(ComparisonType comparisonType, XContentBuilderWrapper builder) {
+    public static void toXContent(ComparisonType comparisonType, XContentBuilderWrapper builder) {
         start(comparisonType, builder);
         builder.field(Fields.TYPE, comparisonType.getComparisonType().getSimpleName());
         builder.endObject();
     }
 
-    public static void ToXContent(CompoundType compoundType, XContentBuilderWrapper builder) {
+    public static void toXContent(CompoundType compoundType, XContentBuilderWrapper builder) {
         start(compoundType, builder);
         builder.field(Fields.TYPE, compoundType.getCompoundType().getSimpleName());
         builder.endObject();
     }
 
-    public static void ToXContent(UpcastPainlessCast upcastPainlessCast, XContentBuilderWrapper builder) {
+    public static void toXContent(UpcastPainlessCast upcastPainlessCast, XContentBuilderWrapper builder) {
         start(upcastPainlessCast, builder);
         builder.field(Fields.CAST);
-        ToXContent(upcastPainlessCast.getUpcastPainlessCast(), builder);
+        toXContent(upcastPainlessCast.getUpcastPainlessCast(), builder);
         builder.endObject();
     }
 
-    public static void ToXContent(DowncastPainlessCast downcastPainlessCast, XContentBuilderWrapper builder) {
+    public static void toXContent(DowncastPainlessCast downcastPainlessCast, XContentBuilderWrapper builder) {
         start(downcastPainlessCast, builder);
         builder.field(Fields.CAST);
-        ToXContent(downcastPainlessCast.getDowncastPainlessCast(), builder);
+        toXContent(downcastPainlessCast.getDowncastPainlessCast(), builder);
         builder.endObject();
     }
 
-    public static void ToXContent(StandardPainlessField standardPainlessField, XContentBuilderWrapper builder) {
+    public static void toXContent(StandardPainlessField standardPainlessField, XContentBuilderWrapper builder) {
         start(standardPainlessField, builder);
         builder.field("field");
-        ToXContent(standardPainlessField.getStandardPainlessField(), builder);
+        toXContent(standardPainlessField.getStandardPainlessField(), builder);
         builder.endObject();
     }
 
-    public static void ToXContent(StandardPainlessConstructor standardPainlessConstructor, XContentBuilderWrapper builder) {
+    public static void toXContent(StandardPainlessConstructor standardPainlessConstructor, XContentBuilderWrapper builder) {
         start(standardPainlessConstructor, builder);
         builder.field("constructor");
-        ToXContent(standardPainlessConstructor.getStandardPainlessConstructor(), builder);
+        toXContent(standardPainlessConstructor.getStandardPainlessConstructor(), builder);
         builder.endObject();
     }
 
-    public static void ToXContent(StandardPainlessMethod standardPainlessMethod, XContentBuilderWrapper builder) {
+    public static void toXContent(StandardPainlessMethod standardPainlessMethod, XContentBuilderWrapper builder) {
         start(standardPainlessMethod, builder);
         builder.field(Fields.METHOD);
-        ToXContent(standardPainlessMethod.getStandardPainlessMethod(), builder);
+        toXContent(standardPainlessMethod.getStandardPainlessMethod(), builder);
         builder.endObject();
     }
 
-    public static void ToXContent(GetterPainlessMethod getterPainlessMethod, XContentBuilderWrapper builder) {
+    public static void toXContent(GetterPainlessMethod getterPainlessMethod, XContentBuilderWrapper builder) {
         start(getterPainlessMethod, builder);
         builder.field(Fields.METHOD);
-        ToXContent(getterPainlessMethod.getGetterPainlessMethod(), builder);
+        toXContent(getterPainlessMethod.getGetterPainlessMethod(), builder);
         builder.endObject();
     }
 
-    public static void ToXContent(SetterPainlessMethod setterPainlessMethod, XContentBuilderWrapper builder) {
+    public static void toXContent(SetterPainlessMethod setterPainlessMethod, XContentBuilderWrapper builder) {
         start(setterPainlessMethod, builder);
         builder.field(Fields.METHOD);
-        ToXContent(setterPainlessMethod.getSetterPainlessMethod(), builder);
+        toXContent(setterPainlessMethod.getSetterPainlessMethod(), builder);
         builder.endObject();
     }
 
-    public static void ToXContent(StandardConstant standardConstant, XContentBuilderWrapper builder) {
+    public static void toXContent(StandardConstant standardConstant, XContentBuilderWrapper builder) {
         start(standardConstant, builder);
         builder.startObject("constant");
         builder.field(Fields.TYPE, standardConstant.getStandardConstant().getClass().getSimpleName());
@@ -214,40 +214,40 @@ public class DecorationToXContent {
         builder.endObject();
     }
 
-    public static void ToXContent(StandardLocalFunction standardLocalFunction, XContentBuilderWrapper builder) {
+    public static void toXContent(StandardLocalFunction standardLocalFunction, XContentBuilderWrapper builder) {
         start(standardLocalFunction, builder);
         builder.field("function");
-        ToXContent(standardLocalFunction.getLocalFunction(), builder);
+        toXContent(standardLocalFunction.getLocalFunction(), builder);
         builder.endObject();
     }
 
-    public static void ToXContent(StandardPainlessClassBinding standardPainlessClassBinding, XContentBuilderWrapper builder) {
+    public static void toXContent(StandardPainlessClassBinding standardPainlessClassBinding, XContentBuilderWrapper builder) {
         start(standardPainlessClassBinding, builder);
         builder.field("PainlessClassBinding");
-        ToXContent(standardPainlessClassBinding.getPainlessClassBinding(), builder);
+        toXContent(standardPainlessClassBinding.getPainlessClassBinding(), builder);
         builder.endObject();
     }
 
-    public static void ToXContent(StandardPainlessInstanceBinding standardPainlessInstanceBinding, XContentBuilderWrapper builder) {
+    public static void toXContent(StandardPainlessInstanceBinding standardPainlessInstanceBinding, XContentBuilderWrapper builder) {
         start(standardPainlessInstanceBinding, builder);
         builder.field("PainlessInstanceBinding");
-        ToXContent(standardPainlessInstanceBinding.getPainlessInstanceBinding(), builder);
+        toXContent(standardPainlessInstanceBinding.getPainlessInstanceBinding(), builder);
         builder.endObject();
     }
 
-    public static void ToXContent(MethodNameDecoration methodNameDecoration, XContentBuilderWrapper builder) {
+    public static void toXContent(MethodNameDecoration methodNameDecoration, XContentBuilderWrapper builder) {
         start(methodNameDecoration, builder);
         builder.field("methodName", methodNameDecoration.getMethodName());
         builder.endObject();
     }
 
-    public static void ToXContent(ReturnType returnType, XContentBuilderWrapper builder) {
+    public static void toXContent(ReturnType returnType, XContentBuilderWrapper builder) {
         start(returnType, builder);
         builder.field("returnType", returnType.getReturnType().getSimpleName());
         builder.endObject();
     }
 
-    public static void ToXContent(TypeParameters typeParameters, XContentBuilderWrapper builder) {
+    public static void toXContent(TypeParameters typeParameters, XContentBuilderWrapper builder) {
         start(typeParameters, builder);
         if (typeParameters.getTypeParameters().isEmpty() == false) {
             builder.field("typeParameters", classNames(typeParameters.getTypeParameters()));
@@ -255,7 +255,7 @@ public class DecorationToXContent {
         builder.endObject();
     }
 
-    public static void ToXContent(ParameterNames parameterNames, XContentBuilderWrapper builder) {
+    public static void toXContent(ParameterNames parameterNames, XContentBuilderWrapper builder) {
         start(parameterNames, builder);
         if (parameterNames.getParameterNames().isEmpty() == false) {
             builder.field("parameterNames", parameterNames.getParameterNames());
@@ -263,13 +263,11 @@ public class DecorationToXContent {
         builder.endObject();
     }
 
-    public static void ToXContent(ReferenceDecoration referenceDecoration, XContentBuilderWrapper builder) {
-        start(referenceDecoration, builder);
-        FunctionRef ref = referenceDecoration.getReference();
+    public static void toXContent(FunctionRef ref, XContentBuilderWrapper builder) {
         builder.field("interfaceMethodName", ref.interfaceMethodName);
 
         builder.field("interfaceMethodType");
-        ToXContent(ref.interfaceMethodType, builder);
+        toXContent(ref.interfaceMethodType, builder);
 
         builder.field("delegateClassName", ref.delegateClassName);
         builder.field("isDelegateInterface", ref.isDelegateInterface);
@@ -278,7 +276,7 @@ public class DecorationToXContent {
         builder.field("delegateMethodName", ref.delegateMethodName);
 
         builder.field("delegateMethodType");
-        ToXContent(ref.delegateMethodType, builder);
+        toXContent(ref.delegateMethodType, builder);
 
         if (ref.delegateInjections.length > 0) {
             builder.startArray("delegateInjections");
@@ -292,123 +290,128 @@ public class DecorationToXContent {
         }
 
         builder.field("factoryMethodType");
-        ToXContent(ref.factoryMethodType, builder);
+        toXContent(ref.factoryMethodType, builder);
+    }
+
+    public static void toXContent(ReferenceDecoration referenceDecoration, XContentBuilderWrapper builder) {
+        start(referenceDecoration, builder);
+        toXContent(referenceDecoration.getReference(), builder);
         builder.endObject();
     }
 
-    public static void ToXContent(EncodingDecoration encodingDecoration, XContentBuilderWrapper builder) {
+    public static void toXContent(EncodingDecoration encodingDecoration, XContentBuilderWrapper builder) {
         start(encodingDecoration, builder);
         builder.field("encoding", encodingDecoration.getEncoding());
         builder.endObject();
     }
 
-    public static void ToXContent(CapturesDecoration capturesDecoration, XContentBuilderWrapper builder) {
+    public static void toXContent(CapturesDecoration capturesDecoration, XContentBuilderWrapper builder) {
         start(capturesDecoration, builder);
         if (capturesDecoration.getCaptures().isEmpty() == false) {
             builder.startArray("captures");
             for (SemanticScope.Variable capture : capturesDecoration.getCaptures()) {
-                ToXContent(capture, builder);
+                toXContent(capture, builder);
             }
             builder.endArray();
         }
         builder.endObject();
     }
 
-    public static void ToXContent(InstanceType instanceType, XContentBuilderWrapper builder) {
+    public static void toXContent(InstanceType instanceType, XContentBuilderWrapper builder) {
         start(instanceType, builder);
         builder.field("instanceType", instanceType.getInstanceType().getSimpleName());
         builder.endObject();
     }
 
-    public static void ToXContent(AccessDepth accessDepth, XContentBuilderWrapper builder) {
+    public static void toXContent(AccessDepth accessDepth, XContentBuilderWrapper builder) {
         start(accessDepth, builder);
         builder.field("depth", accessDepth.getAccessDepth());
         builder.endObject();
     }
 
-    public static void ToXContent(IRNodeDecoration irNodeDecoration, XContentBuilderWrapper builder) {
+    public static void toXContent(IRNodeDecoration irNodeDecoration, XContentBuilderWrapper builder) {
         start(irNodeDecoration, builder);
-        // TODO(stu): expand this
-        builder.field("irNode", irNodeDecoration.getIRNode().toString());
+        builder.field("irNode");
+        IRNodeToXContent.toXContent(irNodeDecoration.getIRNode(), builder);
         builder.endObject();
     }
 
     public static void ToXContent(Converter converter, XContentBuilderWrapper builder) {
         start(converter, builder);
         builder.field("converter");
-        ToXContent(converter.getConverter(), builder);
+        toXContent(converter.getConverter(), builder);
         builder.endObject();
     }
 
-    public static void ToXContent(Decoration decoration, XContentBuilderWrapper builder) {
+    public static void toXContent(Decoration decoration, XContentBuilderWrapper builder) {
         if  (decoration instanceof TargetType) {
-            ToXContent((TargetType) decoration, builder);
+            toXContent((TargetType) decoration, builder);
         } else if (decoration instanceof ValueType) {
-            ToXContent((ValueType) decoration, builder);
+            toXContent((ValueType) decoration, builder);
         } else if (decoration instanceof StaticType) {
-            ToXContent((StaticType) decoration, builder);
+            toXContent((StaticType) decoration, builder);
         } else if (decoration instanceof PartialCanonicalTypeName) {
-            ToXContent((PartialCanonicalTypeName) decoration, builder);
+            toXContent((PartialCanonicalTypeName) decoration, builder);
         } else if (decoration instanceof ExpressionPainlessCast) {
-            ToXContent((ExpressionPainlessCast) decoration, builder);
+            toXContent((ExpressionPainlessCast) decoration, builder);
         } else if (decoration instanceof SemanticVariable) {
-            ToXContent((SemanticVariable) decoration, builder);
+            toXContent((SemanticVariable) decoration, builder);
         } else if (decoration instanceof IterablePainlessMethod) {
-            ToXContent((IterablePainlessMethod) decoration, builder);
+            toXContent((IterablePainlessMethod) decoration, builder);
         } else if (decoration instanceof UnaryType) {
-            ToXContent((UnaryType) decoration, builder);
+            toXContent((UnaryType) decoration, builder);
         } else if (decoration instanceof BinaryType) {
-            ToXContent((BinaryType) decoration, builder);
+            toXContent((BinaryType) decoration, builder);
         } else if (decoration instanceof ShiftType) {
-            ToXContent((ShiftType) decoration, builder);
+            toXContent((ShiftType) decoration, builder);
         } else if (decoration instanceof ComparisonType) {
-            ToXContent((ComparisonType) decoration, builder);
+            toXContent((ComparisonType) decoration, builder);
         } else if (decoration instanceof CompoundType) {
-            ToXContent((CompoundType) decoration, builder);
+            toXContent((CompoundType) decoration, builder);
         } else if (decoration instanceof UpcastPainlessCast) {
-            ToXContent((UpcastPainlessCast) decoration, builder);
+            toXContent((UpcastPainlessCast) decoration, builder);
         } else if (decoration instanceof DowncastPainlessCast) {
-            ToXContent((DowncastPainlessCast) decoration, builder);
+            toXContent((DowncastPainlessCast) decoration, builder);
         } else if (decoration instanceof StandardPainlessField) {
-            ToXContent((StandardPainlessField) decoration, builder);
+            toXContent((StandardPainlessField) decoration, builder);
         } else if (decoration instanceof StandardPainlessConstructor) {
-            ToXContent((StandardPainlessConstructor) decoration, builder);
+            toXContent((StandardPainlessConstructor) decoration, builder);
         } else if (decoration instanceof StandardPainlessMethod) {
-            ToXContent((StandardPainlessMethod) decoration, builder);
+            toXContent((StandardPainlessMethod) decoration, builder);
         } else if (decoration instanceof GetterPainlessMethod) {
-            ToXContent((GetterPainlessMethod) decoration, builder);
+            toXContent((GetterPainlessMethod) decoration, builder);
         } else if (decoration instanceof SetterPainlessMethod) {
-            ToXContent((SetterPainlessMethod) decoration, builder);
+            toXContent((SetterPainlessMethod) decoration, builder);
         } else if (decoration instanceof StandardConstant) {
-            ToXContent((StandardConstant) decoration, builder);
+            toXContent((StandardConstant) decoration, builder);
         } else if (decoration instanceof StandardLocalFunction) {
-            ToXContent((StandardLocalFunction) decoration, builder);
+            toXContent((StandardLocalFunction) decoration, builder);
         } else if (decoration instanceof StandardPainlessClassBinding) {
-            ToXContent((StandardPainlessClassBinding) decoration, builder);
+            toXContent((StandardPainlessClassBinding) decoration, builder);
         } else if (decoration instanceof StandardPainlessInstanceBinding) {
-            ToXContent((StandardPainlessInstanceBinding) decoration, builder);
+            toXContent((StandardPainlessInstanceBinding) decoration, builder);
         } else if (decoration instanceof MethodNameDecoration) {
-            ToXContent((MethodNameDecoration) decoration, builder);
+            toXContent((MethodNameDecoration) decoration, builder);
         } else if (decoration instanceof ReturnType) {
-            ToXContent((ReturnType) decoration, builder);
+            toXContent((ReturnType) decoration, builder);
         } else if (decoration instanceof TypeParameters) {
-            ToXContent((TypeParameters) decoration, builder);
+            toXContent((TypeParameters) decoration, builder);
         } else if (decoration instanceof ParameterNames) {
-            ToXContent((ParameterNames) decoration, builder);
+            toXContent((ParameterNames) decoration, builder);
         } else if (decoration instanceof ReferenceDecoration) {
-            ToXContent((ReferenceDecoration) decoration, builder);
+            toXContent((ReferenceDecoration) decoration, builder);
         } else if (decoration instanceof EncodingDecoration) {
-            ToXContent((EncodingDecoration) decoration, builder);
+            toXContent((EncodingDecoration) decoration, builder);
         } else if (decoration instanceof CapturesDecoration) {
-            ToXContent((CapturesDecoration) decoration, builder);
+            toXContent((CapturesDecoration) decoration, builder);
         } else if (decoration instanceof InstanceType) {
-            ToXContent((InstanceType) decoration, builder);
+            toXContent((InstanceType) decoration, builder);
         } else if (decoration instanceof AccessDepth) {
-            ToXContent((AccessDepth) decoration, builder);
+            toXContent((AccessDepth) decoration, builder);
         } else if (decoration instanceof IRNodeDecoration) {
-            ToXContent((IRNodeDecoration) decoration, builder);
+            toXContent((IRNodeDecoration) decoration, builder);
         } else if (decoration instanceof Converter) {
-            ToXContent((Converter) decoration, builder);
+            toXContent((Converter) decoration, builder);
         } else {
             builder.startObject();
             builder.field(Fields.DECORATION, decoration.getClass().getSimpleName());
@@ -417,7 +420,7 @@ public class DecorationToXContent {
     }
 
     // lookup
-    public static void ToXContent(PainlessCast painlessCast, XContentBuilderWrapper builder) {
+    public static void toXContent(PainlessCast painlessCast, XContentBuilderWrapper builder) {
         builder.startObject();
         if (painlessCast.originalType != null) {
             builder.field("originalType", painlessCast.originalType.getSimpleName());
@@ -440,11 +443,11 @@ public class DecorationToXContent {
         builder.endObject();
     }
 
-    public static void ToXContent(PainlessMethod method, XContentBuilderWrapper builder) {
+    public static void toXContent(PainlessMethod method, XContentBuilderWrapper builder) {
         builder.startObject();
         if (method.javaMethod != null) {
             builder.field("javaMethod");
-            ToXContent(method.methodType, builder);
+            toXContent(method.methodType, builder);
         }
         if (method.targetClass != null) {
             builder.field("targetClass", method.targetClass.getSimpleName());
@@ -457,14 +460,14 @@ public class DecorationToXContent {
         }
         if (method.methodHandle != null) {
             builder.field("methodHandle");
-            ToXContent(method.methodHandle.type(), builder);
+            toXContent(method.methodHandle.type(), builder);
         }
         // ignoring methodType as that's handled under methodHandle
-        AnnotationsToXContent(method.annotations, builder);
+        annotationsToXContent(method.annotations, builder);
         builder.endObject();
     }
 
-    public static void ToXContent(FunctionTable.LocalFunction localFunction, XContentBuilderWrapper builder) {
+    public static void toXContent(FunctionTable.LocalFunction localFunction, XContentBuilderWrapper builder) {
         builder.startObject();
         builder.field("functionName", localFunction.getFunctionName());
         builder.field("returnType", localFunction.getReturnType().getSimpleName());
@@ -474,67 +477,67 @@ public class DecorationToXContent {
         builder.field("isInternal", localFunction.isInternal());
         builder.field("isStatic", localFunction.isStatic());
         builder.field("methodType");
-        ToXContent(localFunction.getMethodType(), builder);
+        toXContent(localFunction.getMethodType(), builder);
         builder.endObject();
     }
 
-    public static void ToXContent(PainlessClassBinding binding, XContentBuilderWrapper builder) {
+    public static void toXContent(PainlessClassBinding binding, XContentBuilderWrapper builder) {
         builder.startObject();
         builder.field("javaConstructor");
-        ToXContent(binding.javaConstructor, builder);
+        toXContent(binding.javaConstructor, builder);
 
         builder.field("javaMethod");
-        ToXContent(binding.javaMethod, builder);
+        toXContent(binding.javaMethod, builder);
         builder.field("returnType", binding.returnType.getSimpleName());
         if (binding.typeParameters.isEmpty() == false) {
             builder.field("typeParameters", classNames(binding.typeParameters));
         }
-        AnnotationsToXContent(binding.annotations, builder);
+        annotationsToXContent(binding.annotations, builder);
         builder.endObject();
     }
 
-    public static void ToXContent(PainlessInstanceBinding binding, XContentBuilderWrapper builder) {
+    public static void toXContent(PainlessInstanceBinding binding, XContentBuilderWrapper builder) {
         builder.startObject();
         builder.field("targetInstance", binding.targetInstance.getClass().getSimpleName());
 
         builder.field("javaMethod");
-        ToXContent(binding.javaMethod, builder);
+        toXContent(binding.javaMethod, builder);
         builder.field("returnType", binding.returnType.getSimpleName());
         if (binding.typeParameters.isEmpty() == false) {
             builder.field("typeParameters", classNames(binding.typeParameters));
         }
-        AnnotationsToXContent(binding.annotations, builder);
+        annotationsToXContent(binding.annotations, builder);
         builder.endObject();
     }
 
-    public static void ToXContent(PainlessField field, XContentBuilderWrapper builder) {
+    public static void toXContent(PainlessField field, XContentBuilderWrapper builder) {
         builder.startObject();
         builder.field("javaField");
-        ToXContent(field.javaField, builder);
+        toXContent(field.javaField, builder);
         builder.field("typeParameter", field.typeParameter.getSimpleName());
         builder.field("getterMethodHandle");
-        ToXContent(field.getterMethodHandle.type(), builder);
+        toXContent(field.getterMethodHandle.type(), builder);
         builder.field("setterMethodHandle");
         if (field.setterMethodHandle != null) {
-            ToXContent(field.setterMethodHandle.type(), builder);
+            toXContent(field.setterMethodHandle.type(), builder);
         }
         builder.endObject();
     }
 
-    public static void ToXContent(PainlessConstructor constructor, XContentBuilderWrapper builder) {
+    public static void toXContent(PainlessConstructor constructor, XContentBuilderWrapper builder) {
         builder.startObject();
         builder.field("javaConstructor");
-        ToXContent(constructor.javaConstructor, builder);
+        toXContent(constructor.javaConstructor, builder);
         if (constructor.typeParameters.isEmpty() == false) {
             builder.field("typeParameters", classNames(constructor.typeParameters));
         }
         builder.field("methodHandle");
-        ToXContent(constructor.methodHandle.type(), builder);
+        toXContent(constructor.methodHandle.type(), builder);
         builder.endObject();
     }
 
     // symbol
-    public static void ToXContent(SemanticScope.Variable variable, XContentBuilderWrapper builder) {
+    public static void toXContent(SemanticScope.Variable variable, XContentBuilderWrapper builder) {
         builder.startObject();
         builder.field(Fields.TYPE, variable.getType());
         builder.field("name", variable.getName());
@@ -543,18 +546,18 @@ public class DecorationToXContent {
     }
 
     // annotations
-    public static void AnnotationsToXContent(Map<Class<?>, Object> annotations, XContentBuilderWrapper builder) {
+    private static void annotationsToXContent(Map<Class<?>, Object> annotations, XContentBuilderWrapper builder) {
         if (annotations == null || annotations.isEmpty()) {
             return;
         }
         builder.startArray("annotations");
         for (Class<?> key : annotations.keySet().stream().sorted().collect(Collectors.toList())) {
-            AnnotationToXContent(annotations.get(key), builder);
+            annotationToXContent(annotations.get(key), builder);
         }
         builder.endArray();
     }
 
-    public static void AnnotationToXContent(Object annotation, XContentBuilderWrapper builder) {
+    private static void annotationToXContent(Object annotation, XContentBuilderWrapper builder) {
         if (annotation instanceof CompileTimeOnlyAnnotation) {
             builder.value(CompileTimeOnlyAnnotation.NAME);
         } else if (annotation instanceof DeprecatedAnnotation) {
@@ -577,7 +580,7 @@ public class DecorationToXContent {
     }
 
     // asm
-    public static void ToXContent(org.objectweb.asm.commons.Method asmMethod, XContentBuilderWrapper builder) {
+    private static void toXContent(org.objectweb.asm.commons.Method asmMethod, XContentBuilderWrapper builder) {
         builder.startObject();
         builder.field("name", asmMethod.getName());
         builder.field("descriptor", asmMethod.getDescriptor());
@@ -587,7 +590,7 @@ public class DecorationToXContent {
     }
 
     // java.lang.invoke
-    public static void ToXContent(MethodType methodType, XContentBuilderWrapper builder) {
+    private static void toXContent(MethodType methodType, XContentBuilderWrapper builder) {
         builder.startObject();
         List<Class<?>> parameters = methodType.parameterList();
         if (parameters.isEmpty() == false) {
@@ -598,7 +601,7 @@ public class DecorationToXContent {
     }
 
     // java.lang.reflect
-    public static void ToXContent(Field field, XContentBuilderWrapper builder) {
+    private static void toXContent(Field field, XContentBuilderWrapper builder) {
         builder.startObject();
         builder.field("name", field.getName());
         builder.field("type", field.getType().getSimpleName());
@@ -606,7 +609,7 @@ public class DecorationToXContent {
         builder.endObject();
     }
 
-    public static void ToXContent(Method method, XContentBuilderWrapper builder) {
+    private static void toXContent(Method method, XContentBuilderWrapper builder) {
         builder.startObject();
         builder.field("name", method.getName());
         builder.field("parameters", classNames(method.getParameterTypes()));
@@ -619,7 +622,7 @@ public class DecorationToXContent {
         builder.endObject();
     }
 
-    public static void ToXContent(Constructor<?> constructor, XContentBuilderWrapper builder) {
+    private static void toXContent(Constructor<?> constructor, XContentBuilderWrapper builder) {
         builder.startObject();
         builder.field("name", constructor.getName());
         if (constructor.getParameterTypes().length > 0) {
@@ -633,16 +636,16 @@ public class DecorationToXContent {
     }
 
     // helpers
-    public static void start(Decoration decoration, XContentBuilderWrapper builder) {
+    private static void start(Decoration decoration, XContentBuilderWrapper builder) {
         builder.startObject();
         builder.field(Fields.DECORATION, decoration.getClass().getSimpleName());
     }
 
-    public static List<String> classNames(Class<?>[] classes) {
+    private static List<String> classNames(Class<?>[] classes) {
         return Arrays.stream(classes).map(Class::getSimpleName).collect(Collectors.toList());
     }
 
-    public static List<String> classNames(List<Class<?>> classes) {
+    private static List<String> classNames(List<Class<?>> classes) {
         return classes.stream().map(Class::getSimpleName).collect(Collectors.toList());
     }
 }

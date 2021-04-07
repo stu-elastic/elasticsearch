@@ -73,7 +73,7 @@ import java.util.stream.Collectors;
  * Serialize the user tree
  */
 public class UserTreeToXContent extends UserTreeBaseVisitor<ScriptScope> {
-    public final XContentBuilderWrapper builder;
+    private final XContentBuilderWrapper builder;
 
     public UserTreeToXContent(XContentBuilder builder) {
         this.builder = new XContentBuilderWrapper(Objects.requireNonNull(builder));
@@ -188,26 +188,24 @@ public class UserTreeToXContent extends UserTreeBaseVisitor<ScriptScope> {
     public void visitFor(SFor userForNode, ScriptScope scope) {
         start(userForNode);
 
-        ANode initializerNode = userForNode.getInitializerNode();
-        builder.startArray("initializer");
-        if (initializerNode != null) {
-            initializerNode.visit(this, scope);
+        // TODO(stu): why is initializerNode ANode instead of an expression
+        if (userForNode.getInitializerNode() != null) {
+            builder.startArray("initializer");
+            userForNode.getInitializerNode().visit(this, scope);
+            builder.endArray();
         }
-        builder.endArray();
 
-        builder.startArray("condition");
-        AExpression conditionNode = userForNode.getConditionNode();
-        if (conditionNode != null) {
-            conditionNode.visit(this, scope);
+        if (userForNode.getConditionNode() != null) {
+            builder.startArray("condition");
+            userForNode.getConditionNode().visit(this, scope);
+            builder.endArray();
         }
-        builder.endArray();
 
-        builder.startArray("afterthought");
-        AExpression afterthoughtNode = userForNode.getAfterthoughtNode();
-        if (afterthoughtNode != null) {
-            afterthoughtNode.visit(this, scope);
+        if (userForNode.getAfterthoughtNode() != null) {
+            builder.startArray("afterthought");
+            userForNode.getAfterthoughtNode().visit(this, scope);
+            builder.endArray();
         }
-        builder.endArray();
 
         block(userForNode.getBlockNode(), scope);
 
@@ -675,7 +673,7 @@ public class UserTreeToXContent extends UserTreeBaseVisitor<ScriptScope> {
                     .collect(Collectors.toList());
 
             for (Class<? extends Decoration> dkey : dkeys) {
-                DecorationToXContent.ToXContent(decorations.get(dkey), builder);
+                DecorationToXContent.toXContent(decorations.get(dkey), builder);
             }
             builder.endArray();
         }
