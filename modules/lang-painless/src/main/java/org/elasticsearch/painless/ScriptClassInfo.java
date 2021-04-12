@@ -18,7 +18,9 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 
 import static java.util.Collections.unmodifiableList;
@@ -38,9 +40,11 @@ public class ScriptClassInfo {
     private final List<Class<?>> getReturns;
     public final List<FunctionTable.LocalFunction> converters;
     public final FunctionTable.LocalFunction defConverter;
+    public final Map<String, Class<?>> globals;
 
     public ScriptClassInfo(PainlessLookup painlessLookup, Class<?> baseClass) {
         this.baseClass = baseClass;
+        this.globals = new HashMap<>();
 
         // Find the main method and the uses$argName methods
         java.lang.reflect.Method executeMethod = null;

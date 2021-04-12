@@ -8,9 +8,27 @@
 
 package org.elasticsearch.painless;
 
+import org.elasticsearch.painless.phase.UserTreeVisitor;
+import org.elasticsearch.painless.symbol.ScriptScope;
+import org.elasticsearch.painless.toxcontent.UserTreeToXContent;
+
+import java.util.Map;
+
 public class UserFunctionTests extends ScriptTestCase {
     public void testZeroArgumentUserFunction() {
         String source = "def twofive() { return 25; } twofive()";
         assertEquals(25, exec(source));
+    }
+
+    public void testUserFunctionWithParams() {
+        String source = "def twofive(int f) { return 25 + f; } twofive(params['foo'])";
+        assertEquals(45, exec(source, Map.of("foo", 20), true));
+        UserTreeVisitor<ScriptScope> semantic = new UserTreeToXContent();
+        UserTreeVisitor<ScriptScope> ir = new UserTreeToXContent();
+        Debugger.phases(source, semantic, ir, null);
+        System.out.println("----------Semantic----------");
+        System.out.println(semantic);
+        System.out.println("----------IR----------");
+        System.out.println(ir);
     }
 }

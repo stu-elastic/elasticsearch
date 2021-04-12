@@ -443,6 +443,7 @@ public class DecorationToXContent {
         builder.endObject();
     }
 
+    // TODO(stu): LookupToXContent
     public static void toXContent(PainlessMethod method, XContentBuilderWrapper builder) {
         builder.startObject();
         if (method.javaMethod != null) {
@@ -589,6 +590,8 @@ public class DecorationToXContent {
         builder.endObject();
     }
 
+    // TODO(stu): move these to JavaToXContent
+
     // java.lang.invoke
     private static void toXContent(MethodType methodType, XContentBuilderWrapper builder) {
         builder.startObject();
@@ -609,16 +612,17 @@ public class DecorationToXContent {
         builder.endObject();
     }
 
-    private static void toXContent(Method method, XContentBuilderWrapper builder) {
+    public static void toXContent(Method method, XContentBuilderWrapper builder) {
         builder.startObject();
+        builder.field("class", method.getDeclaringClass().getSimpleName());
         builder.field("name", method.getName());
-        builder.field("parameters", classNames(method.getParameterTypes()));
+        builder.field("parameterTypes", classNames(method.getParameterTypes()));
+        builder.field("modifiers", Modifier.toString(method.getModifiers()));
         builder.field("return", method.getReturnType().getSimpleName());
         Class<?>[] exceptions = method.getExceptionTypes();
         if (exceptions.length > 0) {
             builder.field("exceptions", classNames(exceptions));
         }
-        builder.field("modifiers", Modifier.toString(method.getModifiers()));
         builder.endObject();
     }
 
