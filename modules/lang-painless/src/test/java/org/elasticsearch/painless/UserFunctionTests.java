@@ -16,8 +16,20 @@ import java.util.Map;
 
 public class UserFunctionTests extends ScriptTestCase {
     public void testZeroArgumentUserFunction() {
-        String source = "def twofive() { return 25; } twofive()";
-        assertEquals(25, exec(source));
+        String source = "def twofive(int f) { return params['foo'] + f; } twofive(5)";
+        // assertEquals(25, exec(source));
+//        assertEquals(25, exec(source, Map.of("foo", 20), true));
+        UserTreeVisitor<ScriptScope> semantic = new UserTreeToXContent();
+        UserTreeVisitor<ScriptScope> ir = new UserTreeToXContent();
+        try {
+            Debugger.phases(source, semantic, ir, null);
+        } catch (NullPointerException e) {
+
+        }
+        System.out.println("----------Semantic----------");
+        System.out.println(semantic);
+        System.out.println("----------IR----------");
+        System.out.println(ir);
     }
 
     public void testUserFunctionWithParams() {

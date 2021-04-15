@@ -42,6 +42,8 @@ public class ScriptClassInfo {
     public final FunctionTable.LocalFunction defConverter;
     public final Map<String, Class<?>> globals;
 
+    public static final String MAIN_METHOD = "execute";
+
     public ScriptClassInfo(PainlessLookup painlessLookup, Class<?> baseClass) {
         this.baseClass = baseClass;
         this.globals = new HashMap<>();
@@ -57,7 +59,7 @@ public class ScriptClassInfo {
             if (m.isDefault()) {
                 continue;
             }
-            if (m.getName().equals("execute")) {
+            if (m.getName().equals(MAIN_METHOD)) {
                 if (executeMethod == null) {
                     executeMethod = m;
                     returnType = m.getReturnType();
@@ -184,6 +186,14 @@ public class ScriptClassInfo {
      */
     public List<Class<?>> getGetReturns() {
         return getReturns;
+    }
+
+
+    /**
+     * The global variables: execute arguments and proxied variables (eg `getDoc` -> `doc`).
+     */
+    public Map<String, Class<?>> getGlobals() {
+        return globals;
     }
 
     /**
