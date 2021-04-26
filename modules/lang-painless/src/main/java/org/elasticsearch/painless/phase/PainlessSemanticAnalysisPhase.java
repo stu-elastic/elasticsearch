@@ -47,7 +47,7 @@ public class PainlessSemanticAnalysisPhase extends DefaultSemanticAnalysisPhase 
     public void visitFunction(SFunction userFunctionNode, ScriptScope scriptScope) {
         functionName = userFunctionNode.getFunctionName();
 
-        if ("execute".equals(functionName)) {
+        if (ScriptClassInfo.MAIN_METHOD.equals(functionName)) {
             ScriptClassInfo scriptClassInfo = scriptScope.getScriptClassInfo();
             LocalFunction localFunction =
                     scriptScope.getFunctionTable().getFunction(functionName, scriptClassInfo.getExecuteArguments().size());
@@ -117,7 +117,7 @@ public class PainlessSemanticAnalysisPhase extends DefaultSemanticAnalysisPhase 
         if (rtn) {
             semanticScope.putDecoration(userStatementNode, new TargetType(rtnType));
             semanticScope.setCondition(userStatementNode, Internal.class);
-            if ("execute".equals(functionName)) {
+            if (ScriptClassInfo.MAIN_METHOD.equals(functionName)) {
                 decorateWithCastForReturn(userStatementNode, userExpressionNode, semanticScope,
                     semanticScope.getScriptScope().getScriptClassInfo());
             } else {
@@ -152,7 +152,7 @@ public class PainlessSemanticAnalysisPhase extends DefaultSemanticAnalysisPhase 
             semanticScope.putDecoration(userValueNode, new TargetType(semanticScope.getReturnType()));
             semanticScope.setCondition(userValueNode, Internal.class);
             checkedVisit(userValueNode, semanticScope);
-            if ("execute".equals(functionName)) {
+            if (ScriptClassInfo.MAIN_METHOD.equals(functionName)) {
                 decorateWithCastForReturn(userValueNode, userReturnNode, semanticScope,
                     semanticScope.getScriptScope().getScriptClassInfo());
             } else {
