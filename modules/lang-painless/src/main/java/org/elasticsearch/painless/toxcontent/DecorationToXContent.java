@@ -26,6 +26,7 @@ import org.elasticsearch.painless.symbol.Decorations.ValueType;
 import org.elasticsearch.painless.symbol.Decorations.StaticType;
 import org.elasticsearch.painless.symbol.Decorations.PartialCanonicalTypeName;
 import org.elasticsearch.painless.symbol.Decorations.ExpressionPainlessCast;
+import org.elasticsearch.painless.symbol.Decorations.GlobalMember;
 import org.elasticsearch.painless.symbol.Decorations.SemanticVariable;
 import org.elasticsearch.painless.symbol.Decorations.IterablePainlessMethod;
 import org.elasticsearch.painless.symbol.Decorations.UnaryType;
@@ -109,6 +110,12 @@ public class DecorationToXContent {
         start(expressionPainlessCast, builder);
         builder.field(Fields.CAST);
         toXContent(expressionPainlessCast.getExpressionPainlessCast(), builder);
+        builder.endObject();
+    }
+
+    public static void toXContent(GlobalMember globalMember, XContentBuilderWrapper builder) {
+        start(globalMember, builder);
+        builder.field("isLocalMember", globalMember.isLocalMember());
         builder.endObject();
     }
 
@@ -354,6 +361,8 @@ public class DecorationToXContent {
             toXContent((PartialCanonicalTypeName) decoration, builder);
         } else if (decoration instanceof ExpressionPainlessCast) {
             toXContent((ExpressionPainlessCast) decoration, builder);
+        } else if (decoration instanceof GlobalMember) {
+            toXContent((GlobalMember) decoration, builder);
         } else if (decoration instanceof SemanticVariable) {
             toXContent((SemanticVariable) decoration, builder);
         } else if (decoration instanceof IterablePainlessMethod) {

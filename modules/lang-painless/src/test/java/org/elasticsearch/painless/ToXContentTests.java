@@ -107,7 +107,7 @@ public class ToXContentTests extends ScriptTestCase {
         return Collections.emptyMap();
     }
 
-    private XContentBuilder semanticPhase(String script) {
+    XContentBuilder semanticPhase(String script) {
         XContentBuilder builder;
         try {
             builder = XContentFactory.jsonBuilder();

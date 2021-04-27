@@ -37,7 +37,7 @@ import org.elasticsearch.painless.symbol.SemanticScope.FunctionScope;
 
 import java.util.List;
 
-import static org.elasticsearch.painless.symbol.SemanticScope.newFunctionScope;
+import static org.elasticsearch.painless.symbol.SemanticScope.newMainFunctionScope;
 
 public class PainlessSemanticAnalysisPhase extends DefaultSemanticAnalysisPhase {
 
@@ -86,7 +86,7 @@ public class PainlessSemanticAnalysisPhase extends DefaultSemanticAnalysisPhase 
                 classScope.defineVariable(userFunctionNode.getLocation(), typeParameter, parameterName, false);
             }
 
-            FunctionScope functionScope = newFunctionScope(classScope, localFunction);
+            FunctionScope functionScope = newMainFunctionScope(classScope, localFunction);
             SBlock userBlockNode = userFunctionNode.getBlockNode();
 
             if (userBlockNode.getStatementNodes().isEmpty()) {

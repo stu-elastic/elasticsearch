@@ -13,6 +13,7 @@ import org.elasticsearch.painless.CompilerSettings;
 import org.elasticsearch.painless.FunctionRef;
 import org.elasticsearch.painless.Location;
 import org.elasticsearch.painless.Operation;
+import org.elasticsearch.painless.ScriptClassInfo;
 import org.elasticsearch.painless.lookup.PainlessCast;
 import org.elasticsearch.painless.lookup.PainlessClassBinding;
 import org.elasticsearch.painless.lookup.PainlessConstructor;
@@ -2405,6 +2406,9 @@ public class DefaultSemanticAnalysisPhase extends UserTreeBaseVisitor<SemanticSc
 
             Class<?> valueType = variable.getType();
             semanticScope.putDecoration(userSymbolNode, new ValueType(valueType));
+            semanticScope.putDecoration(userSymbolNode, new Decorations.GlobalMember(
+                ScriptClassInfo.MAIN_METHOD.equals(semanticScope.getLocalFunction().getFunctionName()))
+            );
         } else {
             semanticScope.putDecoration(userSymbolNode, new PartialCanonicalTypeName(symbol));
         }
