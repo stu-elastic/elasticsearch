@@ -205,8 +205,9 @@ public class DefaultSemanticAnalysisPhase extends UserTreeBaseVisitor<SemanticSc
      * Visits a class.
      */
     public void visitClass(SClass userClassNode, ScriptScope scriptScope) {
+        SemanticScope.ClassScope classScope = new SemanticScope.ClassScope(scriptScope);
         for (SFunction userFunctionNode : userClassNode.getFunctionNodes()) {
-            visitFunction(userFunctionNode, scriptScope);
+            visitFunction(userFunctionNode, classScope);
         }
     }
 
@@ -214,13 +215,14 @@ public class DefaultSemanticAnalysisPhase extends UserTreeBaseVisitor<SemanticSc
      * Visits a function and defines variables for each parameter.
      * Checks: control flow, type validation
      */
-    public void visitFunction(SFunction userFunctionNode, ScriptScope scriptScope) {
+    public void visitFunction(SFunction userFunctionNode, SemanticScope.ClassScope classScope) {
         String functionName = userFunctionNode.getFunctionName();
+        ScriptScope scriptScope = classScope.getScriptScope();
         LocalFunction localFunction =
                 scriptScope.getFunctionTable().getFunction(functionName, userFunctionNode.getCanonicalTypeNameParameters().size());
         Class<?> returnType = localFunction.getReturnType();
         List<Class<?>> typeParameters = localFunction.getTypeParameters();
-        FunctionScope functionScope = newFunctionScope(scriptScope, localFunction.getReturnType());
+        FunctionScope functionScope = newFunctionScope(classScope, localFunction);
 
         for (int index = 0; index < localFunction.getTypeParameters().size(); ++index) {
             Class<?> typeParameter = localFunction.getTypeParameters().get(index);

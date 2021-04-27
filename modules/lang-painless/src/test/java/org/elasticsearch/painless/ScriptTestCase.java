@@ -62,27 +62,7 @@ public abstract class ScriptTestCase extends ESTestCase {
     }
 
     /** Compiles and returns the result of {@code script} */
-    /*
-    TODO(stu): overriden
     public Object exec(String script) {
-        return exec(script, null, true);
-    }
-     */
-
-    
-    public Object exec(String script) {
-        UserTreeVisitor<ScriptScope> semantic = new UserTreeToXContent();
-        UserTreeVisitor<ScriptScope> ir = new UserTreeToXContent();
-        try {
-            Debugger.phases(script, semantic, ir, null);
-            System.out.println("----------Semantic----------");
-            System.out.println(semantic);
-            System.out.println("----------IR----------");
-            System.out.println(ir);
-        } catch (RuntimeException err) {
-            System.out.println("err [" + err.getMessage() + "]");
-        }
-
         return exec(script, null, true);
     }
 
