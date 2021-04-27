@@ -364,7 +364,6 @@ public abstract class SemanticScope {
 
             Variable variable = variables.get(name);
 
-
             if (variable == null) {
                 variable = parent.getVariable(location, name);
             } else {
