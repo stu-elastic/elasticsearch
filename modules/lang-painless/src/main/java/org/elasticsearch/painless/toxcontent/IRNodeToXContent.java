@@ -265,13 +265,13 @@ public class IRNodeToXContent {
         end(irNode, builder);
     }
 
-    public static void visitForEachSubArray(ForEachSubArrayNode irNode, XContentBuilderWrapper builder) {
+    public static void visitForEachSubArrayLoop(ForEachSubArrayNode irNode, XContentBuilderWrapper builder) {
         start(irNode, builder);
         visitConditionFragment(irNode, builder);
         end(irNode, builder);
     }
 
-    public static void visitForEachSubIterable(ForEachSubIterableNode irNode, XContentBuilderWrapper builder) {
+    public static void visitForEachSubIterableLoop(ForEachSubIterableNode irNode, XContentBuilderWrapper builder) {
         start(irNode, builder);
         visitConditionFragment(irNode, builder);
         end(irNode, builder);
@@ -374,7 +374,7 @@ public class IRNodeToXContent {
         terminal(irNode, builder);
     }
 
-    public static void visitLoadDotArrayLength(LoadDotArrayLengthNode irNode, XContentBuilderWrapper builder) {
+    public static void visitLoadDotArrayLengthNode(LoadDotArrayLengthNode irNode, XContentBuilderWrapper builder) {
         terminal(irNode, builder);
     }
 
@@ -673,9 +673,9 @@ public class IRNodeToXContent {
         } else if (irNode instanceof ForEachLoopNode) {
             visitForEachLoop((ForEachLoopNode) irNode, builder);
         } else if (irNode instanceof ForEachSubArrayNode) {
-            visitForEachSubArray((ForEachSubArrayNode) irNode, builder);
+            visitForEachSubArrayLoop((ForEachSubArrayNode) irNode, builder);
         } else if (irNode instanceof ForEachSubIterableNode) {
-            visitForEachSubIterable((ForEachSubIterableNode) irNode, builder);
+            visitForEachSubIterableLoop((ForEachSubIterableNode) irNode, builder);
         } else if (irNode instanceof ForLoopNode) {
             visitForLoop((ForLoopNode) irNode, builder);
         } else if (irNode instanceof FunctionNode) {
@@ -699,7 +699,7 @@ public class IRNodeToXContent {
         } else if (irNode instanceof LoadBraceNode) {
             visitLoadBrace((LoadBraceNode) irNode, builder);
         } else if (irNode instanceof LoadDotArrayLengthNode) {
-            visitLoadDotArrayLength((LoadDotArrayLengthNode) irNode, builder);
+            visitLoadDotArrayLengthNode((LoadDotArrayLengthNode) irNode, builder);
         } else if (irNode instanceof LoadDotDefNode) {
             visitLoadDotDef((LoadDotDefNode) irNode, builder);
         } else if (irNode instanceof LoadDotNode) {

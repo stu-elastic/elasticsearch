@@ -116,7 +116,7 @@ public class ASMToXContent extends DefaultIRTreeToASMBytesPhase {
         builder.startObject();
         builder.field("function");
         super.visitFunction(irNode, writeScope);
-        IRNodeToXContent.visitIR(irNode, builder);
+        IRNodeToXContent.visitFunction(irNode, builder);
         if (writeScope.isEmpty() == false) {
             visitWriteScopeFragment(writeScope);
         }
@@ -129,7 +129,7 @@ public class ASMToXContent extends DefaultIRTreeToASMBytesPhase {
         builder.startObject();
         builder.field("field");
         super.visitField(irNode, writeScope);
-        IRNodeToXContent.visitIR(irNode, builder);
+        IRNodeToXContent.visitField(irNode, builder);
         if (writeScope.isEmpty() == false) {
             visitWriteScopeFragment(writeScope);
         }
@@ -142,7 +142,7 @@ public class ASMToXContent extends DefaultIRTreeToASMBytesPhase {
         builder.startObject();
         builder.field("block");
         super.visitBlock(irNode, writeScope);
-        IRNodeToXContent.visitIR(irNode, builder);
+        IRNodeToXContent.visitBlock(irNode, builder);
         if (writeScope.isEmpty() == false) {
             visitWriteScopeFragment(writeScope);
         }
@@ -154,7 +154,7 @@ public class ASMToXContent extends DefaultIRTreeToASMBytesPhase {
         builder.startObject();
         builder.field("if");
         super.visitIf(irNode, writeScope);
-        IRNodeToXContent.visitIR(irNode, builder);
+        IRNodeToXContent.visitIf(irNode, builder);
         if (writeScope.isEmpty() == false) {
             visitWriteScopeFragment(writeScope);
         }
@@ -166,7 +166,7 @@ public class ASMToXContent extends DefaultIRTreeToASMBytesPhase {
         builder.startObject();
         builder.field("ifElse");
         super.visitIfElse(irNode, writeScope);
-        IRNodeToXContent.visitIR(irNode, builder);
+        IRNodeToXContent.visitIfElse(irNode, builder);
         if (writeScope.isEmpty() == false) {
             visitWriteScopeFragment(writeScope);
         }
@@ -178,7 +178,7 @@ public class ASMToXContent extends DefaultIRTreeToASMBytesPhase {
         builder.startObject();
         builder.field("whileLoop");
         super.visitWhileLoop(irNode, writeScope);
-        IRNodeToXContent.visitIR(irNode, builder);
+        IRNodeToXContent.visitWhileLoop(irNode, builder);
         if (writeScope.isEmpty() == false) {
             visitWriteScopeFragment(writeScope);
         }
@@ -190,7 +190,7 @@ public class ASMToXContent extends DefaultIRTreeToASMBytesPhase {
         builder.startObject();
         builder.field("doWhileLoop");
         super.visitDoWhileLoop(irNode, writeScope);
-        IRNodeToXContent.visitIR(irNode, builder);
+        IRNodeToXContent.visitDoWhileLoop(irNode, builder);
         if (writeScope.isEmpty() == false) {
             visitWriteScopeFragment(writeScope);
         }
@@ -202,7 +202,7 @@ public class ASMToXContent extends DefaultIRTreeToASMBytesPhase {
         builder.startObject();
         builder.field("forLoop");
         super.visitForLoop(irNode, writeScope);
-        IRNodeToXContent.visitIR(irNode, builder);
+        IRNodeToXContent.visitForLoop(irNode, builder);
         if (writeScope.isEmpty() == false) {
             visitWriteScopeFragment(writeScope);
         }
@@ -214,7 +214,7 @@ public class ASMToXContent extends DefaultIRTreeToASMBytesPhase {
         builder.startObject();
         builder.field("forEachLoop");
         super.visitForEachLoop(irNode, writeScope);
-        IRNodeToXContent.visitIR(irNode, builder);
+        IRNodeToXContent.visitForEachLoop(irNode, builder);
         if (writeScope.isEmpty() == false) {
             visitWriteScopeFragment(writeScope);
         }
@@ -226,7 +226,7 @@ public class ASMToXContent extends DefaultIRTreeToASMBytesPhase {
         builder.startObject();
         builder.field("forEachSubArrayLoop");
         super.visitForEachSubArrayLoop(irNode, writeScope);
-        IRNodeToXContent.visitIR(irNode, builder);
+        IRNodeToXContent.visitForEachSubArrayLoop(irNode, builder);
         if (writeScope.isEmpty() == false) {
             visitWriteScopeFragment(writeScope);
         }
@@ -238,7 +238,7 @@ public class ASMToXContent extends DefaultIRTreeToASMBytesPhase {
         builder.startObject();
         builder.field("forEachSubIterableLoop");
         super.visitForEachSubIterableLoop(irNode, writeScope);
-        IRNodeToXContent.visitIR(irNode, builder);
+        IRNodeToXContent.visitForEachSubIterableLoop(irNode, builder);
         if (writeScope.isEmpty() == false) {
             visitWriteScopeFragment(writeScope);
         }
@@ -250,7 +250,7 @@ public class ASMToXContent extends DefaultIRTreeToASMBytesPhase {
         builder.startObject();
         builder.field("declarationBlock");
         super.visitDeclarationBlock(irNode, writeScope);
-        IRNodeToXContent.visitIR(irNode, builder);
+        IRNodeToXContent.visitDeclarationBlock(irNode, builder);
         if (writeScope.isEmpty() == false) {
             visitWriteScopeFragment(writeScope);
         }
@@ -262,7 +262,7 @@ public class ASMToXContent extends DefaultIRTreeToASMBytesPhase {
         builder.startObject();
         builder.field("declaration");
         super.visitDeclaration(irNode, writeScope);
-        IRNodeToXContent.visitIR(irNode, builder);
+        IRNodeToXContent.visitDeclaration(irNode, builder);
         if (writeScope.isEmpty() == false) {
             visitWriteScopeFragment(writeScope);
         }
@@ -274,7 +274,7 @@ public class ASMToXContent extends DefaultIRTreeToASMBytesPhase {
         builder.startObject();
         builder.field("return");
         super.visitReturn(irNode, writeScope);
-        IRNodeToXContent.visitIR(irNode, builder);
+        IRNodeToXContent.visitReturn(irNode, builder);
         if (writeScope.isEmpty() == false) {
             visitWriteScopeFragment(writeScope);
         }
@@ -286,7 +286,7 @@ public class ASMToXContent extends DefaultIRTreeToASMBytesPhase {
         builder.startObject();
         builder.field("statementExpression");
         super.visitStatementExpression(irNode, writeScope);
-        IRNodeToXContent.visitIR(irNode, builder);
+        IRNodeToXContent.visitStatementExpression(irNode, builder);
         if (writeScope.isEmpty() == false) {
             visitWriteScopeFragment(writeScope);
         }
@@ -299,7 +299,7 @@ public class ASMToXContent extends DefaultIRTreeToASMBytesPhase {
         builder.startObject();
         builder.field("try");
         super.visitTry(irNode, writeScope);
-        IRNodeToXContent.visitIR(irNode, builder);
+        IRNodeToXContent.visitTry(irNode, builder);
         if (writeScope.isEmpty() == false) {
             visitWriteScopeFragment(writeScope);
         }
@@ -311,7 +311,7 @@ public class ASMToXContent extends DefaultIRTreeToASMBytesPhase {
         builder.startObject();
         builder.field("catch");
         super.visitCatch(irNode, writeScope);
-        IRNodeToXContent.visitIR(irNode, builder);
+        IRNodeToXContent.visitCatch(irNode, builder);
         if (writeScope.isEmpty() == false) {
             visitWriteScopeFragment(writeScope);
         }
@@ -323,7 +323,7 @@ public class ASMToXContent extends DefaultIRTreeToASMBytesPhase {
         builder.startObject();
         builder.field("throw");
         super.visitThrow(irNode, writeScope);
-        IRNodeToXContent.visitIR(irNode, builder);
+        IRNodeToXContent.visitThrow(irNode, builder);
         if (writeScope.isEmpty() == false) {
             visitWriteScopeFragment(writeScope);
         }
@@ -335,7 +335,7 @@ public class ASMToXContent extends DefaultIRTreeToASMBytesPhase {
         builder.startObject();
         builder.field("continue");
         super.visitContinue(irNode, writeScope);
-        IRNodeToXContent.visitIR(irNode, builder);
+        IRNodeToXContent.visitContinue(irNode, builder);
         if (writeScope.isEmpty() == false) {
             visitWriteScopeFragment(writeScope);
         }
@@ -347,7 +347,7 @@ public class ASMToXContent extends DefaultIRTreeToASMBytesPhase {
         builder.startObject();
         builder.field("break");
         super.visitBreak(irNode, writeScope);
-        IRNodeToXContent.visitIR(irNode, builder);
+        IRNodeToXContent.visitBreak(irNode, builder);
         if (writeScope.isEmpty() == false) {
             visitWriteScopeFragment(writeScope);
         }
@@ -359,7 +359,7 @@ public class ASMToXContent extends DefaultIRTreeToASMBytesPhase {
         builder.startObject();
         builder.field("binaryImpl");
         super.visitBinaryImpl(irNode, writeScope);
-        IRNodeToXContent.visitIR(irNode, builder);
+        IRNodeToXContent.visitBinaryImpl(irNode, builder);
         if (writeScope.isEmpty() == false) {
             visitWriteScopeFragment(writeScope);
         }
@@ -371,7 +371,7 @@ public class ASMToXContent extends DefaultIRTreeToASMBytesPhase {
         builder.startObject();
         builder.field("unaryMath");
         super.visitUnaryMath(irNode, writeScope);
-        IRNodeToXContent.visitIR(irNode, builder);
+        IRNodeToXContent.visitUnaryMath(irNode, builder);
         if (writeScope.isEmpty() == false) {
             visitWriteScopeFragment(writeScope);
         }
@@ -383,7 +383,7 @@ public class ASMToXContent extends DefaultIRTreeToASMBytesPhase {
         builder.startObject();
         builder.field("binaryMath");
         super.visitBinaryMath(irNode, writeScope);
-        IRNodeToXContent.visitIR(irNode, builder);
+        IRNodeToXContent.visitBinaryMath(irNode, builder);
         if (writeScope.isEmpty() == false) {
             visitWriteScopeFragment(writeScope);
         }
@@ -395,7 +395,7 @@ public class ASMToXContent extends DefaultIRTreeToASMBytesPhase {
         builder.startObject();
         builder.field("stringConcatenation");
         super.visitStringConcatenation(irNode, writeScope);
-        IRNodeToXContent.visitIR(irNode, builder);
+        IRNodeToXContent.visitStringConcatenation(irNode, builder);
         if (writeScope.isEmpty() == false) {
             visitWriteScopeFragment(writeScope);
         }
@@ -407,7 +407,7 @@ public class ASMToXContent extends DefaultIRTreeToASMBytesPhase {
         builder.startObject();
         builder.field("boolean");
         super.visitBoolean(irNode, writeScope);
-        IRNodeToXContent.visitIR(irNode, builder);
+        IRNodeToXContent.visitBoolean(irNode, builder);
         if (writeScope.isEmpty() == false) {
             visitWriteScopeFragment(writeScope);
         }
@@ -419,7 +419,7 @@ public class ASMToXContent extends DefaultIRTreeToASMBytesPhase {
         builder.startObject();
         builder.field("comparison");
         super.visitComparison(irNode, writeScope);
-        IRNodeToXContent.visitIR(irNode, builder);
+        IRNodeToXContent.visitComparison(irNode, builder);
         if (writeScope.isEmpty() == false) {
             visitWriteScopeFragment(writeScope);
         }
@@ -432,7 +432,7 @@ public class ASMToXContent extends DefaultIRTreeToASMBytesPhase {
         builder.field("cast");
         super.visitCast(irNode, writeScope);
         builder.startObject("ir");
-        IRNodeToXContent.visitIR(irNode, builder);
+        IRNodeToXContent.visitCast(irNode, builder);
         if (writeScope.isEmpty() == false) {
             visitWriteScopeFragment(writeScope);
         }
@@ -444,7 +444,7 @@ public class ASMToXContent extends DefaultIRTreeToASMBytesPhase {
         builder.startObject();
         builder.field("instanceof");
         super.visitInstanceof(irNode, writeScope);
-        IRNodeToXContent.visitIR(irNode, builder);
+        IRNodeToXContent.visitInstanceof(irNode, builder);
         if (writeScope.isEmpty() == false) {
             visitWriteScopeFragment(writeScope);
         }
@@ -456,7 +456,7 @@ public class ASMToXContent extends DefaultIRTreeToASMBytesPhase {
         builder.startObject();
         builder.field("conditional");
         super.visitConditional(irNode, writeScope);
-        IRNodeToXContent.visitIR(irNode, builder);
+        IRNodeToXContent.visitConditional(irNode, builder);
         if (writeScope.isEmpty() == false) {
             visitWriteScopeFragment(writeScope);
         }
@@ -468,7 +468,7 @@ public class ASMToXContent extends DefaultIRTreeToASMBytesPhase {
         builder.startObject();
         builder.field("elvis");
         super.visitElvis(irNode, writeScope);
-        IRNodeToXContent.visitIR(irNode, builder);
+        IRNodeToXContent.visitElvis(irNode, builder);
         if (writeScope.isEmpty() == false) {
             visitWriteScopeFragment(writeScope);
         }
@@ -480,7 +480,7 @@ public class ASMToXContent extends DefaultIRTreeToASMBytesPhase {
         builder.startObject();
         builder.field("listInitialization");
         super.visitListInitialization(irNode, writeScope);
-        IRNodeToXContent.visitIR(irNode, builder);
+        IRNodeToXContent.visitListInitialization(irNode, builder);
         if (writeScope.isEmpty() == false) {
             visitWriteScopeFragment(writeScope);
         }
@@ -492,7 +492,7 @@ public class ASMToXContent extends DefaultIRTreeToASMBytesPhase {
         builder.startObject();
         builder.field("mapInitialization");
         super.visitMapInitialization(irNode, writeScope);
-        IRNodeToXContent.visitIR(irNode, builder);
+        IRNodeToXContent.visitMapInitialization(irNode, builder);
         if (writeScope.isEmpty() == false) {
             visitWriteScopeFragment(writeScope);
         }
@@ -504,7 +504,7 @@ public class ASMToXContent extends DefaultIRTreeToASMBytesPhase {
         builder.startObject();
         builder.field("newArray");
         super.visitNewArray(irNode, writeScope);
-        IRNodeToXContent.visitIR(irNode, builder);
+        IRNodeToXContent.visitNewArray(irNode, builder);
         if (writeScope.isEmpty() == false) {
             visitWriteScopeFragment(writeScope);
         }
@@ -516,7 +516,7 @@ public class ASMToXContent extends DefaultIRTreeToASMBytesPhase {
         builder.startObject();
         builder.field("newObject");
         super.visitNewObject(irNode, writeScope);
-        IRNodeToXContent.visitIR(irNode, builder);
+        IRNodeToXContent.visitNewObject(irNode, builder);
         if (writeScope.isEmpty() == false) {
             visitWriteScopeFragment(writeScope);
         }
@@ -529,7 +529,7 @@ public class ASMToXContent extends DefaultIRTreeToASMBytesPhase {
         builder.startObject("constant");
         builder.field("ir");
         super.visitConstant(irNode, writeScope);
-        IRNodeToXContent.visitIR(irNode, builder);
+        IRNodeToXContent.visitConstant(irNode, builder);
         if (writeScope.isEmpty() == false) {
             visitWriteScopeFragment(writeScope);
         }
@@ -542,7 +542,7 @@ public class ASMToXContent extends DefaultIRTreeToASMBytesPhase {
         builder.startObject();
         builder.field("null");
         super.visitNull(irNode, writeScope);
-        IRNodeToXContent.visitIR(irNode, builder);
+        IRNodeToXContent.visitNull(irNode, builder);
         if (writeScope.isEmpty() == false) {
             visitWriteScopeFragment(writeScope);
         }
@@ -554,7 +554,7 @@ public class ASMToXContent extends DefaultIRTreeToASMBytesPhase {
         builder.startObject();
         builder.field("defInterfaceReference");
         super.visitDefInterfaceReference(irNode, writeScope);
-        IRNodeToXContent.visitIR(irNode, builder);
+        IRNodeToXContent.visitDefInterfaceReference(irNode, builder);
         if (writeScope.isEmpty() == false) {
             visitWriteScopeFragment(writeScope);
         }
@@ -566,7 +566,7 @@ public class ASMToXContent extends DefaultIRTreeToASMBytesPhase {
         builder.startObject();
         builder.field("typedInterfaceReference");
         super.visitTypedInterfaceReference(irNode, writeScope);
-        IRNodeToXContent.visitIR(irNode, builder);
+        IRNodeToXContent.visitTypedInterfaceReference(irNode, builder);
         if (writeScope.isEmpty() == false) {
             visitWriteScopeFragment(writeScope);
         }
@@ -578,7 +578,7 @@ public class ASMToXContent extends DefaultIRTreeToASMBytesPhase {
         builder.startObject();
         builder.field("typedCaptureReference");
         super.visitTypedCaptureReference(irNode, writeScope);
-        IRNodeToXContent.visitIR(irNode, builder);
+        IRNodeToXContent.visitTypedCaptureReference(irNode, builder);
         if (writeScope.isEmpty() == false) {
             visitWriteScopeFragment(writeScope);
         }
@@ -590,7 +590,7 @@ public class ASMToXContent extends DefaultIRTreeToASMBytesPhase {
         builder.startObject();
         builder.field("static");
         super.visitStatic(irNode, writeScope);
-        IRNodeToXContent.visitIR(irNode, builder);
+        IRNodeToXContent.visitStatic(irNode, builder);
         if (writeScope.isEmpty() == false) {
             visitWriteScopeFragment(writeScope);
         }
@@ -602,7 +602,7 @@ public class ASMToXContent extends DefaultIRTreeToASMBytesPhase {
         builder.startObject();
         builder.field("loadVariable");
         super.visitLoadVariable(irNode, writeScope);
-        IRNodeToXContent.visitIR(irNode, builder);
+        IRNodeToXContent.visitLoadVariable(irNode, builder);
         if (writeScope.isEmpty() == false) {
             visitWriteScopeFragment(writeScope);
         }
@@ -614,7 +614,7 @@ public class ASMToXContent extends DefaultIRTreeToASMBytesPhase {
         builder.startObject();
         builder.field("nullSafeSub");
         super.visitNullSafeSub(irNode, writeScope);
-        IRNodeToXContent.visitIR(irNode, builder);
+        IRNodeToXContent.visitNullSafeSub(irNode, builder);
         if (writeScope.isEmpty() == false) {
             visitWriteScopeFragment(writeScope);
         }
@@ -626,7 +626,7 @@ public class ASMToXContent extends DefaultIRTreeToASMBytesPhase {
         builder.startObject();
         builder.field("loadDotArrayLengthNode");
         super.visitLoadDotArrayLengthNode(irNode, writeScope);
-        IRNodeToXContent.visitIR(irNode, builder);
+        IRNodeToXContent.visitLoadDotArrayLengthNode(irNode, builder);
         if (writeScope.isEmpty() == false) {
             visitWriteScopeFragment(writeScope);
         }
@@ -638,7 +638,7 @@ public class ASMToXContent extends DefaultIRTreeToASMBytesPhase {
         builder.startObject();
         builder.field("loadDotDef");
         super.visitLoadDotDef(irNode, writeScope);
-        IRNodeToXContent.visitIR(irNode, builder);
+        IRNodeToXContent.visitLoadDotDef(irNode, builder);
         if (writeScope.isEmpty() == false) {
             visitWriteScopeFragment(writeScope);
         }
@@ -650,7 +650,7 @@ public class ASMToXContent extends DefaultIRTreeToASMBytesPhase {
         builder.startObject();
         builder.field("loadDot");
         super.visitLoadDot(irNode, writeScope);
-        IRNodeToXContent.visitIR(irNode, builder);
+        IRNodeToXContent.visitLoadDot(irNode, builder);
         if (writeScope.isEmpty() == false) {
             visitWriteScopeFragment(writeScope);
         }
@@ -662,7 +662,7 @@ public class ASMToXContent extends DefaultIRTreeToASMBytesPhase {
         builder.startObject();
         builder.field("loadDotShortcut");
         super.visitLoadDotShortcut(irNode, writeScope);
-        IRNodeToXContent.visitIR(irNode, builder);
+        IRNodeToXContent.visitLoadDotShortcut(irNode, builder);
         if (writeScope.isEmpty() == false) {
             visitWriteScopeFragment(writeScope);
         }
@@ -674,7 +674,7 @@ public class ASMToXContent extends DefaultIRTreeToASMBytesPhase {
         builder.startObject();
         builder.field("loadListShortcut");
         super.visitLoadListShortcut(irNode, writeScope);
-        IRNodeToXContent.visitIR(irNode, builder);
+        IRNodeToXContent.visitLoadListShortcut(irNode, builder);
         if (writeScope.isEmpty() == false) {
             visitWriteScopeFragment(writeScope);
         }
@@ -686,7 +686,7 @@ public class ASMToXContent extends DefaultIRTreeToASMBytesPhase {
         builder.startObject();
         builder.field("loadMapShortcut");
         super.visitLoadMapShortcut(irNode, writeScope);
-        IRNodeToXContent.visitIR(irNode, builder);
+        IRNodeToXContent.visitLoadMapShortcut(irNode, builder);
         if (writeScope.isEmpty() == false) {
             visitWriteScopeFragment(writeScope);
         }
@@ -698,7 +698,7 @@ public class ASMToXContent extends DefaultIRTreeToASMBytesPhase {
         builder.startObject();
         builder.field("loadFieldMember");
         super.visitLoadFieldMember(irNode, writeScope);
-        IRNodeToXContent.visitIR(irNode, builder);
+        IRNodeToXContent.visitLoadFieldMember(irNode, builder);
         if (writeScope.isEmpty() == false) {
             visitWriteScopeFragment(writeScope);
         }
@@ -710,7 +710,7 @@ public class ASMToXContent extends DefaultIRTreeToASMBytesPhase {
         builder.startObject();
         builder.field("loadBraceDef");
         super.visitLoadBraceDef(irNode, writeScope);
-        IRNodeToXContent.visitIR(irNode, builder);
+        IRNodeToXContent.visitLoadBraceDef(irNode, builder);
         if (writeScope.isEmpty() == false) {
             visitWriteScopeFragment(writeScope);
         }
@@ -722,7 +722,7 @@ public class ASMToXContent extends DefaultIRTreeToASMBytesPhase {
         builder.startObject();
         builder.field("loadBrace");
         super.visitLoadBrace(irNode, writeScope);
-        IRNodeToXContent.visitIR(irNode, builder);
+        IRNodeToXContent.visitLoadBrace(irNode, builder);
         if (writeScope.isEmpty() == false) {
             visitWriteScopeFragment(writeScope);
         }
@@ -734,7 +734,7 @@ public class ASMToXContent extends DefaultIRTreeToASMBytesPhase {
         builder.startObject();
         builder.field("storeVariable");
         super.visitStoreVariable(irNode, writeScope);
-        IRNodeToXContent.visitIR(irNode, builder);
+        IRNodeToXContent.visitStoreVariable(irNode, builder);
         if (writeScope.isEmpty() == false) {
             visitWriteScopeFragment(writeScope);
         }
@@ -746,7 +746,7 @@ public class ASMToXContent extends DefaultIRTreeToASMBytesPhase {
         builder.startObject();
         builder.field("storeDotDef");
         super.visitStoreDotDef(irNode, writeScope);
-        IRNodeToXContent.visitIR(irNode, builder);
+        IRNodeToXContent.visitStoreDotDef(irNode, builder);
         if (writeScope.isEmpty() == false) {
             visitWriteScopeFragment(writeScope);
         }
@@ -758,7 +758,7 @@ public class ASMToXContent extends DefaultIRTreeToASMBytesPhase {
         builder.startObject();
         builder.field("storeDot");
         super.visitStoreDot(irNode, writeScope);
-        IRNodeToXContent.visitIR(irNode, builder);
+        IRNodeToXContent.visitStoreDot(irNode, builder);
         if (writeScope.isEmpty() == false) {
             visitWriteScopeFragment(writeScope);
         }
@@ -770,7 +770,7 @@ public class ASMToXContent extends DefaultIRTreeToASMBytesPhase {
         builder.startObject();
         builder.field("storeDotShortcut");
         super.visitStoreDotShortcut(irNode, writeScope);
-        IRNodeToXContent.visitIR(irNode, builder);
+        IRNodeToXContent.visitStoreDotShortcut(irNode, builder);
         if (writeScope.isEmpty() == false) {
             visitWriteScopeFragment(writeScope);
         }
@@ -782,7 +782,7 @@ public class ASMToXContent extends DefaultIRTreeToASMBytesPhase {
         builder.startObject();
         builder.field("storeListShortcut");
         super.visitStoreListShortcut(irNode, writeScope);
-        IRNodeToXContent.visitIR(irNode, builder);
+        IRNodeToXContent.visitStoreListShortcut(irNode, builder);
         if (writeScope.isEmpty() == false) {
             visitWriteScopeFragment(writeScope);
         }
@@ -794,7 +794,7 @@ public class ASMToXContent extends DefaultIRTreeToASMBytesPhase {
         builder.startObject();
         builder.field("storeMapShortcut");
         super.visitStoreMapShortcut(irNode, writeScope);
-        IRNodeToXContent.visitIR(irNode, builder);
+        IRNodeToXContent.visitStoreMapShortcut(irNode, builder);
         if (writeScope.isEmpty() == false) {
             visitWriteScopeFragment(writeScope);
         }
@@ -806,7 +806,7 @@ public class ASMToXContent extends DefaultIRTreeToASMBytesPhase {
         builder.startObject();
         builder.field("storeFieldMember");
         super.visitStoreFieldMember(irNode, writeScope);
-        IRNodeToXContent.visitIR(irNode, builder);
+        IRNodeToXContent.visitStoreFieldMember(irNode, builder);
         if (writeScope.isEmpty() == false) {
             visitWriteScopeFragment(writeScope);
         }
@@ -818,7 +818,7 @@ public class ASMToXContent extends DefaultIRTreeToASMBytesPhase {
         builder.startObject();
         builder.field("storeBraceDef");
         super.visitStoreBraceDef(irNode, writeScope);
-        IRNodeToXContent.visitIR(irNode, builder);
+        IRNodeToXContent.visitStoreBraceDef(irNode, builder);
         if (writeScope.isEmpty() == false) {
             visitWriteScopeFragment(writeScope);
         }
@@ -830,7 +830,7 @@ public class ASMToXContent extends DefaultIRTreeToASMBytesPhase {
         builder.startObject();
         builder.field("storeBrace");
         super.visitStoreBrace(irNode, writeScope);
-        IRNodeToXContent.visitIR(irNode, builder);
+        IRNodeToXContent.visitStoreBrace(irNode, builder);
         if (writeScope.isEmpty() == false) {
             visitWriteScopeFragment(writeScope);
         }
@@ -842,7 +842,7 @@ public class ASMToXContent extends DefaultIRTreeToASMBytesPhase {
         builder.startObject();
         builder.field("invokeCallDef");
         super.visitInvokeCallDef(irNode, writeScope);
-        IRNodeToXContent.visitIR(irNode, builder);
+        IRNodeToXContent.visitInvokeCallDef(irNode, builder);
         if (writeScope.isEmpty() == false) {
             visitWriteScopeFragment(writeScope);
         }
@@ -854,7 +854,7 @@ public class ASMToXContent extends DefaultIRTreeToASMBytesPhase {
         builder.startObject();
         builder.field("invokeCall");
         super.visitInvokeCall(irNode, writeScope);
-        IRNodeToXContent.visitIR(irNode, builder);
+        IRNodeToXContent.visitInvokeCall(irNode, builder);
         if (writeScope.isEmpty() == false) {
             visitWriteScopeFragment(writeScope);
         }
@@ -866,7 +866,7 @@ public class ASMToXContent extends DefaultIRTreeToASMBytesPhase {
         builder.startObject();
         builder.field("invokeCallMember");
         super.visitInvokeCallMember(irNode, writeScope);
-        IRNodeToXContent.visitIR(irNode, builder);
+        IRNodeToXContent.visitInvokeCallMember(irNode, builder);
         if (writeScope.isEmpty() == false) {
             visitWriteScopeFragment(writeScope);
         }
@@ -878,7 +878,7 @@ public class ASMToXContent extends DefaultIRTreeToASMBytesPhase {
         builder.startObject();
         builder.field("flipArrayIndex");
         super.visitFlipArrayIndex(irNode, writeScope);
-        IRNodeToXContent.visitIR(irNode, builder);
+        IRNodeToXContent.visitFlipArrayIndex(irNode, builder);
         if (writeScope.isEmpty() == false) {
             visitWriteScopeFragment(writeScope);
         }
@@ -890,7 +890,7 @@ public class ASMToXContent extends DefaultIRTreeToASMBytesPhase {
         builder.startObject();
         builder.field("flipCollectionIndex");
         super.visitFlipCollectionIndex(irNode, writeScope);
-        IRNodeToXContent.visitIR(irNode, builder);
+        IRNodeToXContent.visitFlipCollectionIndex(irNode, builder);
         if (writeScope.isEmpty() == false) {
             visitWriteScopeFragment(writeScope);
         }
@@ -902,7 +902,7 @@ public class ASMToXContent extends DefaultIRTreeToASMBytesPhase {
         builder.startObject();
         builder.field("flipDefIndex");
         super.visitFlipDefIndex(irNode, writeScope);
-        IRNodeToXContent.visitIR(irNode, builder);
+        IRNodeToXContent.visitFlipDefIndex(irNode, builder);
         if (writeScope.isEmpty() == false) {
             visitWriteScopeFragment(writeScope);
         }
@@ -914,7 +914,7 @@ public class ASMToXContent extends DefaultIRTreeToASMBytesPhase {
         builder.startObject();
         builder.field("dup");
         super.visitDup(irNode, writeScope);
-        IRNodeToXContent.visitIR(irNode, builder);
+        IRNodeToXContent.visitDup(irNode, builder);
         if (writeScope.isEmpty() == false) {
             visitWriteScopeFragment(writeScope);
         }
