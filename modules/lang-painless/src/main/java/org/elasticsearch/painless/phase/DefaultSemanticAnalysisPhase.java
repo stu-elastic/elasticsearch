@@ -2392,7 +2392,7 @@ public class DefaultSemanticAnalysisPhase extends UserTreeBaseVisitor<SemanticSc
             }
 
             semanticScope.putDecoration(userSymbolNode, new StaticType(staticType));
-        } else if (semanticScope.isVariableDefined(symbol)) {
+        } else if (semanticScope.isVariableDefined(symbol, true)) {
             if (read == false && write == false) {
                 throw userSymbolNode.createError(new IllegalArgumentException("not a statement: variable [" + symbol + "] not used"));
             }

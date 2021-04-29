@@ -89,8 +89,8 @@ public abstract class SemanticScope {
         }
 
         @Override
-        public boolean isVariableDefined(String name) {
-            return globals.containsKey(name);
+        public boolean isVariableDefined(String name, boolean localScope) {
+            return localScope == false && globals.containsKey(name);
         }
 
         @Override
@@ -113,23 +113,13 @@ public abstract class SemanticScope {
         }
 
         @Override
-        protected boolean isLocalVariableDefined(String name) {
-            return false;
-        }
-
-        @Override
         protected Variable getLocalVariable(String name) {
             return null;
         }
 
         @Override
-        protected boolean canDefineLocalVariable(String name) {
-            return true;
-        }
-
-        @Override
         public Variable defineVariable(Location location, Class<?> type, String name, boolean isReadOnly) {
-            if (isVariableDefined(name)) {
+            if (isVariableDefined(name, false)) {
                 throw location.createError(new IllegalArgumentException("variable [" + name + "] is already defined"));
             }
 
@@ -160,8 +150,17 @@ public abstract class SemanticScope {
         }
 
         @Override
-        public boolean isVariableDefined(String name) {
-            return variables.containsKey(name) || parent.isVariableDefined(name);
+        public boolean isVariableDefined(String name, boolean localScope) {
+            if (localScope) {
+                if (variables.containsKey(name) || parent.isVariableDefined(name, true)) {
+                    return true;
+                }
+                if (isMainFunction) {
+                    return parent.isVariableDefined(name, false);
+                }
+                return false;
+            }
+            return parent.isVariableDefined(name, false);
         }
 
         /**
@@ -177,7 +176,7 @@ public abstract class SemanticScope {
             Variable variable = variables.get(name);
 
             if (variable == null) {
-                if (parent.isVariableDefined(name) == false) {
+                if (parent.isVariableDefined(name, false) == false && parent.isVariableDefined(name, true) == false) {
                     throw location.createError(new IllegalArgumentException("variable [" + name + "] is not defined"));
                 }
                 variable = parent.getVariable(location, name);
@@ -190,31 +189,12 @@ public abstract class SemanticScope {
         }
 
         @Override
-        protected boolean isLocalVariableDefined(String name) {
-            return variables.containsKey(name) || parent.isLocalVariableDefined(name);
-        }
-
-        @Override
         protected Variable getLocalVariable(String name) {
             Variable local = variables.get(name);
             if (local != null) {
                 return local;
             }
             return parent.getLocalVariable(name);
-        }
-
-        @Override
-        protected boolean canDefineLocalVariable(String name) {
-            // Already defined
-            if (isLocalVariableDefined(name)) {
-                return false;
-            }
-            // Global
-            if (isVariableDefined(name)) {
-                // In execute
-                return isMainFunction == false;
-            }
-            return true;
         }
 
         @Override
@@ -250,12 +230,11 @@ public abstract class SemanticScope {
         }
 
         @Override
-        public boolean isVariableDefined(String name) {
-            if (variables.containsKey(name)) {
-                return true;
+        public boolean isVariableDefined(String name, boolean localScope) {
+            if (localScope) {
+                return variables.containsKey(name) || parent.isVariableDefined(name, true);
             }
-
-            return parent.isVariableDefined(name);
+            return parent.isVariableDefined(name, false);
         }
 
         /**
@@ -272,7 +251,7 @@ public abstract class SemanticScope {
             Variable variable = variables.get(name);
 
             if (variable == null) {
-                if (parent.isVariableDefined(name) == false) {
+                if (parent.isVariableDefined(name, false) == false && parent.isVariableDefined(name, true) == false) {
                     throw location.createError(new IllegalArgumentException("variable [" + name + "] is not defined"));
                 }
                 variable = parent.getVariable(location, name);
@@ -288,23 +267,12 @@ public abstract class SemanticScope {
         }
 
         @Override
-        protected boolean isLocalVariableDefined(String name) {
-            // TODO(stu): what should we do about captures here?
-            return variables.containsKey(name) || parent.isLocalVariableDefined(name);
-        }
-
-        @Override
         protected Variable getLocalVariable(String name) {
             Variable local = variables.get(name);
             if (local != null) {
                 return local;
             }
             return parent.getLocalVariable(name);
-        }
-
-        @Override
-        protected boolean canDefineLocalVariable(String name) {
-            return parent.canDefineLocalVariable(name);
         }
 
         @Override
@@ -345,9 +313,11 @@ public abstract class SemanticScope {
         }
 
         @Override
-        public boolean isVariableDefined(String name) {
-            if (variables.containsKey(name)) {
-                return true;
+        public boolean isVariableDefined(String name, boolean localScope) {
+            if (localScope) {
+                return variables.containsKey(name) || parent.isVariableDefined(name, true);
+                    return true;
+                }
             }
 
             return parent.isVariableDefined(name);
@@ -371,28 +341,6 @@ public abstract class SemanticScope {
             }
 
             return variable;
-        }
-
-        @Override
-        protected boolean isLocalVariableDefined(String name) {
-            return variables.containsKey(name) || parent.isLocalVariableDefined(name);
-        }
-
-        @Override
-        protected Variable getLocalVariable(String name) {
-            Variable local = variables.get(name);
-            if (local != null) {
-                return local;
-            }
-            return parent.getLocalVariable(name);
-        }
-
-        @Override
-        protected boolean canDefineLocalVariable(String name) {
-            if (isLocalVariableDefined(name)) {
-                return false;
-            }
-            return parent.canDefineLocalVariable(name);
         }
 
         @Override
@@ -489,14 +437,12 @@ public abstract class SemanticScope {
     public abstract LocalFunction getLocalFunction();
     public abstract String getReturnCanonicalTypeName();
 
-    protected abstract boolean canDefineLocalVariable(String name);
-
     public Class<?> getReturnType() {
         return getLocalFunction().returnType;
     }
 
     public Variable defineVariable(Location location, Class<?> type, String name, boolean isReadOnly) {
-        if (canDefineLocalVariable(name) == false) {
+        if (isVariableDefined(name, true)) {
             throw location.createError(new IllegalArgumentException("variable [" + name + "] is already defined"));
         }
 
@@ -506,7 +452,7 @@ public abstract class SemanticScope {
         return variable;
     }
 
-    public abstract boolean isVariableDefined(String name);
+    public abstract boolean isVariableDefined(String name, boolean localScope);
 
     /**
      * Fetches the variable or throws an IllegalArgumentException if the variable is not defined
@@ -517,15 +463,8 @@ public abstract class SemanticScope {
      */
     public abstract Variable getVariable(Location location, String name);
 
-    protected abstract boolean isLocalVariableDefined(String name);
-    protected abstract Variable getLocalVariable(String name);
-
     public Variable defineInternalVariable(Location location, Class<?> type, String name, boolean isReadOnly) {
         return defineVariable(location, type, "#" + name, isReadOnly);
-    }
-
-    public boolean isInternalVariableDefined(String name) {
-        return isVariableDefined("#" + name);
     }
 
     public Variable getInternalVariable(Location location, String name) {
