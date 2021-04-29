@@ -55,6 +55,7 @@ public class XContentBuilderWrapper {
         } catch (IOException io) {
             throw new IllegalStateException(io);
         }
+        System.out.println("end");
     }
 
     public void startArray() {

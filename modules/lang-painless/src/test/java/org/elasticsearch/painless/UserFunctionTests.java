@@ -8,9 +8,23 @@
 
 package org.elasticsearch.painless;
 
+import org.elasticsearch.common.collect.Tuple;
+import org.elasticsearch.common.xcontent.XContentBuilder;
+
 public class UserFunctionTests extends ScriptTestCase {
     public void testZeroArgumentUserFunction() {
         String source = "def twofive() { return 25; } twofive()";
         assertEquals(25, exec(source));
+    }
+
+    public void testIRBuilder() {
+        String script = "def twofive() { return 25; } twofive()";
+        Tuple<XContentBuilder, Tuple<XContentBuilder, XContentBuilder>> builders = ToXContentTests.phases(script);
+        System.out.println("----------Semantic----------");
+        System.out.println(builders.v1());
+        System.out.println("----------IR----------");
+        System.out.println(builders.v2().v1());
+        System.out.println("----------ASM----------");
+        System.out.println(builders.v2().v2());
     }
 }

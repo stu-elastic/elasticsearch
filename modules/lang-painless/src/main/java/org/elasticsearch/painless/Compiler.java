@@ -293,10 +293,11 @@ final class Compiler {
         new DefaultStaticConstantExtractionPhase().visitClass(classNode, scriptScope);
         classNode.setDebugStream(debugStream);
 
-        WriteScope writeScope = WriteScope.newScriptScope();
-        new DefaultIRTreeToASMBytesPhase().visitClass(classNode, writeScope);
         if (asmPhaseVisitor != null) {
+            WriteScope writeScope = WriteScope.newScriptScope();
             asmPhaseVisitor.visitClass(classNode, writeScope);
+        } else {
+            new DefaultIRTreeToASMBytesPhase().visitScript(classNode);
         }
 
         return classNode.getBytes();

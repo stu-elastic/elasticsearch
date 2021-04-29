@@ -9,7 +9,6 @@
 package org.elasticsearch.painless.toxcontent;
 
 import org.elasticsearch.painless.FunctionRef;
-import org.elasticsearch.painless.ir.IRNode.IRCondition;
 import org.elasticsearch.painless.ir.IRNode.IRDecoration;
 import org.elasticsearch.painless.lookup.PainlessCast;
 import org.elasticsearch.painless.lookup.PainlessClassBinding;
@@ -17,71 +16,58 @@ import org.elasticsearch.painless.lookup.PainlessConstructor;
 import org.elasticsearch.painless.lookup.PainlessField;
 import org.elasticsearch.painless.lookup.PainlessInstanceBinding;
 import org.elasticsearch.painless.symbol.FunctionTable;
-import org.elasticsearch.painless.symbol.IRDecorations.IRDType;
-import org.elasticsearch.painless.symbol.IRDecorations.IRDExpressionType;
+import org.elasticsearch.painless.symbol.IRDecorations.IRDArrayName;
+import org.elasticsearch.painless.symbol.IRDecorations.IRDArrayType;
 import org.elasticsearch.painless.symbol.IRDecorations.IRDBinaryType;
-import org.elasticsearch.painless.symbol.IRDecorations.IRDShiftType;
-import org.elasticsearch.painless.symbol.IRDecorations.IRDOperation;
-import org.elasticsearch.painless.symbol.IRDecorations.IRDFlags;
-import org.elasticsearch.painless.symbol.IRDecorations.IRCAllEscape;
+import org.elasticsearch.painless.symbol.IRDecorations.IRDCaptureNames;
 import org.elasticsearch.painless.symbol.IRDecorations.IRDCast;
-import org.elasticsearch.painless.symbol.IRDecorations.IRDExceptionType;
-import org.elasticsearch.painless.symbol.IRDecorations.IRDSymbol;
+import org.elasticsearch.painless.symbol.IRDecorations.IRDClassBinding;
 import org.elasticsearch.painless.symbol.IRDecorations.IRDComparisonType;
 import org.elasticsearch.painless.symbol.IRDecorations.IRDConstant;
 import org.elasticsearch.painless.symbol.IRDecorations.IRDConstantFieldName;
-import org.elasticsearch.painless.symbol.IRDecorations.IRDDeclarationType;
-import org.elasticsearch.painless.symbol.IRDecorations.IRDName;
-import org.elasticsearch.painless.symbol.IRDecorations.IRDDefReferenceEncoding;
-import org.elasticsearch.painless.symbol.IRDecorations.IRDSize;
-import org.elasticsearch.painless.symbol.IRDecorations.IRDDepth;
-import org.elasticsearch.painless.symbol.IRDecorations.IRDModifiers;
-import org.elasticsearch.painless.symbol.IRDecorations.IRDFieldType;
-import org.elasticsearch.painless.symbol.IRDecorations.IRDVariableType;
-import org.elasticsearch.painless.symbol.IRDecorations.IRDVariableName;
-import org.elasticsearch.painless.symbol.IRDecorations.IRDArrayType;
-import org.elasticsearch.painless.symbol.IRDecorations.IRDArrayName;
-import org.elasticsearch.painless.symbol.IRDecorations.IRDIndexType;
-import org.elasticsearch.painless.symbol.IRDecorations.IRDIndexName;
-import org.elasticsearch.painless.symbol.IRDecorations.IRDIndexedType;
-import org.elasticsearch.painless.symbol.IRDecorations.IRDIterableType;
-import org.elasticsearch.painless.symbol.IRDecorations.IRDIterableName;
-import org.elasticsearch.painless.symbol.IRDecorations.IRDMethod;
-import org.elasticsearch.painless.symbol.IRDecorations.IRDReturnType;
-import org.elasticsearch.painless.symbol.IRDecorations.IRDTypeParameters;
-import org.elasticsearch.painless.symbol.IRDecorations.IRDParameterNames;
-import org.elasticsearch.painless.symbol.IRDecorations.IRCStatic;
-import org.elasticsearch.painless.symbol.IRDecorations.IRCVarArgs;
-import org.elasticsearch.painless.symbol.IRDecorations.IRCSynthetic;
-import org.elasticsearch.painless.symbol.IRDecorations.IRDMaxLoopCounter;
-import org.elasticsearch.painless.symbol.IRDecorations.IRDInstanceType;
-import org.elasticsearch.painless.symbol.IRDecorations.IRDFunction;
-import org.elasticsearch.painless.symbol.IRDecorations.IRDClassBinding;
-import org.elasticsearch.painless.symbol.IRDecorations.IRDInstanceBinding;
 import org.elasticsearch.painless.symbol.IRDecorations.IRDConstructor;
-import org.elasticsearch.painless.symbol.IRDecorations.IRDValue;
+import org.elasticsearch.painless.symbol.IRDecorations.IRDDeclarationType;
+import org.elasticsearch.painless.symbol.IRDecorations.IRDDefReferenceEncoding;
+import org.elasticsearch.painless.symbol.IRDecorations.IRDDepth;
+import org.elasticsearch.painless.symbol.IRDecorations.IRDExceptionType;
+import org.elasticsearch.painless.symbol.IRDecorations.IRDExpressionType;
 import org.elasticsearch.painless.symbol.IRDecorations.IRDField;
-import org.elasticsearch.painless.symbol.IRDecorations.IRCContinuous;
-import org.elasticsearch.painless.symbol.IRDecorations.IRCInitialize;
-import org.elasticsearch.painless.symbol.IRDecorations.IRCRead;
-import org.elasticsearch.painless.symbol.IRDecorations.IRDCaptureNames;
-import org.elasticsearch.painless.symbol.IRDecorations.IRDStoreType;
-import org.elasticsearch.painless.symbol.IRDecorations.IRDUnaryType;
+import org.elasticsearch.painless.symbol.IRDecorations.IRDFieldType;
+import org.elasticsearch.painless.symbol.IRDecorations.IRDFlags;
+import org.elasticsearch.painless.symbol.IRDecorations.IRDFunction;
+import org.elasticsearch.painless.symbol.IRDecorations.IRDIndexName;
+import org.elasticsearch.painless.symbol.IRDecorations.IRDIndexType;
+import org.elasticsearch.painless.symbol.IRDecorations.IRDIndexedType;
+import org.elasticsearch.painless.symbol.IRDecorations.IRDInstanceBinding;
+import org.elasticsearch.painless.symbol.IRDecorations.IRDInstanceType;
+import org.elasticsearch.painless.symbol.IRDecorations.IRDIterableName;
+import org.elasticsearch.painless.symbol.IRDecorations.IRDIterableType;
+import org.elasticsearch.painless.symbol.IRDecorations.IRDMaxLoopCounter;
+import org.elasticsearch.painless.symbol.IRDecorations.IRDMethod;
+import org.elasticsearch.painless.symbol.IRDecorations.IRDModifiers;
+import org.elasticsearch.painless.symbol.IRDecorations.IRDName;
+import org.elasticsearch.painless.symbol.IRDecorations.IRDOperation;
+import org.elasticsearch.painless.symbol.IRDecorations.IRDParameterNames;
 import org.elasticsearch.painless.symbol.IRDecorations.IRDReference;
 import org.elasticsearch.painless.symbol.IRDecorations.IRDRegexLimit;
+import org.elasticsearch.painless.symbol.IRDecorations.IRDReturnType;
+import org.elasticsearch.painless.symbol.IRDecorations.IRDShiftType;
+import org.elasticsearch.painless.symbol.IRDecorations.IRDSize;
+import org.elasticsearch.painless.symbol.IRDecorations.IRDStoreType;
+import org.elasticsearch.painless.symbol.IRDecorations.IRDSymbol;
+import org.elasticsearch.painless.symbol.IRDecorations.IRDType;
+import org.elasticsearch.painless.symbol.IRDecorations.IRDTypeParameters;
+import org.elasticsearch.painless.symbol.IRDecorations.IRDUnaryType;
+import org.elasticsearch.painless.symbol.IRDecorations.IRDValue;
+import org.elasticsearch.painless.symbol.IRDecorations.IRDVariableName;
+import org.elasticsearch.painless.symbol.IRDecorations.IRDVariableType;
 
 import java.util.List;
 
 public class IRDecorationToXContent {
 
     public static void visitType(IRDType ird, XContentBuilderWrapper builder) {
-        builder.startObject();
-        builder.field("decoration", ird.getClass().getSimpleName());
-        if (ird.getValue() != null) {
-            builder.field("type", ird.getValue().getClass().getSimpleName());
-            builder.field("value", ird.getValue().toString());
-        }
-        builder.endObject();
+        visitAbstractDecoration(ird, builder);
     }
 
     public static void visitAbstractDecoration(IRDecoration<?> ird, XContentBuilderWrapper builder) {
@@ -110,12 +96,6 @@ public class IRDecorationToXContent {
         builder.endObject();
     }
 
-    public static void visitCondition(IRCondition irc, XContentBuilderWrapper builder) {
-        builder.startObject();
-        builder.field("condition", irc.getClass().getSimpleName());
-        builder.endObject();
-    }
-
     public static void visitExpressionType(IRDExpressionType ird, XContentBuilderWrapper builder) {
         visitType(ird, builder);
     }
@@ -136,10 +116,6 @@ public class IRDecorationToXContent {
         visitAbstractDecoration(ird, builder);
     }
 
-    public static void visitAllEscape(IRCAllEscape irc, XContentBuilderWrapper builder) {
-        visitCondition(irc, builder);
-    }
-
     public static void visitCast(IRDCast ird, XContentBuilderWrapper builder) {
         builder.startObject();
         builder.field("decoration", ird.getClass().getSimpleName());
@@ -147,8 +123,9 @@ public class IRDecorationToXContent {
             builder.field("type", ird.getValue().getClass().getSimpleName());
             PainlessCast cast = ird.getValue();
             if (cast != null) {
-                builder.field("cast");
-                DecorationToXContent.toXContent(cast, builder);
+                // builder.field("cast"); // TODO(stu): revert
+                builder.field("cast-decoration");
+                UserDecorationToXContent.visitPainlessCast(cast, builder);
             }
         }
         builder.endObject();
@@ -247,23 +224,20 @@ public class IRDecorationToXContent {
     }
 
     public static void visitTypeParameters(IRDTypeParameters ird, XContentBuilderWrapper builder) {
-        // TODO(stu): handle as list of class
+        builder.startObject();
+        builder.field("decoration", ird.getClass().getSimpleName());
+        if (ird.getValue().size() > 0) {
+            builder.startArray("typeParameters");
+            for (Class<?> cls : ird.getValue()) {
+                builder.value(cls.getSimpleName());
+            }
+            builder.endArray();
+        }
+        builder.endObject();
     }
 
     public static void visitParameterNames(IRDParameterNames ird, XContentBuilderWrapper builder) {
         visiDecorationListString(ird, builder);
-    }
-
-    public static void visitStatic(IRCStatic irc, XContentBuilderWrapper builder) {
-        visitCondition(irc, builder);
-    }
-
-    public static void visitVarArgs(IRCVarArgs irc, XContentBuilderWrapper builder) {
-        visitCondition(irc, builder);
-    }
-
-    public static void visitSynthetic(IRCSynthetic irc, XContentBuilderWrapper builder) {
-        visitCondition(irc, builder);
     }
 
     public static void visitMaxLoopCounter(IRDMaxLoopCounter ird, XContentBuilderWrapper builder) {
@@ -282,7 +256,7 @@ public class IRDecorationToXContent {
             FunctionTable.LocalFunction func = ird.getValue();
             if (func != null) {
                 builder.field("function");
-                DecorationToXContent.toXContent(func, builder);
+                UserDecorationToXContent.visitLocalFunction(func, builder);
             }
         }
         builder.endObject();
@@ -296,7 +270,7 @@ public class IRDecorationToXContent {
             PainlessClassBinding binding = ird.getValue();
             if (binding != null) {
                 builder.field("binding");
-                DecorationToXContent.toXContent(binding, builder);
+                UserDecorationToXContent.visitPainlessClassBinding(binding, builder);
             }
         }
         builder.endObject();
@@ -310,7 +284,7 @@ public class IRDecorationToXContent {
             PainlessInstanceBinding binding = ird.getValue();
             if (binding != null) {
                 builder.field("binding");
-                DecorationToXContent.toXContent(binding, builder);
+                UserDecorationToXContent.visitPainlessInstanceBinding(binding, builder);
             }
         }
         builder.endObject();
@@ -324,7 +298,7 @@ public class IRDecorationToXContent {
             PainlessConstructor constructor = ird.getValue();
             if (constructor != null) {
                 builder.field("constructor");
-                DecorationToXContent.toXContent(constructor, builder);
+                UserDecorationToXContent.visitPainlessConstructor(constructor, builder);
             }
         }
         builder.endObject();
@@ -342,22 +316,10 @@ public class IRDecorationToXContent {
             PainlessField field = ird.getValue();
             if (field != null) {
                 builder.field("field");
-                DecorationToXContent.toXContent(field, builder);
+                UserDecorationToXContent.visitPainlessField(field, builder);
             }
         }
         builder.endObject();
-    }
-
-    public static void visitContinuous(IRCContinuous irc, XContentBuilderWrapper builder) {
-        visitCondition(irc, builder);
-    }
-
-    public static void visitInitialize(IRCInitialize irc, XContentBuilderWrapper builder) {
-        visitCondition(irc, builder);
-    }
-
-    public static void visitRead(IRCRead irc, XContentBuilderWrapper builder) {
-        visitCondition(irc, builder);
     }
 
     public static void visitCaptureNames(IRDCaptureNames ird, XContentBuilderWrapper builder) {
@@ -381,7 +343,7 @@ public class IRDecorationToXContent {
             if (functionRef != null) {
                 // TODO(stu): regularize whether to start an object here or not
                 builder.startObject("functionRef");
-                DecorationToXContent.toXContent(functionRef, builder);
+                UserDecorationToXContent.visitFunctionRef(functionRef, builder);
                 builder.endObject();
             }
         }
@@ -391,25 +353,6 @@ public class IRDecorationToXContent {
 
     public static void visitRegexLimit(IRDRegexLimit ird, XContentBuilderWrapper builder) {
         visitAbstractDecoration(ird, builder);
-    }
-
-    public static void visitIRDecoration(IRCondition irc, XContentBuilderWrapper builder) {
-        if (irc instanceof IRCAllEscape) {
-            visitAllEscape((IRCAllEscape) irc, builder);
-        } else if (irc instanceof IRCStatic) {
-            visitStatic((IRCStatic) irc, builder);
-        } else if (irc instanceof IRCVarArgs) {
-            visitVarArgs((IRCVarArgs) irc, builder);
-        } else if (irc instanceof IRCSynthetic) {
-            visitSynthetic((IRCSynthetic) irc, builder);
-        } else if (irc instanceof IRCContinuous) {
-            visitContinuous((IRCContinuous) irc, builder);
-        } else if (irc instanceof IRCInitialize) {
-            visitInitialize((IRCInitialize) irc, builder);
-        } else if (irc instanceof IRCRead) {
-            visitRead((IRCRead) irc, builder);
-        }
-        throw new IllegalStateException("unhandled IRCCondition [" + irc.getClass().getSimpleName() + "]");
     }
 
     public static void visitIRDecoration(IRDecoration<?> ird, XContentBuilderWrapper builder) {

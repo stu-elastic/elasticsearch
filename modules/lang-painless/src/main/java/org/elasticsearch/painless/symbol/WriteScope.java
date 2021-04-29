@@ -172,6 +172,33 @@ public class WriteScope {
         return newBlockScope(false);
     }
 
+    // Access for debugging purposes only
+    public WriteScope getParent() {
+        return parent;
+    }
+
+    // Access for debugging purposes only
+    public int getNextSlot() {
+        return nextSlot;
+    }
+
+    // Access for debugging purposes only
+    public Map<String, Variable> getVariables() {
+        return variables;
+    }
+
+    public boolean isEmpty() {
+        return parent == null &&
+               classWriter == null &&
+               methodWriter == null &&
+               continueLabel == null &&
+               breakLabel == null &&
+               tryBeginLabel == null &&
+               tryEndLabel == null &&
+               catchesEndLabel == null &&
+               nextSlot == 0;
+    }
+
     public ClassWriter getClassWriter() {
         return classWriter;
     }

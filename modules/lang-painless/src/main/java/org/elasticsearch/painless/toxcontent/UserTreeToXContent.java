@@ -672,7 +672,7 @@ public class UserTreeToXContent extends UserTreeBaseVisitor<ScriptScope> {
                     .collect(Collectors.toList());
 
             for (Class<? extends Decoration> dkey : dkeys) {
-                DecorationToXContent.toXContent(decorations.get(dkey), builder);
+                UserDecorationToXContent.visitDecoration(decorations.get(dkey), builder);
             }
             builder.endArray();
         }

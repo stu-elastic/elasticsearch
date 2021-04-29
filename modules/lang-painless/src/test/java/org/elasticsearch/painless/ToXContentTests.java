@@ -9,11 +9,15 @@
 package org.elasticsearch.painless;
 
 import org.elasticsearch.common.bytes.BytesReference;
+import org.elasticsearch.common.collect.Tuple;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.common.xcontent.XContentHelper;
+import org.elasticsearch.painless.phase.IRTreeVisitor;
 import org.elasticsearch.painless.phase.UserTreeVisitor;
 import org.elasticsearch.painless.symbol.ScriptScope;
+import org.elasticsearch.painless.symbol.WriteScope;
+import org.elasticsearch.painless.toxcontent.ASMToXContent;
 import org.elasticsearch.painless.toxcontent.UserTreeToXContent;
 
 import java.io.IOException;
@@ -23,7 +27,7 @@ import java.util.Map;
 
 public class ToXContentTests extends ScriptTestCase {
     public void testUserFunction() {
-        Map<?,?> func = getFunction("def twofive(int i) { return 25 + i; } int j = 23; twofive(j)", "twofive");
+        Map<?,?> func = getSemFunction("def twofive(int i) { return 25 + i; } int j = 23; twofive(j)", "twofive");
         assertFalse((Boolean)func.get("isInternal"));
         assertTrue((Boolean)func.get("isStatic"));
         assertEquals("SFunction", func.get("node"));
@@ -87,14 +91,14 @@ public class ToXContentTests extends ScriptTestCase {
     }
 
     private Map<?, ?> getExecute(String script) {
-        return getFunction(script, "execute");
+        return getSemFunction(script, "execute");
     }
 
-    private Map<?, ?> getFunction(String script, String function) {
-        return getFunction(semanticPhase(script), function);
+    private Map<?, ?> getSemFunction(String script, String function) {
+        return getSemFunction(phases(script).v1(), function);
     }
 
-    private Map<?, ?> getFunction(XContentBuilder builder, String function) {
+    private Map<?, ?> getSemFunction(XContentBuilder builder, String function) {
         Map<String, Object> map = XContentHelper.convertToMap(BytesReference.bytes(builder), false, builder.contentType()).v2();
         for (Object funcObj: ((List<?>)map.get("functions"))) {
             if (funcObj instanceof Map) {
@@ -107,18 +111,24 @@ public class ToXContentTests extends ScriptTestCase {
         return Collections.emptyMap();
     }
 
-    XContentBuilder semanticPhase(String script) {
-        XContentBuilder builder;
+    public static Tuple<XContentBuilder, Tuple<XContentBuilder, XContentBuilder>> phases(String script) {
+        XContentBuilder semanticBuilder;
+        XContentBuilder irBuilder;
+        XContentBuilder asmBuilder;
         try {
-            builder = XContentFactory.jsonBuilder();
+            semanticBuilder = XContentFactory.jsonBuilder();
+            irBuilder = XContentFactory.jsonBuilder();
+            asmBuilder = XContentFactory.jsonBuilder().prettyPrint();
         } catch (IOException err) {
             fail("script [" + script + "] threw IOException [" + err.getMessage() + "]");
             return null;
         }
-        UserTreeVisitor<ScriptScope> semantic = new UserTreeToXContent(builder);
-        Debugger.phases(script, semantic, null, null);
-        Map<String, Object> map = XContentHelper.convertToMap(BytesReference.bytes(builder), false, builder.contentType()).v2();
+        UserTreeVisitor<ScriptScope> semantic = new UserTreeToXContent(semanticBuilder);
+        UserTreeVisitor<ScriptScope> ir = new UserTreeToXContent(semanticBuilder);
+        IRTreeVisitor<WriteScope> asm = new ASMToXContent(asmBuilder);
+        Debugger.phases(script, semantic, ir, asm);
+        Map<String, Object> map = XContentHelper.convertToMap(BytesReference.bytes(semanticBuilder), false, semanticBuilder.contentType()).v2();
         assertEquals(script, map.get("source"));
-        return builder;
+        return new Tuple<>(semanticBuilder, new Tuple<>(irBuilder, asmBuilder));
     }
 }
