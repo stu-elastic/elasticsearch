@@ -86,6 +86,7 @@ import org.elasticsearch.painless.symbol.Decorations.EncodingDecoration;
 import org.elasticsearch.painless.symbol.Decorations.Explicit;
 import org.elasticsearch.painless.symbol.Decorations.ExpressionPainlessCast;
 import org.elasticsearch.painless.symbol.Decorations.GetterPainlessMethod;
+import org.elasticsearch.painless.symbol.Decorations.GlobalMember;
 import org.elasticsearch.painless.symbol.Decorations.InLoop;
 import org.elasticsearch.painless.symbol.Decorations.InstanceType;
 import org.elasticsearch.painless.symbol.Decorations.Internal;
@@ -2403,6 +2404,9 @@ public class DefaultSemanticAnalysisPhase extends UserTreeBaseVisitor<SemanticSc
 
             Class<?> valueType = variable.getType();
             semanticScope.putDecoration(userSymbolNode, new ValueType(valueType));
+            if (variable.isGlobal()) {
+                semanticScope.setCondition(userSymbolNode, GlobalMember.class);
+            }
         } else {
             semanticScope.putDecoration(userSymbolNode, new PartialCanonicalTypeName(symbol));
         }

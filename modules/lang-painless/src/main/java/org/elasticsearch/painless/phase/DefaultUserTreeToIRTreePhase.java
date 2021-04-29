@@ -75,6 +75,7 @@ import org.elasticsearch.painless.ir.StoreBraceNode;
 import org.elasticsearch.painless.ir.StoreDotDefNode;
 import org.elasticsearch.painless.ir.StoreDotNode;
 import org.elasticsearch.painless.ir.StoreDotShortcutNode;
+import org.elasticsearch.painless.ir.StoreFieldMemberNode;
 import org.elasticsearch.painless.ir.StoreListShortcutNode;
 import org.elasticsearch.painless.ir.StoreMapShortcutNode;
 import org.elasticsearch.painless.ir.StoreVariableNode;
@@ -143,6 +144,7 @@ import org.elasticsearch.painless.node.SReturn;
 import org.elasticsearch.painless.node.SThrow;
 import org.elasticsearch.painless.node.STry;
 import org.elasticsearch.painless.node.SWhile;
+import org.elasticsearch.painless.symbol.Decorations;
 import org.elasticsearch.painless.symbol.Decorations.AccessDepth;
 import org.elasticsearch.painless.symbol.Decorations.AllEscape;
 import org.elasticsearch.painless.symbol.Decorations.BinaryType;
@@ -156,6 +158,7 @@ import org.elasticsearch.painless.symbol.Decorations.EncodingDecoration;
 import org.elasticsearch.painless.symbol.Decorations.Explicit;
 import org.elasticsearch.painless.symbol.Decorations.ExpressionPainlessCast;
 import org.elasticsearch.painless.symbol.Decorations.GetterPainlessMethod;
+import org.elasticsearch.painless.symbol.Decorations.GlobalMember;
 import org.elasticsearch.painless.symbol.Decorations.IRNodeDecoration;
 import org.elasticsearch.painless.symbol.Decorations.InstanceType;
 import org.elasticsearch.painless.symbol.Decorations.IterablePainlessMethod;
@@ -1483,19 +1486,27 @@ public class DefaultUserTreeToIRTreePhase implements UserTreeVisitor<ScriptScope
             UnaryNode irStoreNode = null;
             ExpressionNode irLoadNode = null;
 
+            // TODO(stu): for debugging
+            boolean globalsEnabled = true;
             if (write || compound) {
-                StoreVariableNode irStoreVariableNode = new StoreVariableNode(location);
-                irStoreVariableNode.attachDecoration(new IRDExpressionType(read ? valueType : void.class));
-                irStoreVariableNode.attachDecoration(new IRDStoreType(valueType));
-                irStoreVariableNode.attachDecoration(new IRDName(symbol));
-                irStoreNode = irStoreVariableNode;
+                if (scriptScope.getCondition(userSymbolNode, GlobalMember.class) && globalsEnabled) {
+                    irStoreNode = new StoreFieldMemberNode(location);
+                } else {
+                    irStoreNode = new StoreVariableNode(location);
+                }
+                irStoreNode.attachDecoration(new IRDExpressionType(read ? valueType : void.class));
+                irStoreNode.attachDecoration(new IRDStoreType(valueType));
+                irStoreNode.attachDecoration(new IRDName(symbol));
             }
 
             if (write == false || compound) {
-                LoadVariableNode irLoadVariableNode = new LoadVariableNode(location);
-                irLoadVariableNode.attachDecoration(new IRDExpressionType(valueType));
-                irLoadVariableNode.attachDecoration(new IRDName(symbol));
-                irLoadNode = irLoadVariableNode;
+                if (scriptScope.getCondition(userSymbolNode, GlobalMember.class) && globalsEnabled) {
+                    irLoadNode = new LoadFieldMemberNode(location);
+                } else {
+                    irLoadNode = new LoadVariableNode(location);
+                }
+                irLoadNode.attachDecoration(new IRDExpressionType(valueType));
+                irLoadNode.attachDecoration(new IRDName(symbol));
             }
 
             scriptScope.putDecoration(userSymbolNode, new AccessDepth(0));

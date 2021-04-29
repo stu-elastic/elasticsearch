@@ -175,6 +175,10 @@ public class Decorations {
 
     }
 
+    public static class GlobalMember implements Condition {
+
+    }
+
     public static class ExpressionPainlessCast implements Decoration {
 
         private final PainlessCast expressionPainlessCast;

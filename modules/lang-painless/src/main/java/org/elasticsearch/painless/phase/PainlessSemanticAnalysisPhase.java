@@ -17,6 +17,7 @@ import org.elasticsearch.painless.lookup.def;
 import org.elasticsearch.painless.node.AExpression;
 import org.elasticsearch.painless.node.AStatement;
 import org.elasticsearch.painless.node.SBlock;
+import org.elasticsearch.painless.node.SClass;
 import org.elasticsearch.painless.node.SExpression;
 import org.elasticsearch.painless.node.SFunction;
 import org.elasticsearch.painless.node.SReturn;
@@ -44,10 +45,26 @@ public class PainlessSemanticAnalysisPhase extends DefaultSemanticAnalysisPhase 
     protected String functionName = "";
 
     @Override
+    public void visitClass(SClass userClassNode, ScriptScope scriptScope) {
+        for (SFunction userFunctionNode : userClassNode.getFunctionNodes()) {
+            // Hit execute first to capture the globals
+            if (ScriptClassInfo.MAIN_METHOD.equals(userFunctionNode.getFunctionName())) {
+                visitFunction(userFunctionNode, scriptScope);
+                break;
+            }
+        }
+        for (SFunction userFunctionNode : userClassNode.getFunctionNodes()) {
+            if (ScriptClassInfo.MAIN_METHOD.equals(userFunctionNode.getFunctionName()) == false) {
+                visitFunction(userFunctionNode, scriptScope);
+            }
+        }
+    }
+
+    @Override
     public void visitFunction(SFunction userFunctionNode, ScriptScope scriptScope) {
         functionName = userFunctionNode.getFunctionName();
 
-        if ("execute".equals(functionName)) {
+        if (ScriptClassInfo.MAIN_METHOD.equals(functionName)) {
             ScriptClassInfo scriptClassInfo = scriptScope.getScriptClassInfo();
             LocalFunction localFunction =
                     scriptScope.getFunctionTable().getFunction(functionName, scriptClassInfo.getExecuteArguments().size());
@@ -57,7 +74,7 @@ public class PainlessSemanticAnalysisPhase extends DefaultSemanticAnalysisPhase 
             for (int i = 0; i < typeParameters.size(); ++i) {
                 Class<?> typeParameter = localFunction.getTypeParameters().get(i);
                 String parameterName = scriptClassInfo.getExecuteArguments().get(i).getName();
-                functionScope.defineVariable(userFunctionNode.getLocation(), typeParameter, parameterName, false);
+                functionScope.defineVariable(userFunctionNode.getLocation(), typeParameter, parameterName, false, true);
             }
 
             for (int i = 0; i < scriptClassInfo.getGetMethods().size(); ++i) {
@@ -65,7 +82,7 @@ public class PainlessSemanticAnalysisPhase extends DefaultSemanticAnalysisPhase 
                 org.objectweb.asm.commons.Method method = scriptClassInfo.getGetMethods().get(i);
                 String parameterName = method.getName().substring(3);
                 parameterName = Character.toLowerCase(parameterName.charAt(0)) + parameterName.substring(1);
-                functionScope.defineVariable(userFunctionNode.getLocation(), typeParameter, parameterName, false);
+                functionScope.defineVariable(userFunctionNode.getLocation(), typeParameter, parameterName, false, true);
             }
 
             SBlock userBlockNode = userFunctionNode.getBlockNode();
@@ -85,6 +102,7 @@ public class PainlessSemanticAnalysisPhase extends DefaultSemanticAnalysisPhase 
             }
 
             scriptScope.setUsedVariables(functionScope.getUsedVariables());
+            scriptScope.setGlobalVariables(functionScope.getGlobalVariables());
         } else {
             super.visitFunction(userFunctionNode, scriptScope);
         }
@@ -117,7 +135,7 @@ public class PainlessSemanticAnalysisPhase extends DefaultSemanticAnalysisPhase 
         if (rtn) {
             semanticScope.putDecoration(userStatementNode, new TargetType(rtnType));
             semanticScope.setCondition(userStatementNode, Internal.class);
-            if ("execute".equals(functionName)) {
+            if (ScriptClassInfo.MAIN_METHOD.equals(functionName)) {
                 decorateWithCastForReturn(userStatementNode, userExpressionNode, semanticScope,
                     semanticScope.getScriptScope().getScriptClassInfo());
             } else {
@@ -152,7 +170,7 @@ public class PainlessSemanticAnalysisPhase extends DefaultSemanticAnalysisPhase 
             semanticScope.putDecoration(userValueNode, new TargetType(semanticScope.getReturnType()));
             semanticScope.setCondition(userValueNode, Internal.class);
             checkedVisit(userValueNode, semanticScope);
-            if ("execute".equals(functionName)) {
+            if (ScriptClassInfo.MAIN_METHOD.equals(functionName)) {
                 decorateWithCastForReturn(userValueNode, userReturnNode, semanticScope,
                     semanticScope.getScriptScope().getScriptClassInfo());
             } else {

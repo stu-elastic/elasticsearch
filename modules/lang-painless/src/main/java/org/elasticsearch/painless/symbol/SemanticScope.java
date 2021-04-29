@@ -43,11 +43,13 @@ public abstract class SemanticScope {
         protected final Class<?> type;
         protected final String name;
         protected final boolean isFinal;
+        protected final boolean isGlobal;
 
-        public Variable(Class<?> type, String name, boolean isFinal) {
+        public Variable(Class<?> type, String name, boolean isFinal, boolean isGlobal) {
             this.type = Objects.requireNonNull(type);
             this.name = Objects.requireNonNull(name);
             this.isFinal = isFinal;
+            this.isGlobal = isGlobal;
         }
 
         public Class<?> getType() {
@@ -64,6 +66,10 @@ public abstract class SemanticScope {
 
         public String getName() {
             return name;
+        }
+
+        public boolean isGlobal() {
+            return isGlobal;
         }
 
         public boolean isFinal() {
@@ -168,7 +174,7 @@ public abstract class SemanticScope {
 
             if (variable == null) {
                 variable = parent.getVariable(location, name);
-                variable = new Variable(variable.getType(), variable.getName(), true);
+                variable = new Variable(variable.getType(), variable.getName(), true, variable.isGlobal());
                 captures.add(variable);
             } else {
                 usedVariables.add(name);
@@ -261,6 +267,7 @@ public abstract class SemanticScope {
 
     protected final Map<String, Variable> variables = new HashMap<>();
     protected final Set<String> usedVariables;
+    protected final Set<Variable> globalVariables = new HashSet<>();
 
     protected SemanticScope(ScriptScope scriptScope, Set<String> usedVariables) {
         this.scriptScope = Objects.requireNonNull(scriptScope);
@@ -326,12 +333,26 @@ public abstract class SemanticScope {
     public abstract Class<?> getReturnType();
     public abstract String getReturnCanonicalTypeName();
 
+    public Variable defineVariable(Location location, Class<?> type, String name, boolean isReadOnly, boolean isGlobal) {
+        if (isVariableDefined(name)) {
+            throw location.createError(new IllegalArgumentException("variable [" + name + "] is already defined"));
+        }
+
+        Variable variable = new Variable(type, name, isReadOnly, isGlobal);
+        variables.put(name, variable);
+        if (isGlobal) {
+            globalVariables.add(variable);
+        }
+
+        return variable;
+    }
+
     public Variable defineVariable(Location location, Class<?> type, String name, boolean isReadOnly) {
         if (isVariableDefined(name)) {
             throw location.createError(new IllegalArgumentException("variable [" + name + "] is already defined"));
         }
 
-        Variable variable = new Variable(type, name, isReadOnly);
+        Variable variable = new Variable(type, name, isReadOnly, false);
         variables.put(name, variable);
 
         return variable;
@@ -359,5 +380,9 @@ public abstract class SemanticScope {
      */
     public Set<String> getUsedVariables() {
         return Collections.unmodifiableSet(usedVariables);
+    }
+
+    public Set<Variable> getGlobalVariables() {
+        return Collections.unmodifiableSet(globalVariables);
     }
 }

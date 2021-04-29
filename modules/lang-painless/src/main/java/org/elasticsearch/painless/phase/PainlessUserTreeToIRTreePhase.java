@@ -80,7 +80,7 @@ public class PainlessUserTreeToIRTreePhase extends DefaultUserTreeToIRTreePhase 
         // to convert get methods into local variables for those
         // that are used and adds additional sandboxing by wrapping
         // the main "execute" block with several exceptions.
-        if ("execute".equals(functionName)) {
+        if (ScriptClassInfo.MAIN_METHOD.equals(functionName)) {
             ScriptClassInfo scriptClassInfo = scriptScope.getScriptClassInfo();
             LocalFunction localFunction =
                     scriptScope.getFunctionTable().getFunction(functionName, scriptClassInfo.getExecuteArguments().size());
@@ -152,6 +152,13 @@ public class PainlessUserTreeToIRTreePhase extends DefaultUserTreeToIRTreePhase 
         } else {
             super.visitFunction(userFunctionNode, scriptScope);
         }
+    }
+
+    protected void injectFields(ScriptScope scriptScope) {
+        Location internalLocation = new Location("$internal$ScriptInjectionPhase$injectFields", 0);
+        int modifiers = Opcodes.ACC_PUBLIC;
+
+        scriptScope.get
     }
 
     // adds static fields and getter methods required by PainlessScript for exception handling
