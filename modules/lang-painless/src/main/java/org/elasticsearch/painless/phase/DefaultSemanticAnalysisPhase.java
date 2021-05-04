@@ -119,6 +119,7 @@ import org.elasticsearch.painless.symbol.Decorations.TargetType;
 import org.elasticsearch.painless.symbol.Decorations.TypeParameters;
 import org.elasticsearch.painless.symbol.Decorations.UnaryType;
 import org.elasticsearch.painless.symbol.Decorations.UpcastPainlessCast;
+import org.elasticsearch.painless.symbol.Decorations.UserFunction;
 import org.elasticsearch.painless.symbol.Decorations.ValueType;
 import org.elasticsearch.painless.symbol.Decorations.Write;
 import org.elasticsearch.painless.symbol.FunctionTable;
@@ -226,6 +227,10 @@ public class DefaultSemanticAnalysisPhase extends UserTreeBaseVisitor<SemanticSc
             Class<?> typeParameter = localFunction.getTypeParameters().get(index);
             String parameterName = userFunctionNode.getParameterNames().get(index);
             functionScope.defineVariable(userFunctionNode.getLocation(), typeParameter, parameterName, false);
+        }
+
+        if (localFunction.isInternal() == false) {
+            functionScope.setCondition(userFunctionNode, UserFunction.class);
         }
 
         SBlock userBlockNode = userFunctionNode.getBlockNode();
@@ -1771,6 +1776,7 @@ public class DefaultSemanticAnalysisPhase extends UserTreeBaseVisitor<SemanticSc
 
         if (localFunction != null) {
             semanticScope.putDecoration(userCallLocalNode, new StandardLocalFunction(localFunction));
+            semanticScope.setCondition(userCallLocalNode, UserFunction.class);
 
             typeParameters = new ArrayList<>(localFunction.getTypeParameters());
             valueType = localFunction.getReturnType();
@@ -2276,6 +2282,10 @@ public class DefaultSemanticAnalysisPhase extends UserTreeBaseVisitor<SemanticSc
                         scriptScope.getCompilerSettings().asMap());
                 valueType = targetType.getTargetType();
                 semanticScope.putDecoration(userFunctionRefNode, new ReferenceDecoration(ref));
+                semanticScope.setCondition(userFunctionRefNode, UserFunction.class);
+            }
+            if (symbol.equals("this")) {
+                semanticScope.setCondition(userFunctionRefNode, UserFunction.class);
             }
         } else {
             if (semanticScope.getCondition(userFunctionRefNode, Write.class)) {

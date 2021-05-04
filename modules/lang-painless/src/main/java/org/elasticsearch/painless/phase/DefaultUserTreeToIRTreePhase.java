@@ -184,6 +184,7 @@ import org.elasticsearch.painless.symbol.Decorations.TargetType;
 import org.elasticsearch.painless.symbol.Decorations.TypeParameters;
 import org.elasticsearch.painless.symbol.Decorations.UnaryType;
 import org.elasticsearch.painless.symbol.Decorations.UpcastPainlessCast;
+import org.elasticsearch.painless.symbol.Decorations.UserFunction;
 import org.elasticsearch.painless.symbol.Decorations.ValueType;
 import org.elasticsearch.painless.symbol.Decorations.Write;
 import org.elasticsearch.painless.symbol.FunctionTable;
@@ -191,6 +192,7 @@ import org.elasticsearch.painless.symbol.FunctionTable.LocalFunction;
 import org.elasticsearch.painless.symbol.IRDecorations.IRCAllEscape;
 import org.elasticsearch.painless.symbol.IRDecorations.IRCContinuous;
 import org.elasticsearch.painless.symbol.IRDecorations.IRCInitialize;
+import org.elasticsearch.painless.symbol.IRDecorations.IRCMangleFunctionName;
 import org.elasticsearch.painless.symbol.IRDecorations.IRCRead;
 import org.elasticsearch.painless.symbol.IRDecorations.IRCStatic;
 import org.elasticsearch.painless.symbol.IRDecorations.IRCSynthetic;
@@ -619,6 +621,10 @@ public class DefaultUserTreeToIRTreePhase implements UserTreeVisitor<ScriptScope
 
         if (userFunctionNode.isSynthetic()) {
             irFunctionNode.attachCondition(IRCSynthetic.class);
+        }
+
+        if (scriptScope.getCondition(userFunctionNode, UserFunction.class)) {
+            irFunctionNode.attachCondition(IRCMangleFunctionName.class);
         }
 
         irFunctionNode.attachDecoration(new IRDMaxLoopCounter(scriptScope.getCompilerSettings().getMaxLoopCounter()));
@@ -1211,6 +1217,9 @@ public class DefaultUserTreeToIRTreePhase implements UserTreeVisitor<ScriptScope
         if (scriptScope.hasDecoration(callLocalNode, StandardLocalFunction.class)) {
             LocalFunction localFunction = scriptScope.getDecoration(callLocalNode, StandardLocalFunction.class).getLocalFunction();
             irInvokeCallMemberNode.attachDecoration(new IRDFunction(localFunction));
+            if (scriptScope.getCondition(callLocalNode, UserFunction.class)) {
+                irInvokeCallMemberNode.attachCondition(IRCMangleFunctionName.class);
+            }
         } else if (scriptScope.hasDecoration(callLocalNode, StandardPainlessMethod.class)) {
             PainlessMethod importedMethod =
                     scriptScope.getDecoration(callLocalNode, StandardPainlessMethod.class).getStandardPainlessMethod();
@@ -1401,6 +1410,10 @@ public class DefaultUserTreeToIRTreePhase implements UserTreeVisitor<ScriptScope
         if (capturesDecoration != null) {
             irReferenceNode.attachDecoration(new IRDCaptureNames(
                     Collections.singletonList(capturesDecoration.getCaptures().get(0).getName())));
+        }
+
+        if (scriptScope.getCondition(userFunctionRefNode, UserFunction.class)) {
+            irReferenceNode.attachCondition(IRCMangleFunctionName.class);
         }
 
         scriptScope.putDecoration(userFunctionRefNode, new IRNodeDecoration(irReferenceNode));

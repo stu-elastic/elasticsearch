@@ -175,6 +175,13 @@ public class Decorations {
 
     }
 
+    /**
+     * A call, method reference or definition of a local user function
+     */
+    public interface UserFunction extends Condition {
+
+    }
+
     public static class ExpressionPainlessCast implements Decoration {
 
         private final PainlessCast expressionPainlessCast;
@@ -405,13 +412,13 @@ public class Decorations {
 
     public static class StandardLocalFunction implements Decoration {
 
-        private final LocalFunction localFunction;
+        private final FunctionTable.LocalFunction localFunction;
 
-        public StandardLocalFunction(LocalFunction localFunction) {
+        public StandardLocalFunction(FunctionTable.LocalFunction localFunction) {
             this.localFunction = Objects.requireNonNull(localFunction);
         }
 
-        public LocalFunction getLocalFunction() {
+        public FunctionTable.LocalFunction getLocalFunction() {
             return localFunction;
         }
     }
@@ -591,12 +598,12 @@ public class Decorations {
     }
 
     public static class Converter implements Decoration {
-        private final LocalFunction converter;
-        public Converter(LocalFunction converter) {
+        private final FunctionTable.LocalFunction converter;
+        public Converter(FunctionTable.LocalFunction converter) {
             this.converter = converter;
         }
 
-        public LocalFunction getConverter() {
+        public FunctionTable.LocalFunction getConverter() {
             return converter;
         }
     }

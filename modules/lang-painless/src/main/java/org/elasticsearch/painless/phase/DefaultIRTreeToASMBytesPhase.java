@@ -98,6 +98,7 @@ import org.elasticsearch.painless.symbol.FunctionTable.LocalFunction;
 import org.elasticsearch.painless.symbol.IRDecorations.IRCAllEscape;
 import org.elasticsearch.painless.symbol.IRDecorations.IRCContinuous;
 import org.elasticsearch.painless.symbol.IRDecorations.IRCInitialize;
+import org.elasticsearch.painless.symbol.IRDecorations.IRCMangleFunctionName;
 import org.elasticsearch.painless.symbol.IRDecorations.IRCStatic;
 import org.elasticsearch.painless.symbol.IRDecorations.IRCSynthetic;
 import org.elasticsearch.painless.symbol.IRDecorations.IRCVarArgs;
@@ -273,7 +274,11 @@ public class DefaultIRTreeToASMBytesPhase implements IRTreeVisitor<WriteScope> {
             asmParameterTypes[index] = MethodWriter.getType(typeParameters.get(index));
         }
 
-        Method method = new Method(irFunctionNode.getDecorationValue(IRDName.class), asmReturnType, asmParameterTypes);
+        String methodName = irFunctionNode.getDecorationValue(IRDName.class);
+        if (irFunctionNode.hasCondition(IRCMangleFunctionName.class)) {
+            methodName = IRCMangleFunctionName.PREFIX + methodName;
+        }
+        Method method = new Method(methodName, asmReturnType, asmParameterTypes);
 
         ClassWriter classWriter = writeScope.getClassWriter();
         MethodWriter methodWriter = classWriter.newMethodWriter(access, method);
@@ -1625,10 +1630,15 @@ public class DefaultIRTreeToASMBytesPhase implements IRTreeVisitor<WriteScope> {
                 visit(irArgumentNode, writeScope);
             }
 
+            String methodName = localFunction.getFunctionName();
+            if (irInvokeCallMemberNode.hasCondition(IRCMangleFunctionName.class)) {
+                methodName = IRCMangleFunctionName.PREFIX + methodName;
+            }
+            Method asmMethod = new Method(methodName, localFunction.getMethodType().toMethodDescriptorString());
             if (localFunction.isStatic()) {
-                methodWriter.invokeStatic(CLASS_TYPE, localFunction.getAsmMethod());
+                methodWriter.invokeStatic(CLASS_TYPE, asmMethod);
             } else {
-                methodWriter.invokeVirtual(CLASS_TYPE, localFunction.getAsmMethod());
+                methodWriter.invokeVirtual(CLASS_TYPE, asmMethod);
             }
         } else if (importedMethod != null) {
             for (ExpressionNode irArgumentNode : irArgumentNodes) {

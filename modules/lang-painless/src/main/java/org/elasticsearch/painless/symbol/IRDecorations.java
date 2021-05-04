@@ -92,6 +92,14 @@ public class IRDecorations {
         }
     }
 
+    /** condition attached to function definitions, method references or function calls that indicates name mangling */
+    public static class IRCMangleFunctionName implements IRCondition {
+        public static final String PREFIX = "&";
+        private IRCMangleFunctionName() {
+
+        }
+    }
+
     /** condition attached to describe a cast for a node */
     public static class IRDCast extends IRDecoration<PainlessCast> {
 

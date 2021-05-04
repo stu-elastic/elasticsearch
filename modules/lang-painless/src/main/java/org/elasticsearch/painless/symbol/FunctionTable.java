@@ -34,8 +34,6 @@ public class FunctionTable {
         protected final boolean isStatic;
 
         protected final MethodType methodType;
-        protected final Method asmMethod;
-
         public LocalFunction(
                 String functionName, Class<?> returnType, List<Class<?>> typeParameters, boolean isInternal, boolean isStatic) {
 
@@ -49,8 +47,6 @@ public class FunctionTable {
             Class<?>[] javaTypeParameters = typeParameters.stream().map(PainlessLookupUtility::typeToJavaType).toArray(Class<?>[]::new);
 
             this.methodType = MethodType.methodType(javaReturnType, javaTypeParameters);
-            this.asmMethod = new org.objectweb.asm.commons.Method(functionName,
-                    MethodType.methodType(javaReturnType, javaTypeParameters).toMethodDescriptorString());
         }
 
         public String getFunctionName() {
@@ -75,10 +71,6 @@ public class FunctionTable {
 
         public MethodType getMethodType() {
             return methodType;
-        }
-
-        public Method getAsmMethod() {
-            return asmMethod;
         }
     }
 
