@@ -19,7 +19,6 @@ import org.elasticsearch.painless.lookup.PainlessLookupUtility;
 import org.elasticsearch.painless.lookup.PainlessMethod;
 import org.elasticsearch.painless.symbol.Decorator.Condition;
 import org.elasticsearch.painless.symbol.Decorator.Decoration;
-import org.elasticsearch.painless.symbol.FunctionTable.LocalFunction;
 import org.elasticsearch.painless.symbol.SemanticScope.Variable;
 
 import java.util.ArrayList;
@@ -520,13 +519,13 @@ public class Decorations {
 
     public static class EncodingDecoration implements Decoration {
 
-        private final String encoding;
+        private final DefReferenceEncoding encoding;
 
-        public EncodingDecoration(String encoding) {
+        public EncodingDecoration(DefReferenceEncoding encoding) {
             this.encoding = Objects.requireNonNull(encoding);
         }
 
-        public String getEncoding() {
+        public DefReferenceEncoding getEncoding() {
             return encoding;
         }
     }

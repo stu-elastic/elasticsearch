@@ -122,6 +122,7 @@ import org.elasticsearch.painless.symbol.Decorations.UpcastPainlessCast;
 import org.elasticsearch.painless.symbol.Decorations.UserFunction;
 import org.elasticsearch.painless.symbol.Decorations.ValueType;
 import org.elasticsearch.painless.symbol.Decorations.Write;
+import org.elasticsearch.painless.symbol.DefReferenceEncoding;
 import org.elasticsearch.painless.symbol.FunctionTable;
 import org.elasticsearch.painless.symbol.FunctionTable.LocalFunction;
 import org.elasticsearch.painless.symbol.ScriptScope;
@@ -2224,7 +2225,7 @@ public class DefaultSemanticAnalysisPhase extends UserTreeBaseVisitor<SemanticSc
         Class<?> valueType;
         // setup method reference to synthetic method
         if (targetType == null) {
-            String defReferenceEncoding = "Sthis." + name + "," + capturedVariables.size();
+            DefReferenceEncoding defReferenceEncoding = new DefReferenceEncoding(true, "this", name, capturedVariables.size());
             valueType = String.class;
             semanticScope.putDecoration(userLambdaNode, new EncodingDecoration(defReferenceEncoding));
         } else {
@@ -2274,7 +2275,7 @@ public class DefaultSemanticAnalysisPhase extends UserTreeBaseVisitor<SemanticSc
 
             if (targetType == null) {
                 valueType = String.class;
-                String defReferenceEncoding = "S" + symbol + "." + methodName + ",0";
+                DefReferenceEncoding defReferenceEncoding = new DefReferenceEncoding(true, symbol, methodName, 0);
                 semanticScope.putDecoration(userFunctionRefNode, new EncodingDecoration(defReferenceEncoding));
             } else {
                 FunctionRef ref = FunctionRef.create(scriptScope.getPainlessLookup(), scriptScope.getFunctionTable(),
@@ -2282,7 +2283,6 @@ public class DefaultSemanticAnalysisPhase extends UserTreeBaseVisitor<SemanticSc
                         scriptScope.getCompilerSettings().asMap());
                 valueType = targetType.getTargetType();
                 semanticScope.putDecoration(userFunctionRefNode, new ReferenceDecoration(ref));
-                semanticScope.setCondition(userFunctionRefNode, UserFunction.class);
             }
             if (symbol.equals("this")) {
                 semanticScope.setCondition(userFunctionRefNode, UserFunction.class);
@@ -2302,15 +2302,16 @@ public class DefaultSemanticAnalysisPhase extends UserTreeBaseVisitor<SemanticSc
             semanticScope.putDecoration(userFunctionRefNode, new CapturesDecoration(Collections.singletonList(captured)));
             if (targetType == null) {
                 String defReferenceEncoding;
+                DefReferenceEncoding encoding;
                 if (captured.getType() == def.class) {
                     // dynamic implementation
-                    defReferenceEncoding = "D" + symbol + "." + methodName + ",1";
+                    encoding = new DefReferenceEncoding(false, symbol, methodName, 1);
                 } else {
                     // typed implementation
-                    defReferenceEncoding = "S" + captured.getCanonicalTypeName() + "." + methodName + ",1";
+                    encoding = new DefReferenceEncoding(true, captured.getCanonicalTypeName(), methodName, 1);
                 }
                 valueType = String.class;
-                semanticScope.putDecoration(userFunctionRefNode, new EncodingDecoration(defReferenceEncoding));
+                semanticScope.putDecoration(userFunctionRefNode, new EncodingDecoration(encoding));
             } else {
                 valueType = targetType.getTargetType();
                 // static case
@@ -2361,7 +2362,7 @@ public class DefaultSemanticAnalysisPhase extends UserTreeBaseVisitor<SemanticSc
         semanticScope.putDecoration(userNewArrayFunctionRefNode, new MethodNameDecoration(name));
 
         if (targetType == null) {
-            String defReferenceEncoding = "Sthis." + name + ",0";
+            DefReferenceEncoding defReferenceEncoding = new DefReferenceEncoding(true, "this", name, 0);
             valueType = String.class;
             scriptScope.putDecoration(userNewArrayFunctionRefNode, new EncodingDecoration(defReferenceEncoding));
         } else {

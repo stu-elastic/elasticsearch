@@ -94,7 +94,10 @@ public class IRDecorations {
 
     /** condition attached to function definitions, method references or function calls that indicates name mangling */
     public static class IRCMangleFunctionName implements IRCondition {
-        public static final String PREFIX = "&";
+        private static final String PREFIX = "&";
+        public static String mangle(String functionName) {
+            return PREFIX + functionName;
+        }
         private IRCMangleFunctionName() {
 
         }
@@ -173,9 +176,9 @@ public class IRDecorations {
     }
 
     /** describes an encoding used to resolve references and lambdas at runtime */
-    public static class IRDDefReferenceEncoding extends IRDecoration<String> {
+    public static class IRDDefReferenceEncoding extends IRDecoration<DefReferenceEncoding> {
 
-        public IRDDefReferenceEncoding(String value) {
+        public IRDDefReferenceEncoding(DefReferenceEncoding value) {
             super(value);
         }
     }

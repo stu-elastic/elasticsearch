@@ -10,6 +10,7 @@ package org.elasticsearch.painless.phase;
 
 import org.elasticsearch.painless.ClassWriter;
 import org.elasticsearch.painless.DefBootstrap;
+import org.elasticsearch.painless.FunctionRef;
 import org.elasticsearch.painless.Location;
 import org.elasticsearch.painless.MethodWriter;
 import org.elasticsearch.painless.Operation;
@@ -94,6 +95,7 @@ import org.elasticsearch.painless.lookup.PainlessInstanceBinding;
 import org.elasticsearch.painless.lookup.PainlessLookupUtility;
 import org.elasticsearch.painless.lookup.PainlessMethod;
 import org.elasticsearch.painless.lookup.def;
+import org.elasticsearch.painless.symbol.DefReferenceEncoding;
 import org.elasticsearch.painless.symbol.FunctionTable.LocalFunction;
 import org.elasticsearch.painless.symbol.IRDecorations.IRCAllEscape;
 import org.elasticsearch.painless.symbol.IRDecorations.IRCContinuous;
@@ -276,7 +278,7 @@ public class DefaultIRTreeToASMBytesPhase implements IRTreeVisitor<WriteScope> {
 
         String methodName = irFunctionNode.getDecorationValue(IRDName.class);
         if (irFunctionNode.hasCondition(IRCMangleFunctionName.class)) {
-            methodName = IRCMangleFunctionName.PREFIX + methodName;
+            methodName = IRCMangleFunctionName.mangle(methodName);
         }
         Method method = new Method(methodName, asmReturnType, asmParameterTypes);
 
@@ -1254,7 +1256,12 @@ public class DefaultIRTreeToASMBytesPhase implements IRTreeVisitor<WriteScope> {
             }
         }
 
-        methodWriter.invokeLambdaCall(irTypedInterfaceReferenceNode.getDecorationValue(IRDReference.class));
+        if (irTypedInterfaceReferenceNode.hasCondition(IRCMangleFunctionName.class)) {
+            FunctionRef ref = irTypedInterfaceReferenceNode.getDecorationValue(IRDReference.class);
+            methodWriter.invokeLambdaCall(ref.withDelegateMethodName(IRCMangleFunctionName.mangle(ref.delegateMethodName)));
+        } else {
+            methodWriter.invokeLambdaCall(irTypedInterfaceReferenceNode.getDecorationValue(IRDReference.class));
+        }
     }
 
     @Override
@@ -1563,7 +1570,11 @@ public class DefaultIRTreeToASMBytesPhase implements IRTreeVisitor<WriteScope> {
                 DefInterfaceReferenceNode defInterfaceReferenceNode = (DefInterfaceReferenceNode)irArgumentNode;
                 List<String> captureNames =
                         defInterfaceReferenceNode.getDecorationValueOrDefault(IRDCaptureNames.class, Collections.emptyList());
-                boostrapArguments.add(defInterfaceReferenceNode.getDecorationValue(IRDDefReferenceEncoding.class));
+                DefReferenceEncoding defReferenceEncoding = defInterfaceReferenceNode.getDecorationValue(IRDDefReferenceEncoding.class);
+                if (defInterfaceReferenceNode.hasCondition(IRCMangleFunctionName.class)) {
+                    defReferenceEncoding = defReferenceEncoding.withMethod(IRCMangleFunctionName.mangle(defReferenceEncoding.getMethod()));
+                }
+                boostrapArguments.add(defReferenceEncoding.encoded());
 
                 // the encoding uses a char to indicate the number of captures
                 // where the value is the number of current arguments plus the
@@ -1632,7 +1643,7 @@ public class DefaultIRTreeToASMBytesPhase implements IRTreeVisitor<WriteScope> {
 
             String methodName = localFunction.getFunctionName();
             if (irInvokeCallMemberNode.hasCondition(IRCMangleFunctionName.class)) {
-                methodName = IRCMangleFunctionName.PREFIX + methodName;
+                methodName = IRCMangleFunctionName.mangle(methodName);
             }
             Method asmMethod = new Method(methodName, localFunction.getMethodType().toMethodDescriptorString());
             if (localFunction.isStatic()) {
