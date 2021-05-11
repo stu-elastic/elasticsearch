@@ -9,6 +9,7 @@
 package org.elasticsearch.painless;
 
 import java.util.List;
+import java.util.Map;
 
 public class UserFunctionTests extends ScriptTestCase {
     public void testZeroArgumentUserFunction() {
@@ -23,11 +24,14 @@ public class UserFunctionTests extends ScriptTestCase {
                 "int getMulti() { return -1 }\n" +
                 "def l = [1, 100, -100];\n" +
                 "if (myCompare(10, 50) > 0) { l.add(50 + getMulti()) }\n" +
-                "l.sort(this::myCompare);\n" +
-                "if (l[0] == 100) { l.remove(l.size() - 1) ; l.sort((a, b) -> -1 * myCompare(a, b)) } \n"+
+                //"l.sort(this::myCompare);\n" +
+                //"l.sort((a, b) -> -1 * params.get('a'));\n" +
+                //"if (l[0] == 100) { l.remove(l.size() - 1) ; l.sort((a, b) -> -1 * myCompare(a, b)) } \n"+
                 "if (getSource().startsWith('sour')) { l.add(255); }\n" +
                 "return l;";
-        assertEquals(List.of(1, 49, 100, 255), exec(source));
+        System.out.println(Debugger.toString(source));
+        // assertEquals(List.of(1, 49, 100, 255), exec(source, Map.of("a", 1), false));
+        assertEquals(List.of(1, 100, -100, 49, 255), exec(source, Map.of("a", 1), false));
         assertBytecodeExists(source, "public static &getSource()Ljava/lang/String");
         assertBytecodeExists(source, "public static &getMulti()I");
         assertBytecodeExists(source, "INVOKESTATIC org/elasticsearch/painless/PainlessScript$Script.&getMulti ()I");

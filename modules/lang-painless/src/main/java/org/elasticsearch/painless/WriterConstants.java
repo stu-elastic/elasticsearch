@@ -38,6 +38,7 @@ public final class WriterConstants {
     public static final Type BASE_INTERFACE_TYPE = Type.getType(PainlessScript.class);
 
     public static final String CLASS_NAME = BASE_INTERFACE_NAME + "$Script";
+    // TODO(stu): This is the class name to use.  How to convert this into a "class" as Variable?
     public static final Type CLASS_TYPE = Type.getObjectType(CLASS_NAME.replace('.', '/'));
 
     public static final String CTOR_METHOD_NAME = "<init>";

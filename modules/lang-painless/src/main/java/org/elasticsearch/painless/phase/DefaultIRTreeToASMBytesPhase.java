@@ -1618,7 +1618,9 @@ public class DefaultIRTreeToASMBytesPhase implements IRTreeVisitor<WriteScope> {
 
         if (localFunction != null) {
             if (localFunction.isStatic() == false) {
+                // TODO(stu): load this if in static
                 methodWriter.loadThis();
+                // writeScope.getInternalVariable("this");
             }
 
             for (ExpressionNode irArgumentNode : irArgumentNodes) {

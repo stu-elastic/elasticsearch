@@ -272,8 +272,11 @@ public final class Walker extends PainlessParserBaseVisitor<ANode> {
             statements.add((AStatement)visit(ctx.block().dstatement()));
         }
 
+        // TODO(stu): default functions to member functions
+        boolean isStatic = false;
         return new SFunction(nextIdentifier(), location(ctx),
-                rtnType, name, paramTypes, paramNames, new SBlock(nextIdentifier(), location(ctx), statements), false, true, false, false);
+                rtnType, name, paramTypes, paramNames,
+                new SBlock(nextIdentifier(), location(ctx), statements), false, isStatic, false, false);
     }
 
     @Override

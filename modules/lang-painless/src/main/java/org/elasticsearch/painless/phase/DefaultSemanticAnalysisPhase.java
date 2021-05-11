@@ -1698,7 +1698,7 @@ public class DefaultSemanticAnalysisPhase extends UserTreeBaseVisitor<SemanticSc
      * Checks: type validation, method resolution
      */
     @Override
-    public void visitCallLocal(ECallLocal userCallLocalNode, SemanticScope semanticScope) {
+    public void visitCallLocal(ECallLocal userCallLocalNode, SemanticScope semanticScope) { // TODO(stu)
         String methodName = userCallLocalNode.getMethodName();
         List<AExpression> userArgumentNodes = userCallLocalNode.getArgumentNodes();
         int userArgumentsSize = userArgumentNodes.size();
@@ -1725,7 +1725,10 @@ public class DefaultSemanticAnalysisPhase extends UserTreeBaseVisitor<SemanticSc
             localFunction = null;
         }
 
-        if (localFunction == null) {
+        if (localFunction != null) {
+            // semanticScope.getInternalVariable(userCallLocalNode.getLocation(), "this");
+            // TODO(stu): handle LocalFunction
+        } else {
             importedMethod = scriptScope.getPainlessLookup().lookupImportedPainlessMethod(methodName, userArgumentsSize);
 
             if (importedMethod == null) {
