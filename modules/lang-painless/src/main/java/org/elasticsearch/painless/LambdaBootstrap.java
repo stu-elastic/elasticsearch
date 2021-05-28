@@ -8,13 +8,16 @@
 
 package org.elasticsearch.painless;
 
+import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.Handle;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.GeneratorAdapter;
 import org.objectweb.asm.commons.Method;
+import org.objectweb.asm.util.TraceClassVisitor;
 
+import java.io.PrintWriter;
 import java.lang.invoke.CallSite;
 import java.lang.invoke.ConstantCallSite;
 import java.lang.invoke.LambdaConversionException;
@@ -331,6 +334,8 @@ public final class LambdaBootstrap {
         if (captures.length > 0) {
             generateStaticCtorDelegator(cw, ACC_PUBLIC, LAMBDA_FACTORY_METHOD_NAME, lambdaClassType, factoryMethodType);
         }
+
+        new ClassReader(cw.toByteArray()).accept(new TraceClassVisitor(new PrintWriter(System.out)), ClassReader.SKIP_DEBUG);
     }
 
     /**
@@ -411,8 +416,9 @@ public final class LambdaBootstrap {
             // when the method handle for the dynamically invoked delegate method is created.
             // Example: Object::toString
             if (captures.length == 0) {
-                Class<?> clazz = delegateMethodType.parameterType(0);
+                Class<?> clazz = delegateMethodType.parameterType(0); // TODO(stu): this is dropping a parameter type
                 delegateClassType = Type.getType(clazz);
+                //delegateClassType = Type.getType("Lorg/elasticsearch/painless/PainlessScript$Script;"); // TODO(stu): hack
                 delegateMethodType = delegateMethodType.dropParameterTypes(0, 1);
             // Handles the case for a virtual or interface reference method with 'this'
             // captured. interfaceMethodType inserts the 'this' type into its
@@ -471,7 +477,7 @@ public final class LambdaBootstrap {
 
         byte[] classBytes = cw.toByteArray();
         // DEBUG:
-        // new ClassReader(classBytes).accept(new TraceClassVisitor(new PrintWriter(System.out)), ClassReader.SKIP_DEBUG);
+        new ClassReader(classBytes).accept(new TraceClassVisitor(new PrintWriter(System.out)), ClassReader.SKIP_DEBUG);
         return AccessController.doPrivileged((PrivilegedAction<Class<?>>)() ->
             loader.defineLambda(lambdaClassType.getClassName(), classBytes));
     }

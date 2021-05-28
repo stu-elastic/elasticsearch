@@ -54,6 +54,16 @@ public class WriteScope {
         }
     }
 
+    /*
+    public static class ThisVariable extends Variable {
+
+        @Override
+        public Class<?> getType() {
+            throw new IllegalStateException("no Class for this, use ")
+        }
+    }
+     */
+
     protected final WriteScope parent;
     protected final ClassWriter classWriter;
     protected final MethodWriter methodWriter;

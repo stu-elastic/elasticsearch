@@ -22,13 +22,16 @@ public class UserFunctionTests extends ScriptTestCase {
             "String getSource() { 'source'; }\n" +
             "int myCompare(int a, int b) { getMulti() * Integer.compare(a, b) }\n" +
                 "int getMulti() { return -1 }\n" +
-                "def l = [1, 100, -100];\n" +
+                //"def l = [1, 100, -100];\n" +
+                "List l = [1, 100, -100];\n" +
                 "if (myCompare(10, 50) > 0) { l.add(50 + getMulti()) }\n" +
                 //"l.sort(this::myCompare);\n" +
-                //"l.sort((a, b) -> -1 * params.get('a'));\n" +
+                "l.sort((a, b) -> params.get('a') * Integer.compare(a, b));\n" +
+                "l.sort((q, r) -> -1 * myCompare(q, r));" +
                 //"if (l[0] == 100) { l.remove(l.size() - 1) ; l.sort((a, b) -> -1 * myCompare(a, b)) } \n"+
                 "if (getSource().startsWith('sour')) { l.add(255); }\n" +
                 "return l;";
+        System.out.println(source);
         System.out.println(Debugger.toString(source));
         // assertEquals(List.of(1, 49, 100, 255), exec(source, Map.of("a", 1), false));
         assertEquals(List.of(1, 100, -100, 49, 255), exec(source, Map.of("a", 1), false));
@@ -37,5 +40,33 @@ public class UserFunctionTests extends ScriptTestCase {
         assertBytecodeExists(source, "INVOKESTATIC org/elasticsearch/painless/PainlessScript$Script.&getMulti ()I");
         assertBytecodeExists(source, "public static &myCompare(II)I");
         assertBytecodeExists(source, "INVOKESTATIC org/elasticsearch/painless/PainlessScript$Script.&myCompare (II)I");
+    }
+
+    public void testUserFunctionLambda() {
+        String source =
+                "int myCompare(int a, int b) { getMulti() * Integer.compare(a, b) }\n" +
+                "int getMulti() { return -1 }\n" +
+                "List l = [1, 100, -100];\n" +
+                //"l.sort((a, b) -> Integer.compare(a, b));\n" +
+                "l.sort(this::myCompare);\n" +
+                //"l.sort(Integer::compare);\n" +
+                "return l;";
+        System.out.println(source);
+        //System.out.println(Debugger.toString(source));
+        assertEquals(List.of(-100, 1, 100), exec(source, Map.of("a", 1), false));
+    }
+
+    public void testUserFunctionLambda2() {
+        String source =
+                "Integer i = Integer.valueOf(123);\n" +
+                "List l = [1, 100, -100];\n" +
+                //"l.sort((a, b) -> Integer.compare(a, b));\n" +
+                "Map m = [1: 'a'];\n" +
+                "l.sort((a, b) -> m.containsKey(a) ? 1 : Integer.compare(a,b));\n" +
+                //"l.sort(Integer::compare);\n" +
+                "return l;";
+        System.out.println(source);
+        System.out.println(Debugger.toString(source));
+        assertEquals(List.of(-100, 1, 100), exec(source, Map.of("a", 1), false));
     }
 }

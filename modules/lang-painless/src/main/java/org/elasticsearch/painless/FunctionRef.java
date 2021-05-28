@@ -48,7 +48,7 @@ public class FunctionRef {
     public static FunctionRef create(PainlessLookup painlessLookup, FunctionTable functionTable, Location location,
             Class<?> targetClass, String typeName, String methodName, int numberOfCaptures, Map<String, Object> constants) {
 
-        Objects.requireNonNull(painlessLookup);
+        Objects.requireNonNull(painlessLookup); // TODO(stu): for handling lambdas
         Objects.requireNonNull(targetClass);
         Objects.requireNonNull(typeName);
         Objects.requireNonNull(methodName);
@@ -78,14 +78,16 @@ public class FunctionRef {
             List<Class<?>> delegateMethodParameters;
             int interfaceTypeParametersSize = interfaceMethod.typeParameters.size();
 
-            if ("this".equals(typeName)) {
+            boolean isInstanceMethod = "this".equals(typeName);
+            if (isInstanceMethod) {
                 Objects.requireNonNull(functionTable);
 
                 if (numberOfCaptures < 0) {
                     throw new IllegalStateException("internal error");
                 }
 
-                String localFunctionKey = FunctionTable.buildLocalFunctionKey(methodName, numberOfCaptures + interfaceTypeParametersSize);
+                // -1 for this capture
+                String localFunctionKey = FunctionTable.buildLocalFunctionKey(methodName, numberOfCaptures - 1 + interfaceTypeParametersSize);
                 LocalFunction localFunction = functionTable.getFunction(localFunctionKey);
 
                 if (localFunction == null) {
@@ -98,7 +100,8 @@ public class FunctionRef {
                 delegateClassName = CLASS_NAME;
                 isDelegateInterface = false;
                 isDelegateAugmented = false;
-                delegateInvokeType = H_INVOKESTATIC;
+                //delegateInvokeType = H_INVOKESTATIC;
+                delegateInvokeType = localFunction.isStatic() ? H_INVOKESTATIC : H_INVOKEVIRTUAL; // TODO(stu): changed
                 delegateMethodName = localFunction.getMangledName();
                 delegateMethodType = localFunction.getMethodType();
                 delegateInjections = new Object[0];
@@ -178,7 +181,7 @@ public class FunctionRef {
             }
 
             if (location != null) {
-                for (int typeParameter = 0; typeParameter < interfaceTypeParametersSize; ++typeParameter) {
+                for (int typeParameter = 0; typeParameter < interfaceTypeParametersSize - (isInstanceMethod ? 1 : 0); ++typeParameter) {
                     Class<?> from = interfaceMethod.typeParameters.get(typeParameter);
                     Class<?> to = delegateMethodParameters.get(numberOfCaptures + typeParameter);
                     AnalyzerCaster.getLegalCast(location, from, to, false, true);
@@ -189,9 +192,16 @@ public class FunctionRef {
                 }
             }
 
-            MethodType factoryMethodType = MethodType.methodType(targetClass,
+            MethodType factoryMethodType;
+            if (isInstanceMethod) {
+                // TODO(stu): handle more than one (this) capture
+                factoryMethodType = MethodType.methodType(targetClass,
+                    delegateMethodType.insertParameterTypes(0, Object.class));
+            } else {
+                factoryMethodType = MethodType.methodType(targetClass,
                     delegateMethodType.dropParameterTypes(numberOfCaptures, delegateMethodType.parameterCount()));
-            delegateMethodType = delegateMethodType.dropParameterTypes(0, numberOfCaptures);
+                delegateMethodType = delegateMethodType.dropParameterTypes(0, numberOfCaptures);
+            }
 
             return new FunctionRef(interfaceMethodName, interfaceMethodType,
                     delegateClassName, isDelegateInterface, isDelegateAugmented,

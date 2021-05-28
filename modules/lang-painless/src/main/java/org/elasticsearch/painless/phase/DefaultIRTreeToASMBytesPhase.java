@@ -1244,8 +1244,12 @@ public class DefaultIRTreeToASMBytesPhase implements IRTreeVisitor<WriteScope> {
 
         if (captureNames != null) {
             for (String captureName : captureNames) {
-                Variable captureVariable = writeScope.getVariable(captureName);
-                methodWriter.visitVarInsn(captureVariable.getAsmType().getOpcode(Opcodes.ILOAD), captureVariable.getSlot());
+                if ("this".equals(captureName)) {
+                    methodWriter.visitVarInsn(WriterConstants.CLASS_TYPE.getOpcode(Opcodes.ILOAD), 0);
+                } else {
+                    Variable captureVariable = writeScope.getVariable(captureName);
+                    methodWriter.visitVarInsn(captureVariable.getAsmType().getOpcode(Opcodes.ILOAD), captureVariable.getSlot());
+                }
             }
         }
 
