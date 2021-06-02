@@ -8,13 +8,16 @@
 
 package org.elasticsearch.painless;
 
+import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.Handle;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.GeneratorAdapter;
 import org.objectweb.asm.commons.Method;
+import org.objectweb.asm.util.TraceClassVisitor;
 
+import java.io.PrintWriter;
 import java.lang.invoke.CallSite;
 import java.lang.invoke.ConstantCallSite;
 import java.lang.invoke.LambdaConversionException;
@@ -23,6 +26,8 @@ import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import static java.lang.invoke.MethodHandles.Lookup;
 import static org.elasticsearch.painless.WriterConstants.CLASS_VERSION;
@@ -149,6 +154,16 @@ public final class LambdaBootstrap {
             this.type = Type.getType(type);
             this.desc = this.type.getDescriptor();
         }
+
+        /**
+         * Capture of "this"
+         * TODO(stu): "this" is a hack
+         */
+        private Capture() {
+            this.name = "arg$0";
+            this.type = WriterConstants.CLASS_TYPE;
+            this.desc = WriterConstants.CLASS_TYPE.getDescriptor();
+        }
     }
 
     /**
@@ -209,13 +224,14 @@ public final class LambdaBootstrap {
         validateTypes(interfaceMethodType, delegateMethodType);
 
         ClassWriter cw = beginLambdaClass(lambdaClassName, factoryMethodType.returnType());
-        Capture[] captures = generateCaptureFields(cw, factoryMethodType);
-        generateLambdaConstructor(cw, lambdaClassType, factoryMethodType, captures);
+        boolean isInstance = delegateMethodName.startsWith("&"); // TODO(stu): hack, actually pass in info
+        Capture[] captures = generateCaptureFields(cw, factoryMethodType, isInstance);
+        generateLambdaConstructor(cw, lambdaClassType, factoryMethodType, captures, isInstance);
 
         // Handles the special case where a method reference refers to a ctor (we need a static wrapper method):
         if (delegateInvokeType == H_NEWINVOKESPECIAL) {
             assert CTOR_METHOD_NAME.equals(delegateMethodName);
-            generateStaticCtorDelegator(cw, ACC_PRIVATE, DELEGATED_CTOR_WRAPPER_NAME, delegateClassType, delegateMethodType);
+            generateStaticCtorDelegator(cw, ACC_PRIVATE, DELEGATED_CTOR_WRAPPER_NAME, delegateClassType, delegateMethodType, isInstance);
             // replace the delegate with our static wrapper:
             delegateMethodName = DELEGATED_CTOR_WRAPPER_NAME;
             delegateClassType = lambdaClassType;
@@ -224,12 +240,16 @@ public final class LambdaBootstrap {
 
         generateInterfaceMethod(cw, factoryMethodType, lambdaClassType, interfaceMethodName,
             interfaceMethodType, delegateClassType, delegateInvokeType,
-            delegateMethodName, delegateMethodType, isDelegateInterface == 1, isDelegateAugmented == 1, captures, injections);
+            delegateMethodName, delegateMethodType, isDelegateInterface == 1, isDelegateAugmented == 1, captures, isInstance, injections);
 
         endLambdaClass(cw);
 
         Class<?> lambdaClass = createLambdaClass(loader, cw, lambdaClassType);
         if (captures.length > 0) {
+            if (isInstance) {
+                // TODO(stu): hack needed because factoryMethodType is wrong
+                //factoryMethodType = factoryMethodType.insertParameterTypes(0, lookup.lookupClass());
+            }
             return createCaptureCallSite(lookup, factoryMethodType, lambdaClass);
         } else {
             return createNoCaptureCallSite(factoryMethodType, lambdaClass);
@@ -270,14 +290,19 @@ public final class LambdaBootstrap {
      * @return An array of captured variable metadata
      * for generating method arguments later on
      */
-    private static Capture[] generateCaptureFields(ClassWriter cw, MethodType factoryMethodType) {
-        int captureTotal = factoryMethodType.parameterCount();
+    private static Capture[] generateCaptureFields(ClassWriter cw, MethodType factoryMethodType, boolean isInstance) {
+        int captureOffset = isInstance ? 1 : 0;
+        int captureTotal = factoryMethodType.parameterCount() + captureOffset;
         Capture[] captures = new Capture[captureTotal];
+        int modifiers = ACC_PRIVATE | ACC_FINAL;
+        if (isInstance) {
+            captures[0] = new Capture();
+            cw.visitField(modifiers, captures[0].name, captures[0].desc, null, null).visitEnd();
+        }
 
-        for (int captureCount = 0; captureCount < captureTotal; ++captureCount) {
+        for (int captureCount = captureOffset; captureCount < captureTotal; ++captureCount) {
             captures[captureCount] =
                 new Capture(captureCount, factoryMethodType.parameterType(captureCount));
-            int modifiers = ACC_PRIVATE | ACC_FINAL;
 
             FieldVisitor fv = cw.visitField(
                 modifiers, captures[captureCount].name, captures[captureCount].desc, null, null);
@@ -296,9 +321,14 @@ public final class LambdaBootstrap {
             ClassWriter cw,
             Type lambdaClassType,
             MethodType factoryMethodType,
-            Capture[] captures) {
-
+            Capture[] captures,
+            Boolean isInstance) {
         String conDesc = factoryMethodType.changeReturnType(void.class).toMethodDescriptorString();
+        if (isInstance) {
+            List<Type> argumentTypeList = factoryMethodType.parameterList().stream().map(Type::getType).collect(Collectors.toList());
+            argumentTypeList.add(0, WriterConstants.CLASS_TYPE);
+            conDesc = Type.getMethodDescriptor(Type.getType(void.class), argumentTypeList.toArray(Type[]::new));
+        }
         Method conMeth = new Method(CTOR_METHOD_NAME, conDesc);
         Type baseConType = Type.getType(Object.class);
         Method baseConMeth = new Method(CTOR_METHOD_NAME,
@@ -329,22 +359,47 @@ public final class LambdaBootstrap {
         // escape analysis can figure out that everything is final and we don't need
         // an instance, so it can omit object creation on heap!
         if (captures.length > 0) {
-            generateStaticCtorDelegator(cw, ACC_PUBLIC, LAMBDA_FACTORY_METHOD_NAME, lambdaClassType, factoryMethodType);
+            generateStaticCtorDelegator(cw, ACC_PUBLIC, LAMBDA_FACTORY_METHOD_NAME, lambdaClassType, factoryMethodType, isInstance);
         }
+
+        new ClassReader(cw.toByteArray()).accept(new TraceClassVisitor(new PrintWriter(System.out)), ClassReader.SKIP_DEBUG);
+    }
+
+    private static String injectScript(MethodType methodType, boolean voidReturn) {
+        List<Type> argumentTypeList = methodType.parameterList().stream().map(Type::getType).collect(Collectors.toList());
+        argumentTypeList.add(0, WriterConstants.CLASS_TYPE);
+        Type[] arguments = argumentTypeList.toArray(Type[]::new);
+        if (voidReturn) {
+            return Type.getMethodDescriptor(Type.getType(void.class), arguments);
+        }
+        return Type.getMethodDescriptor(Type.getType(methodType.returnType()), arguments);
     }
 
     /**
      * Generates a factory method to delegate to constructors.
      */
     private static void generateStaticCtorDelegator(ClassWriter cw, int access, String delegatorMethodName,
-            Type delegateClassType, MethodType delegateMethodType) {
-        Method wrapperMethod = new Method(delegatorMethodName, delegateMethodType.toMethodDescriptorString());
-        Method constructorMethod =
-            new Method(CTOR_METHOD_NAME, delegateMethodType.changeReturnType(void.class).toMethodDescriptorString());
+            Type delegateClassType, MethodType delegateMethodType, boolean isInstance) {
         int modifiers = access | ACC_STATIC;
 
-        GeneratorAdapter factory = new GeneratorAdapter(modifiers, wrapperMethod,
-            cw.visitMethod(modifiers, delegatorMethodName, delegateMethodType.toMethodDescriptorString(), null, null));
+        Method wrapperMethod = null;
+        Method constructorMethod = null;
+        GeneratorAdapter factory = null;
+
+        if (isInstance) {
+            wrapperMethod = new Method(delegatorMethodName, injectScript(delegateMethodType, false));
+            constructorMethod =
+                new Method(CTOR_METHOD_NAME, injectScript(delegateMethodType, true));
+            factory = new GeneratorAdapter(modifiers, wrapperMethod,
+                cw.visitMethod(modifiers, delegatorMethodName, wrapperMethod.getDescriptor(), null, null));
+        } else {
+            wrapperMethod = new Method(delegatorMethodName, delegateMethodType.toMethodDescriptorString());
+            constructorMethod =
+                new Method(CTOR_METHOD_NAME, delegateMethodType.changeReturnType(void.class).toMethodDescriptorString());
+            factory = new GeneratorAdapter(modifiers, wrapperMethod,
+                cw.visitMethod(modifiers, delegatorMethodName, delegateMethodType.toMethodDescriptorString(), null, null));
+        }
+
         factory.visitCode();
         factory.newInstance(delegateClassType);
         factory.dup();
@@ -371,6 +426,7 @@ public final class LambdaBootstrap {
             boolean isDelegateInterface,
             boolean isDelegateAugmented,
             Capture[] captures,
+            boolean isInstance,
             Object... injections)
             throws LambdaConversionException {
 
@@ -411,7 +467,7 @@ public final class LambdaBootstrap {
             // when the method handle for the dynamically invoked delegate method is created.
             // Example: Object::toString
             if (captures.length == 0) {
-                Class<?> clazz = delegateMethodType.parameterType(0);
+                Class<?> clazz = delegateMethodType.parameterType(0); // TODO(stu): this is dropping a parameter type
                 delegateClassType = Type.getType(clazz);
                 delegateMethodType = delegateMethodType.dropParameterTypes(0, 1);
             // Handles the case for a virtual or interface reference method with 'this'
@@ -421,9 +477,11 @@ public final class LambdaBootstrap {
             // appropriately converted to the delegate method types.
             // Example: something::toString
             } else if (captures.length == 1) {
-                Class<?> clazz = factoryMethodType.parameterType(0);
-                delegateClassType = Type.getType(clazz);
-                interfaceMethodType = interfaceMethodType.insertParameterTypes(0, clazz);
+                if (isInstance == false) {
+                    Class<?> clazz = factoryMethodType.parameterType(0);
+                    delegateClassType = Type.getType(clazz);
+                    interfaceMethodType = interfaceMethodType.insertParameterTypes(0, clazz);
+                }
             } else {
                 throw new LambdaConversionException(
                     "unexpected number of captures [ " + captures.length + "]");
@@ -471,7 +529,7 @@ public final class LambdaBootstrap {
 
         byte[] classBytes = cw.toByteArray();
         // DEBUG:
-        // new ClassReader(classBytes).accept(new TraceClassVisitor(new PrintWriter(System.out)), ClassReader.SKIP_DEBUG);
+        new ClassReader(classBytes).accept(new TraceClassVisitor(new PrintWriter(System.out)), ClassReader.SKIP_DEBUG);
         return AccessController.doPrivileged((PrivilegedAction<Class<?>>)() ->
             loader.defineLambda(lambdaClassType.getClassName(), classBytes));
     }

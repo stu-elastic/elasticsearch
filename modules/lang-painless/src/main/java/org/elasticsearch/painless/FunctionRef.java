@@ -78,7 +78,8 @@ public class FunctionRef {
             List<Class<?>> delegateMethodParameters;
             int interfaceTypeParametersSize = interfaceMethod.typeParameters.size();
 
-            if ("this".equals(typeName)) {
+            boolean isInstanceMethod = "this".equals(typeName);
+            if (isInstanceMethod) {
                 Objects.requireNonNull(functionTable);
 
                 if (numberOfCaptures < 0) {
@@ -98,7 +99,8 @@ public class FunctionRef {
                 delegateClassName = CLASS_NAME;
                 isDelegateInterface = false;
                 isDelegateAugmented = false;
-                delegateInvokeType = H_INVOKESTATIC;
+                // delegateInvokeType = H_INVOKESTATIC; // TODO(stu): localFunction.isStatic() ? H_INVOKESTATIC : H_INVOKEVIRTUAL;
+                delegateInvokeType = localFunction.isStatic() ? H_INVOKESTATIC : H_INVOKEVIRTUAL;
                 delegateMethodName = localFunction.getMangledName();
                 delegateMethodType = localFunction.getMethodType();
                 delegateInjections = new Object[0];
@@ -189,6 +191,8 @@ public class FunctionRef {
                 }
             }
 
+            // TODO(stu): isInstanceMethod, then insert parameter
+            // TODO(stu): this drops all parameters except the captured parameters
             MethodType factoryMethodType = MethodType.methodType(targetClass,
                     delegateMethodType.dropParameterTypes(numberOfCaptures, delegateMethodType.parameterCount()));
             delegateMethodType = delegateMethodType.dropParameterTypes(0, numberOfCaptures);

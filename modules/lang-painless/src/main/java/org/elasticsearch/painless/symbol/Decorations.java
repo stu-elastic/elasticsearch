@@ -606,4 +606,9 @@ public class Decorations {
     public interface IsDocument extends Condition {
 
     }
+
+    // Does the lambda need to capture members of the enclosing instance?
+    public interface InstanceCapturingLambda extends Condition {
+
+    }
 }

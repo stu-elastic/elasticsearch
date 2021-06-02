@@ -87,6 +87,7 @@ import org.elasticsearch.painless.symbol.Decorations.Explicit;
 import org.elasticsearch.painless.symbol.Decorations.ExpressionPainlessCast;
 import org.elasticsearch.painless.symbol.Decorations.GetterPainlessMethod;
 import org.elasticsearch.painless.symbol.Decorations.InLoop;
+import org.elasticsearch.painless.symbol.Decorations.InstanceCapturingLambda;
 import org.elasticsearch.painless.symbol.Decorations.InstanceType;
 import org.elasticsearch.painless.symbol.Decorations.Internal;
 import org.elasticsearch.painless.symbol.Decorations.IterablePainlessMethod;
@@ -1698,7 +1699,7 @@ public class DefaultSemanticAnalysisPhase extends UserTreeBaseVisitor<SemanticSc
      * Checks: type validation, method resolution
      */
     @Override
-    public void visitCallLocal(ECallLocal userCallLocalNode, SemanticScope semanticScope) {
+    public void visitCallLocal(ECallLocal userCallLocalNode, SemanticScope semanticScope) { // TODO(stu)
         String methodName = userCallLocalNode.getMethodName();
         List<AExpression> userArgumentNodes = userCallLocalNode.getArgumentNodes();
         int userArgumentsSize = userArgumentNodes.size();
@@ -1725,7 +1726,9 @@ public class DefaultSemanticAnalysisPhase extends UserTreeBaseVisitor<SemanticSc
             localFunction = null;
         }
 
-        if (localFunction == null) {
+        if (localFunction != null) {
+            semanticScope.setUsesInstanceMethod();
+        } else {
             importedMethod = scriptScope.getPainlessLookup().lookupImportedPainlessMethod(methodName, userArgumentsSize);
 
             if (importedMethod == null) {
@@ -2194,12 +2197,22 @@ public class DefaultSemanticAnalysisPhase extends UserTreeBaseVisitor<SemanticSc
         semanticScope.setCondition(userBlockNode, LastSource.class);
         visit(userBlockNode, lambdaScope);
 
+        if (lambdaScope.usesInstanceMethod()) {
+            semanticScope.setCondition(userLambdaNode, InstanceCapturingLambda.class);
+        }
+
         if (semanticScope.getCondition(userBlockNode, MethodEscape.class) == false) {
             throw userLambdaNode.createError(new IllegalArgumentException("not all paths return a value for lambda"));
         }
 
         // prepend capture list to lambda's arguments
         List<Variable> capturedVariables = new ArrayList<>(lambdaScope.getCaptures());
+        // TODO(stu):
+        //boolean isStatic = true;
+        //if (lambdaScope.usesInstanceMethod()) {
+        //    isStatic = false;
+        //    capturedVariables.add(0, new Variable($this.class, "$this", true)); // TODO(stu)
+        //}
         List<Class<?>> typeParametersWithCaptures = new ArrayList<>(capturedVariables.size() + typeParameters.size());
         List<String> parameterNamesWithCaptures = new ArrayList<>(capturedVariables.size() + parameterNames.size());
 
@@ -2213,6 +2226,7 @@ public class DefaultSemanticAnalysisPhase extends UserTreeBaseVisitor<SemanticSc
 
         // desugar lambda body into a synthetic method
         String name = scriptScope.getNextSyntheticName("lambda");
+        // scriptScope.getFunctionTable().addFunction(name, returnType, typeParametersWithCaptures, true, isStatic); // TODO(stu): update type parameters with captures?
         scriptScope.getFunctionTable().addFunction(name, returnType, typeParametersWithCaptures, true, true);
 
         Class<?> valueType;
@@ -2266,12 +2280,17 @@ public class DefaultSemanticAnalysisPhase extends UserTreeBaseVisitor<SemanticSc
                         "not a statement: function reference [" + symbol + ":" + methodName + "] not used"));
             }
 
+            // TODO(stu): WIP
+            //List<Variable> captures = List.of(new Variable(Object.class, "this", true));
+            //semanticScope.putDecoration(userFunctionRefNode, new CapturesDecoration(captures));
             if (targetType == null) {
                 valueType = String.class;
                 String defReferenceEncoding = "S" + symbol + "." + methodName + ",0";
+                // String defReferenceEncoding = "S" + symbol + "." + methodName + ",1";
                 semanticScope.putDecoration(userFunctionRefNode, new EncodingDecoration(defReferenceEncoding));
             } else {
                 FunctionRef ref = FunctionRef.create(scriptScope.getPainlessLookup(), scriptScope.getFunctionTable(),
+                        // location, targetType.getTargetType(), symbol, methodName, 1, // TODO(stu): numberOfCaptures 1 for this
                         location, targetType.getTargetType(), symbol, methodName, 0,
                         scriptScope.getCompilerSettings().asMap());
                 valueType = targetType.getTargetType();
