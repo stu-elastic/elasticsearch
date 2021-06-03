@@ -458,6 +458,7 @@ public final class MethodWriter extends GeneratorAdapter {
         if (stringConcatArgs != null && stringConcatArgs.isEmpty() == false) {
             throw new IllegalStateException("String concat bytecode not completed.");
         }
+        System.out.println(this.getName() + " endMethod");
         super.endMethod();
     }
 

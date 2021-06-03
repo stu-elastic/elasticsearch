@@ -87,6 +87,7 @@ import org.elasticsearch.painless.symbol.Decorations.Explicit;
 import org.elasticsearch.painless.symbol.Decorations.ExpressionPainlessCast;
 import org.elasticsearch.painless.symbol.Decorations.GetterPainlessMethod;
 import org.elasticsearch.painless.symbol.Decorations.InLoop;
+import org.elasticsearch.painless.symbol.Decorations.InstanceCapturingLambda;
 import org.elasticsearch.painless.symbol.Decorations.InstanceType;
 import org.elasticsearch.painless.symbol.Decorations.Internal;
 import org.elasticsearch.painless.symbol.Decorations.IterablePainlessMethod;
@@ -1725,7 +1726,9 @@ public class DefaultSemanticAnalysisPhase extends UserTreeBaseVisitor<SemanticSc
             localFunction = null;
         }
 
-        if (localFunction == null) {
+        if (localFunction != null) {
+            semanticScope.setUsesInstanceMethod();
+        } else {
             importedMethod = scriptScope.getPainlessLookup().lookupImportedPainlessMethod(methodName, userArgumentsSize);
 
             if (importedMethod == null) {
@@ -2193,6 +2196,10 @@ public class DefaultSemanticAnalysisPhase extends UserTreeBaseVisitor<SemanticSc
 
         semanticScope.setCondition(userBlockNode, LastSource.class);
         visit(userBlockNode, lambdaScope);
+
+        if (lambdaScope.usesInstanceMethod()) {
+            semanticScope.setCondition(userLambdaNode, InstanceCapturingLambda.class);
+        }
 
         if (semanticScope.getCondition(userBlockNode, MethodEscape.class) == false) {
             throw userLambdaNode.createError(new IllegalArgumentException("not all paths return a value for lambda"));

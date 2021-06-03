@@ -157,6 +157,7 @@ import org.elasticsearch.painless.symbol.Decorations.Explicit;
 import org.elasticsearch.painless.symbol.Decorations.ExpressionPainlessCast;
 import org.elasticsearch.painless.symbol.Decorations.GetterPainlessMethod;
 import org.elasticsearch.painless.symbol.Decorations.IRNodeDecoration;
+import org.elasticsearch.painless.symbol.Decorations.InstanceCapturingLambda;
 import org.elasticsearch.painless.symbol.Decorations.InstanceType;
 import org.elasticsearch.painless.symbol.Decorations.IterablePainlessMethod;
 import org.elasticsearch.painless.symbol.Decorations.ListShortcut;
@@ -1355,6 +1356,9 @@ public class DefaultUserTreeToIRTreePhase implements UserTreeVisitor<ScriptScope
         irFunctionNode.attachDecoration(new IRDParameterNames(
                 new ArrayList<>(scriptScope.getDecoration(userLambdaNode, ParameterNames.class).getParameterNames())));
         irFunctionNode.attachCondition(IRCStatic.class);
+        if (scriptScope.getCondition(userLambdaNode, InstanceCapturingLambda.class) == false) {
+            irFunctionNode.attachCondition(IRCStatic.class);
+        }
         irFunctionNode.attachCondition(IRCSynthetic.class);
         irFunctionNode.attachDecoration(new IRDMaxLoopCounter(scriptScope.getCompilerSettings().getMaxLoopCounter()));
         irClassNode.addFunctionNode(irFunctionNode);
