@@ -96,6 +96,7 @@ import org.elasticsearch.painless.lookup.PainlessMethod;
 import org.elasticsearch.painless.lookup.def;
 import org.elasticsearch.painless.symbol.FunctionTable.LocalFunction;
 import org.elasticsearch.painless.symbol.IRDecorations.IRCAllEscape;
+import org.elasticsearch.painless.symbol.IRDecorations.IRCCaptureBox;
 import org.elasticsearch.painless.symbol.IRDecorations.IRCContinuous;
 import org.elasticsearch.painless.symbol.IRDecorations.IRCInitialize;
 import org.elasticsearch.painless.symbol.IRDecorations.IRCInstanceCapture;
@@ -1228,11 +1229,17 @@ public class DefaultIRTreeToASMBytesPhase implements IRTreeVisitor<WriteScope> {
 
         // TODO(stu): captures here for lambda?
         List<String> captureNames = irDefInterfaceReferenceNode.getDecorationValue(IRDCaptureNames.class);
+        boolean captureBox = irDefInterfaceReferenceNode.hasCondition(IRCCaptureBox.class);
 
         if (captureNames != null) {
             for (String captureName : captureNames) {
                 Variable captureVariable = writeScope.getVariable(captureName);
                 methodWriter.visitVarInsn(captureVariable.getAsmType().getOpcode(Opcodes.ILOAD), captureVariable.getSlot());
+
+                if (captureBox) {
+                    methodWriter.box(captureVariable.getAsmType());
+                    captureBox = false;
+                }
             }
         }
     }
@@ -1243,6 +1250,7 @@ public class DefaultIRTreeToASMBytesPhase implements IRTreeVisitor<WriteScope> {
         methodWriter.writeDebugInfo(irTypedInterfaceReferenceNode.getLocation());
 
         List<String> captureNames = irTypedInterfaceReferenceNode.getDecorationValue(IRDCaptureNames.class);
+        boolean captureBox = irTypedInterfaceReferenceNode.hasCondition(IRCCaptureBox.class);
 
         // TODO(stu): captures here for lambda?
         if (irTypedInterfaceReferenceNode.hasCondition(IRCInstanceCapture.class)) {
@@ -1253,6 +1261,11 @@ public class DefaultIRTreeToASMBytesPhase implements IRTreeVisitor<WriteScope> {
             for (String captureName : captureNames) {
                 Variable captureVariable = writeScope.getVariable(captureName);
                 methodWriter.visitVarInsn(captureVariable.getAsmType().getOpcode(Opcodes.ILOAD), captureVariable.getSlot());
+
+                if (captureBox) {
+                    methodWriter.box(captureVariable.getAsmType());
+                    captureBox = false;
+                }
             }
         }
 
@@ -1271,6 +1284,11 @@ public class DefaultIRTreeToASMBytesPhase implements IRTreeVisitor<WriteScope> {
         String expressionCanonicalTypeName = irTypedCaptureReferenceNode.getDecorationString(IRDExpressionType.class);
 
         methodWriter.visitVarInsn(captured.getAsmType().getOpcode(Opcodes.ILOAD), captured.getSlot());
+
+        if (irTypedCaptureReferenceNode.hasCondition(IRCCaptureBox.class)) {
+            methodWriter.box(captured.getAsmType());
+        }
+
         Type methodType = Type.getMethodType(MethodWriter.getType(expressionType), captured.getAsmType());
         methodWriter.invokeDefCall(methodName, methodType, DefBootstrap.REFERENCE, expressionCanonicalTypeName);
     }

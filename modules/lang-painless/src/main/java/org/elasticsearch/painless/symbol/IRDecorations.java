@@ -441,6 +441,11 @@ public class IRDecorations {
         }
     }
 
+    /** describes if the first capture of a method reference requires boxing */
+    public interface IRCCaptureBox extends IRCondition {
+
+    }
+
     /** describes the type of value stored in an assignment operation */
     public static class IRDStoreType extends IRDType {
 
