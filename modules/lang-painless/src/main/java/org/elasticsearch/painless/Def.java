@@ -337,7 +337,7 @@ public final class Def {
             MethodHandles.Lookup methodHandlesLookup, Class<?> clazz, String type, String call, int captures
             ) throws Throwable {
 
-        final FunctionRef ref = FunctionRef.create(painlessLookup, functions, null, clazz, type, call, captures, constants);
+        final FunctionRef ref = FunctionRef.create(painlessLookup, functions, null, clazz, type, call, captures, constants, false);
         final CallSite callSite = LambdaBootstrap.lambdaBootstrap(
                 methodHandlesLookup,
                 ref.interfaceMethodName,

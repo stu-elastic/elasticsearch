@@ -70,9 +70,11 @@ public class UserFunctionTests extends ScriptTestCase {
 
     public void testUserFunctionCapture() {
         String source =
-            "int myCompare(int m, int x, int y) { return m * ( x - y ) }\n" +
+            "int myCompare(Object o, int x, int y) { return o != null ? -1 * ( x - y ) : ( x - y ) }\n" +
+            //"int myCompare(int m, int x, int y) { return m * ( x - y ) }\n" +
                 "List l = [1, 100, -100];\n" +
-                "int q = -1;\n" +
+                //"int q = -1;\n" +
+                "Object q = '';\n" +
                 "l.sort((a, b) -> myCompare(q, a, b));\n" +
                 "return l;";
         System.out.println(source);

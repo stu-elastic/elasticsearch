@@ -58,6 +58,7 @@ public class FunctionTable {
             Class<?>[] javaTypeParameters = typeParameters.stream().map(PainlessLookupUtility::typeToJavaType).toArray(Class<?>[]::new);
 
             this.methodType = MethodType.methodType(javaReturnType, javaTypeParameters);
+            // TODO(stu): does asmMethod may need to change to add the receiver?
             this.asmMethod = new org.objectweb.asm.commons.Method(mangledName,
                     MethodType.methodType(javaReturnType, javaTypeParameters).toMethodDescriptorString());
         }

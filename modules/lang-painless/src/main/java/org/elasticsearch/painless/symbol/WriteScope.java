@@ -10,6 +10,8 @@ package org.elasticsearch.painless.symbol;
 
 import org.elasticsearch.painless.ClassWriter;
 import org.elasticsearch.painless.MethodWriter;
+import org.elasticsearch.painless.WriterConstants;
+import org.elasticsearch.painless.lookup.$this;
 import org.elasticsearch.painless.lookup.PainlessLookupUtility;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Type;
@@ -28,7 +30,11 @@ public class WriteScope {
 
         public Variable(Class<?> type, String name, int slot) {
             this.type = type;
-            this.asmType = MethodWriter.getType(type);
+            if (type == $this.class) {
+                this.asmType = WriterConstants.CLASS_TYPE;
+            } else {
+                this.asmType = MethodWriter.getType(type);
+            }
             this.name = name;
             this.slot = slot;
         }
@@ -204,6 +210,17 @@ public class WriteScope {
         Variable variable = new Variable(type, name, nextSlot);
         nextSlot += variable.getAsmType().getSize();
         variables.put(name, variable);
+
+        return variable;
+    }
+
+    public Variable defineThis() {
+        if (nextSlot != 0) {
+            throw new IllegalStateException("this needs slot 0, not [" + nextSlot + "], variables [" + variables.values() + "]");
+        }
+        Variable variable = new Variable($this.class, "this", nextSlot);
+        nextSlot += variable.getAsmType().getSize();
+        variables.put(variable.name, variable);
 
         return variable;
     }

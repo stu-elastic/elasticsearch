@@ -103,6 +103,7 @@ public final class MethodWriter extends GeneratorAdapter {
 
         this.statements = statements;
         this.settings = settings;
+        System.out.println(this.getName() + " newMethod");
     }
 
     /**
@@ -515,11 +516,6 @@ public final class MethodWriter extends GeneratorAdapter {
         args[6] = functionRef.isDelegateAugmented ? 1 : 0;
         System.arraycopy(functionRef.delegateInjections, 0, args, 7, functionRef.delegateInjections.length);
 
-        invokeDynamic(
-                functionRef.interfaceMethodName,
-                functionRef.factoryMethodType.toMethodDescriptorString(),
-                LAMBDA_BOOTSTRAP_HANDLE,
-                args
-        );
+        invokeDynamic(functionRef.interfaceMethodName, functionRef.factoryMethodDescriptor, LAMBDA_BOOTSTRAP_HANDLE, args);
     }
 }

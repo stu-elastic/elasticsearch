@@ -192,6 +192,7 @@ import org.elasticsearch.painless.symbol.FunctionTable.LocalFunction;
 import org.elasticsearch.painless.symbol.IRDecorations.IRCAllEscape;
 import org.elasticsearch.painless.symbol.IRDecorations.IRCContinuous;
 import org.elasticsearch.painless.symbol.IRDecorations.IRCInitialize;
+import org.elasticsearch.painless.symbol.IRDecorations.IRCInstanceCapture;
 import org.elasticsearch.painless.symbol.IRDecorations.IRCRead;
 import org.elasticsearch.painless.symbol.IRDecorations.IRCStatic;
 import org.elasticsearch.painless.symbol.IRDecorations.IRCSynthetic;
@@ -1336,6 +1337,7 @@ public class DefaultUserTreeToIRTreePhase implements UserTreeVisitor<ScriptScope
         ExpressionNode irExpressionNode;
 
         if (scriptScope.hasDecoration(userLambdaNode, TargetType.class)) {
+            // TODO(stu): this needs to
             TypedInterfaceReferenceNode typedInterfaceReferenceNode = new TypedInterfaceReferenceNode(userLambdaNode.getLocation());
             typedInterfaceReferenceNode.attachDecoration(new IRDReference(
                     scriptScope.getDecoration(userLambdaNode, ReferenceDecoration.class).getReference()));
@@ -1355,8 +1357,9 @@ public class DefaultUserTreeToIRTreePhase implements UserTreeVisitor<ScriptScope
                 new ArrayList<>(scriptScope.getDecoration(userLambdaNode, TypeParameters.class).getTypeParameters())));
         irFunctionNode.attachDecoration(new IRDParameterNames(
                 new ArrayList<>(scriptScope.getDecoration(userLambdaNode, ParameterNames.class).getParameterNames())));
-        irFunctionNode.attachCondition(IRCStatic.class);
-        if (scriptScope.getCondition(userLambdaNode, InstanceCapturingLambda.class) == false) {
+        if (scriptScope.getCondition(userLambdaNode, InstanceCapturingLambda.class)) {
+            irFunctionNode.attachCondition(IRCInstanceCapture.class);
+        } else {
             irFunctionNode.attachCondition(IRCStatic.class);
         }
         irFunctionNode.attachCondition(IRCSynthetic.class);
@@ -1398,6 +1401,7 @@ public class DefaultUserTreeToIRTreePhase implements UserTreeVisitor<ScriptScope
             irReferenceNode = typedCaptureReferenceNode;
         } else {
             FunctionRef reference = scriptScope.getDecoration(userFunctionRefNode, ReferenceDecoration.class).getReference();
+            // TODO(stu): do we need IRCInstanceCapture here?
             TypedInterfaceReferenceNode typedInterfaceReferenceNode = new TypedInterfaceReferenceNode(userFunctionRefNode.getLocation());
             typedInterfaceReferenceNode.attachDecoration(new IRDReference(reference));
             irReferenceNode = typedInterfaceReferenceNode;

@@ -9,6 +9,7 @@
 package org.elasticsearch.painless.symbol;
 
 import org.elasticsearch.painless.Location;
+import org.elasticsearch.painless.lookup.$this;
 import org.elasticsearch.painless.lookup.PainlessLookupUtility;
 import org.elasticsearch.painless.node.ANode;
 import org.elasticsearch.painless.symbol.Decorator.Condition;
@@ -17,9 +18,11 @@ import org.elasticsearch.painless.symbol.Decorator.Decoration;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Tracks information within a scope required for compilation during the
@@ -38,7 +41,7 @@ public abstract class SemanticScope {
      * variables. Each {@link SemanticScope} tracks its own set of defined
      * variables available for use.
      */
-    public static class Variable {
+    public static class Variable implements Comparable<Variable> {
 
         protected final Class<?> type;
         protected final String name;
@@ -68,6 +71,35 @@ public abstract class SemanticScope {
 
         public boolean isFinal() {
             return isFinal;
+        }
+
+        @Override
+        public int compareTo(Variable o) {
+            if (o == null) {
+                return 1;
+            }
+
+            if (type == $this.class) {
+                return 1;
+            } else if (o.type == $this.class) {
+                return -1;
+            }
+
+            int comp = type.getName().compareTo(o.type.getName());
+            if (comp != 0) {
+                return comp;
+            }
+
+            comp = name.compareTo(o.name);
+            if (comp != 0) {
+                return comp;
+            } else if (isFinal == o.isFinal) {
+                return 0;
+            } else if (isFinal) {
+                return 1;
+            } else {
+                return -1;
+            }
         }
     }
 
@@ -188,8 +220,8 @@ public abstract class SemanticScope {
             return PainlessLookupUtility.typeToCanonicalTypeName(returnType);
         }
 
-        public Set<Variable> getCaptures() {
-            return Collections.unmodifiableSet(captures);
+        public List<Variable> getCaptures() {
+            return captures.stream().sorted().collect(Collectors.toUnmodifiableList());
         }
 
         @Override
@@ -197,7 +229,7 @@ public abstract class SemanticScope {
             if (usesInstanceMethod) {
                 return;
             }
-            // captures.add(new Variable(Object.class, "this", true));
+            //captures.add(new Variable($this.class, "this", true));
             usesInstanceMethod = true;
         }
 

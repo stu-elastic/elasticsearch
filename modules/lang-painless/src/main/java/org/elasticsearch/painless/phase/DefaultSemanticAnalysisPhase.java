@@ -2198,6 +2198,7 @@ public class DefaultSemanticAnalysisPhase extends UserTreeBaseVisitor<SemanticSc
         visit(userBlockNode, lambdaScope);
 
         if (lambdaScope.usesInstanceMethod()) {
+            // TODO(stu): do we need this condition?
             semanticScope.setCondition(userLambdaNode, InstanceCapturingLambda.class);
         }
 
@@ -2206,7 +2207,7 @@ public class DefaultSemanticAnalysisPhase extends UserTreeBaseVisitor<SemanticSc
         }
 
         // prepend capture list to lambda's arguments
-        List<Variable> capturedVariables = new ArrayList<>(lambdaScope.getCaptures());
+        List<Variable> capturedVariables = lambdaScope.getCaptures();
         List<Class<?>> typeParametersWithCaptures = new ArrayList<>(capturedVariables.size() + typeParameters.size());
         List<String> parameterNamesWithCaptures = new ArrayList<>(capturedVariables.size() + parameterNames.size());
 
@@ -2220,7 +2221,8 @@ public class DefaultSemanticAnalysisPhase extends UserTreeBaseVisitor<SemanticSc
 
         // desugar lambda body into a synthetic method
         String name = scriptScope.getNextSyntheticName("lambda");
-        scriptScope.getFunctionTable().addFunction(name, returnType, typeParametersWithCaptures, true, true);
+        boolean isStatic = lambdaScope.usesInstanceMethod() == false;
+        scriptScope.getFunctionTable().addFunction(name, returnType, typeParametersWithCaptures, true, isStatic);
 
         Class<?> valueType;
         // setup method reference to synthetic method
@@ -2231,7 +2233,7 @@ public class DefaultSemanticAnalysisPhase extends UserTreeBaseVisitor<SemanticSc
         } else {
             FunctionRef ref = FunctionRef.create(scriptScope.getPainlessLookup(), scriptScope.getFunctionTable(),
                     location, targetType.getTargetType(), "this", name, capturedVariables.size(),
-                    scriptScope.getCompilerSettings().asMap());
+                    scriptScope.getCompilerSettings().asMap(), lambdaScope.usesInstanceMethod());
             valueType = targetType.getTargetType();
             semanticScope.putDecoration(userLambdaNode, new ReferenceDecoration(ref));
         }
@@ -2280,7 +2282,7 @@ public class DefaultSemanticAnalysisPhase extends UserTreeBaseVisitor<SemanticSc
             } else {
                 FunctionRef ref = FunctionRef.create(scriptScope.getPainlessLookup(), scriptScope.getFunctionTable(),
                         location, targetType.getTargetType(), symbol, methodName, 0,
-                        scriptScope.getCompilerSettings().asMap());
+                        scriptScope.getCompilerSettings().asMap(), true);
                 valueType = targetType.getTargetType();
                 semanticScope.putDecoration(userFunctionRefNode, new ReferenceDecoration(ref));
             }
@@ -2314,7 +2316,7 @@ public class DefaultSemanticAnalysisPhase extends UserTreeBaseVisitor<SemanticSc
                 if (captured.getType() != def.class) {
                     FunctionRef ref = FunctionRef.create(scriptScope.getPainlessLookup(), scriptScope.getFunctionTable(), location,
                             targetType.getTargetType(), captured.getCanonicalTypeName(), methodName, 1,
-                            scriptScope.getCompilerSettings().asMap());
+                            scriptScope.getCompilerSettings().asMap(), false);
                     semanticScope.putDecoration(userFunctionRefNode, new ReferenceDecoration(ref));
                 }
             }
@@ -2364,7 +2366,7 @@ public class DefaultSemanticAnalysisPhase extends UserTreeBaseVisitor<SemanticSc
         } else {
             FunctionRef ref = FunctionRef.create(scriptScope.getPainlessLookup(), scriptScope.getFunctionTable(),
                     userNewArrayFunctionRefNode.getLocation(), targetType.getTargetType(), "this", name, 0,
-                    scriptScope.getCompilerSettings().asMap());
+                    scriptScope.getCompilerSettings().asMap(), false);
             valueType = targetType.getTargetType();
             semanticScope.putDecoration(userNewArrayFunctionRefNode, new ReferenceDecoration(ref));
         }

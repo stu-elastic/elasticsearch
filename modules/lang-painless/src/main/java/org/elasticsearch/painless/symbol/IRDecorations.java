@@ -337,6 +337,14 @@ public class IRDecorations {
         }
     }
 
+    /** describes if a method needs to capture the script "this" */
+    public static class IRCInstanceCapture implements IRCondition {
+
+        private IRCInstanceCapture() {
+
+        }
+    }
+
     /** describes the maximum number of loop iterations possible in a method */
     public static class IRDMaxLoopCounter extends IRDecoration<Integer> {
 
