@@ -1361,6 +1361,7 @@ public class DefaultUserTreeToIRTreePhase implements UserTreeVisitor<ScriptScope
                 new ArrayList<>(scriptScope.getDecoration(userLambdaNode, ParameterNames.class).getParameterNames())));
         if (scriptScope.getCondition(userLambdaNode, InstanceCapturingLambda.class)) {
             irFunctionNode.attachCondition(IRCInstanceCapture.class);
+            irExpressionNode.attachCondition(IRCInstanceCapture.class);
         } else {
             irFunctionNode.attachCondition(IRCStatic.class);
         }

@@ -68,6 +68,30 @@ public class UserFunctionTests extends ScriptTestCase {
         //assertBytecodeExists(source, "INVOKESTATIC org/elasticsearch/painless/PainlessScript$Script.&myCompare (II)I");
     }
 
+    public void testUserFunctionRefEmpty() {
+        String source =
+            "int myCompare(int x, int y) { return -1 * x - y  }\n" +
+                "[].sort((a, b) -> myCompare(a, b));\n";
+        System.out.println(source);
+        System.out.println(Debugger.toString(source));
+        assertEquals(List.of(100, 1, -100), exec(source, Map.of("a", 1), false));
+        assertBytecodeExists(source, "public static &myCompare(II)I");
+        //assertBytecodeExists(source, "INVOKESTATIC org/elasticsearch/painless/PainlessScript$Script.&myCompare (II)I");
+    }
+
+    public void testUserFunctionCallInLambda() {
+        String source =
+            "int myCompare(int x, int y) { -1 * ( x - y ) }\n" +
+                "List l = [1, 100, -100];\n" +
+                "l.sort((a, b) -> myCompare(a, b));\n" +
+                "return l;";
+        System.out.println(source);
+        System.out.println(Debugger.toString(source));
+        assertEquals(List.of(100, 1, -100), exec(source, Map.of("a", 1), false));
+        //assertBytecodeExists(source, "public &myCompare(II)I");
+        //assertBytecodeExists(source, "INVOKESTATIC org/elasticsearch/painless/PainlessScript$Script.&myCompare (II)I");
+    }
+
     public void testUserFunctionCapture() {
         String source =
             "int myCompare(Object o, int x, int y) { return o != null ? -1 * ( x - y ) : ( x - y ) }\n" +

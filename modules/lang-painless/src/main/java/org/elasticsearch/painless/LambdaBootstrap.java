@@ -12,6 +12,7 @@ import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.Handle;
+import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.GeneratorAdapter;
 import org.objectweb.asm.commons.Method;
@@ -423,14 +424,15 @@ public final class LambdaBootstrap {
             // method to be invoked dynamically and have the interface method types
             // appropriately converted to the delegate method types.
             // Example: something::toString
-            } else if (captures.length == 1) {
+            // TODO(stu): do we need this captures check still?
+            } else /*if (captures.length == 1)*/ {
                 Class<?> clazz = factoryMethodType.parameterType(0);
                 delegateClassType = Type.getType(clazz);
                 interfaceMethodType = interfaceMethodType.insertParameterTypes(0, clazz);
-            } else {
+            } /* else {
                 throw new LambdaConversionException(
                     "unexpected number of captures [ " + captures.length + "]");
-            }
+            } */
         } else {
             throw new IllegalStateException(
                 "unexpected invocation type [" + delegateInvokeType + "]");
