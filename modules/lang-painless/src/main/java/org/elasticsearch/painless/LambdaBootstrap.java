@@ -425,6 +425,7 @@ public final class LambdaBootstrap {
                 Class<?> clazz = delegateMethodType.parameterType(0);
                 delegateClassType = Type.getType(clazz);
                 delegateMethodType = delegateMethodType.dropParameterTypes(0, 1);
+                functionalInterfaceWithCaptures = interfaceMethodType.toMethodDescriptorString();
             // Handles the case for a virtual or interface reference method with 'this'
             // captured. interfaceMethodType inserts the 'this' type into its
             // method signature. This later allows the delegate

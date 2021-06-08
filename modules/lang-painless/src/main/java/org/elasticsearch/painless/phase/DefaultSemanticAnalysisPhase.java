@@ -2266,7 +2266,7 @@ public class DefaultSemanticAnalysisPhase extends UserTreeBaseVisitor<SemanticSc
         TargetType targetType = semanticScope.getDecoration(userFunctionRefNode, TargetType.class);
         Class<?> valueType;
 
-        if (symbol.equals("this") || type != null)  {
+        if ("this".equals(symbol) || type != null)  {
             if (semanticScope.getCondition(userFunctionRefNode, Write.class)) {
                 throw userFunctionRefNode.createError(new IllegalArgumentException(
                         "invalid assignment: cannot assign a value to function reference [" + symbol + ":" + methodName + "]"));
@@ -2284,7 +2284,7 @@ public class DefaultSemanticAnalysisPhase extends UserTreeBaseVisitor<SemanticSc
             } else {
                 FunctionRef ref = FunctionRef.create(scriptScope.getPainlessLookup(), scriptScope.getFunctionTable(),
                         location, targetType.getTargetType(), symbol, methodName, 0,
-                        scriptScope.getCompilerSettings().asMap(), true);
+                        scriptScope.getCompilerSettings().asMap(), "this".equals(symbol));
                 valueType = targetType.getTargetType();
                 semanticScope.putDecoration(userFunctionRefNode, new ReferenceDecoration(ref));
                 semanticScope.setCondition(userFunctionRefNode, InstanceCapturingFunctionRef.class);
