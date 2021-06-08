@@ -611,8 +611,13 @@ public class Decorations {
 
     }
 
-    // Does the lambda need to capture members of the enclosing instance?
+    // Does the lambda need to capture the enclosing instance?
     public interface InstanceCapturingLambda extends Condition {
+
+    }
+
+    // Does the function reference need to capture the enclosing instance?
+    public interface InstanceCapturingFunctionRef extends Condition {
 
     }
 }

@@ -159,6 +159,7 @@ import org.elasticsearch.painless.symbol.Decorations.ExpressionPainlessCast;
 import org.elasticsearch.painless.symbol.Decorations.GetterPainlessMethod;
 import org.elasticsearch.painless.symbol.Decorations.IRNodeDecoration;
 import org.elasticsearch.painless.symbol.Decorations.InstanceCapturingLambda;
+import org.elasticsearch.painless.symbol.Decorations.InstanceCapturingFunctionRef;
 import org.elasticsearch.painless.symbol.Decorations.InstanceType;
 import org.elasticsearch.painless.symbol.Decorations.IterablePainlessMethod;
 import org.elasticsearch.painless.symbol.Decorations.ListShortcut;
@@ -1407,7 +1408,9 @@ public class DefaultUserTreeToIRTreePhase implements UserTreeVisitor<ScriptScope
             TypedInterfaceReferenceNode typedInterfaceReferenceNode = new TypedInterfaceReferenceNode(userFunctionRefNode.getLocation());
             typedInterfaceReferenceNode.attachDecoration(new IRDReference(reference));
             // TODO(stu): do we need IRCInstanceCapture here?
-            typedInterfaceReferenceNode.attachCondition(IRCInstanceCapture.class);
+            if (scriptScope.getCondition(userFunctionRefNode, InstanceCapturingFunctionRef.class)) {
+                typedInterfaceReferenceNode.attachCondition(IRCInstanceCapture.class);
+            }
             irReferenceNode = typedInterfaceReferenceNode;
         }
 

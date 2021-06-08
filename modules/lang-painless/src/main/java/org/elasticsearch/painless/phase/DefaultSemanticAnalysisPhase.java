@@ -89,6 +89,7 @@ import org.elasticsearch.painless.symbol.Decorations.ExpressionPainlessCast;
 import org.elasticsearch.painless.symbol.Decorations.GetterPainlessMethod;
 import org.elasticsearch.painless.symbol.Decorations.InLoop;
 import org.elasticsearch.painless.symbol.Decorations.InstanceCapturingLambda;
+import org.elasticsearch.painless.symbol.Decorations.InstanceCapturingFunctionRef;
 import org.elasticsearch.painless.symbol.Decorations.InstanceType;
 import org.elasticsearch.painless.symbol.Decorations.Internal;
 import org.elasticsearch.painless.symbol.Decorations.IterablePainlessMethod;
@@ -2286,6 +2287,7 @@ public class DefaultSemanticAnalysisPhase extends UserTreeBaseVisitor<SemanticSc
                         scriptScope.getCompilerSettings().asMap(), true);
                 valueType = targetType.getTargetType();
                 semanticScope.putDecoration(userFunctionRefNode, new ReferenceDecoration(ref));
+                semanticScope.setCondition(userFunctionRefNode, InstanceCapturingFunctionRef.class);
             }
         } else {
             if (semanticScope.getCondition(userFunctionRefNode, Write.class)) {
