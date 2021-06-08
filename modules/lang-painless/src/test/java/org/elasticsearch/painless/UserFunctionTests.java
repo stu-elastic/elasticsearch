@@ -45,6 +45,7 @@ public class UserFunctionTests extends ScriptTestCase {
      */
     // TODO(stu): test call one from another in lambda
     // TODO(stu): test call function with capture (a, b) -> myCompare(q, a, b)
+    // TODO(stu): test call function with two captures (a, b) -> myCompare(q, r, a, b)
     // TODO(stu): test call function from functionRef
     public void testUserFunctionVirtual() {
         String source =
@@ -66,7 +67,7 @@ public class UserFunctionTests extends ScriptTestCase {
         System.out.println(source);
         System.out.println(Debugger.toString(source));
         assertEquals(List.of(100, 1, -100), exec(source, Map.of("a", 1), false));
-        assertBytecodeExists(source, "public static &myCompare(II)I");
+        assertBytecodeExists(source, "public &myCompare(II)I");
         //assertBytecodeExists(source, "INVOKESTATIC org/elasticsearch/painless/PainlessScript$Script.&myCompare (II)I");
     }
 

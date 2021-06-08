@@ -1404,9 +1404,10 @@ public class DefaultUserTreeToIRTreePhase implements UserTreeVisitor<ScriptScope
             irReferenceNode = typedCaptureReferenceNode;
         } else {
             FunctionRef reference = scriptScope.getDecoration(userFunctionRefNode, ReferenceDecoration.class).getReference();
-            // TODO(stu): do we need IRCInstanceCapture here?
             TypedInterfaceReferenceNode typedInterfaceReferenceNode = new TypedInterfaceReferenceNode(userFunctionRefNode.getLocation());
             typedInterfaceReferenceNode.attachDecoration(new IRDReference(reference));
+            // TODO(stu): do we need IRCInstanceCapture here?
+            typedInterfaceReferenceNode.attachCondition(IRCInstanceCapture.class);
             irReferenceNode = typedInterfaceReferenceNode;
         }
 
