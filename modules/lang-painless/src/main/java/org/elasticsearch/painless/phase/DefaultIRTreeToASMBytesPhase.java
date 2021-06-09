@@ -1228,6 +1228,11 @@ public class DefaultIRTreeToASMBytesPhase implements IRTreeVisitor<WriteScope> {
         methodWriter.push((String)null);
 
         // TODO(stu): captures here for lambda?
+        if (irDefInterfaceReferenceNode.hasCondition(IRCInstanceCapture.class)) {
+            //Variable capturedThis = writeScope.getInternalVariable("this");
+            //methodWriter.visitVarInsn(capturedThis.getAsmType().getOpcode(Opcodes.ILOAD), capturedThis.getSlot());
+        }
+
         List<String> captureNames = irDefInterfaceReferenceNode.getDecorationValue(IRDCaptureNames.class);
         boolean captureBox = irDefInterfaceReferenceNode.hasCondition(IRCCaptureBox.class);
 

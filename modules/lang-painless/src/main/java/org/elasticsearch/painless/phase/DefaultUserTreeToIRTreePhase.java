@@ -1398,6 +1398,9 @@ public class DefaultUserTreeToIRTreePhase implements UserTreeVisitor<ScriptScope
             String encoding = scriptScope.getDecoration(userFunctionRefNode, EncodingDecoration.class).getEncoding();
             DefInterfaceReferenceNode defInterfaceReferenceNode = new DefInterfaceReferenceNode(userFunctionRefNode.getLocation());
             defInterfaceReferenceNode.attachDecoration(new IRDDefReferenceEncoding(encoding));
+            if (scriptScope.getCondition(userFunctionRefNode, InstanceCapturingFunctionRef.class)) {
+                defInterfaceReferenceNode.attachCondition(IRCInstanceCapture.class);
+            }
             irReferenceNode = defInterfaceReferenceNode;
         } else if (capturesDecoration != null && capturesDecoration.getCaptures().get(0).getType() == def.class) {
             TypedCaptureReferenceNode typedCaptureReferenceNode = new TypedCaptureReferenceNode(userFunctionRefNode.getLocation());

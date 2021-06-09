@@ -2266,7 +2266,8 @@ public class DefaultSemanticAnalysisPhase extends UserTreeBaseVisitor<SemanticSc
         TargetType targetType = semanticScope.getDecoration(userFunctionRefNode, TargetType.class);
         Class<?> valueType;
 
-        if ("this".equals(symbol) || type != null)  {
+        boolean isInstanceReference = "this".equals(symbol);
+        if (isInstanceReference || type != null)  {
             if (semanticScope.getCondition(userFunctionRefNode, Write.class)) {
                 throw userFunctionRefNode.createError(new IllegalArgumentException(
                         "invalid assignment: cannot assign a value to function reference [" + symbol + ":" + methodName + "]"));
@@ -2277,6 +2278,9 @@ public class DefaultSemanticAnalysisPhase extends UserTreeBaseVisitor<SemanticSc
                         "not a statement: function reference [" + symbol + ":" + methodName + "] not used"));
             }
 
+            if (isInstanceReference) {
+                semanticScope.setCondition(userFunctionRefNode, InstanceCapturingFunctionRef.class);
+            }
             if (targetType == null) {
                 valueType = String.class;
                 String defReferenceEncoding = "S" + symbol + "." + methodName + ",0";
@@ -2284,10 +2288,9 @@ public class DefaultSemanticAnalysisPhase extends UserTreeBaseVisitor<SemanticSc
             } else {
                 FunctionRef ref = FunctionRef.create(scriptScope.getPainlessLookup(), scriptScope.getFunctionTable(),
                         location, targetType.getTargetType(), symbol, methodName, 0,
-                        scriptScope.getCompilerSettings().asMap(), "this".equals(symbol));
+                        scriptScope.getCompilerSettings().asMap(), isInstanceReference);
                 valueType = targetType.getTargetType();
                 semanticScope.putDecoration(userFunctionRefNode, new ReferenceDecoration(ref));
-                semanticScope.setCondition(userFunctionRefNode, InstanceCapturingFunctionRef.class);
             }
         } else {
             if (semanticScope.getCondition(userFunctionRefNode, Write.class)) {

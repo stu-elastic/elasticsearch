@@ -8,6 +8,8 @@
 
 package org.elasticsearch.painless;
 
+import org.elasticsearch.painless.api.Debug;
+
 import java.lang.invoke.LambdaConversionException;
 import java.time.Instant;
 
@@ -58,13 +60,15 @@ public class FunctionRefTests extends ScriptTestCase {
     }
 
     public void testCtorMethodReference() {
+        String source = "List l = new ArrayList(); l.add(1.0); l.add(2.0); " +
+            "DoubleStream doubleStream = l.stream().mapToDouble(Double::doubleValue);" +
+            "DoubleSummaryStatistics stats = doubleStream.collect(DoubleSummaryStatistics::new, " +
+            "DoubleSummaryStatistics::accept, " +
+            "DoubleSummaryStatistics::combine); " +
+            "return stats.getSum()";
+        //System.out.println(Debugger.toString(source));
         assertEquals(3.0D,
-                exec("List l = new ArrayList(); l.add(1.0); l.add(2.0); " +
-                        "DoubleStream doubleStream = l.stream().mapToDouble(Double::doubleValue);" +
-                        "DoubleSummaryStatistics stats = doubleStream.collect(DoubleSummaryStatistics::new, " +
-                        "DoubleSummaryStatistics::accept, " +
-                        "DoubleSummaryStatistics::combine); " +
-                        "return stats.getSum()"));
+                exec(source));
     }
 
     public void testCtorMethodReferenceDef() {
@@ -150,14 +154,16 @@ public class FunctionRefTests extends ScriptTestCase {
                 "return test.twoFunctionsOfX(x::concat, y::substring);"));
     }
 
-    public void testOwnStaticMethodReference() {
+    public void testOwnMethodReference() {
         assertEquals(2, exec("int mycompare(int i, int j) { j - i } " +
                              "List l = new ArrayList(); l.add(2); l.add(1); l.sort(this::mycompare); return l.get(0);"));
     }
 
     public void testOwnStaticMethodReferenceDef() {
-        assertEquals(2, exec("int mycompare(int i, int j) { j - i } " +
-                             "def l = new ArrayList(); l.add(2); l.add(1); l.sort(this::mycompare); return l.get(0);"));
+        String source = "int mycompare(int i, int j) { j - i } " +
+            "def l = new ArrayList(); l.add(2); l.add(1); l.sort(this::mycompare); return l.get(0);";
+        System.out.println(Debugger.toString(source));
+        assertEquals(2, exec(source));
     }
 
     public void testInterfaceDefaultMethod() {
