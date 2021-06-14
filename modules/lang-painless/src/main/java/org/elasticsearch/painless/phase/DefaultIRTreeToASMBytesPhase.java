@@ -87,6 +87,7 @@ import org.elasticsearch.painless.ir.TypedCaptureReferenceNode;
 import org.elasticsearch.painless.ir.TypedInterfaceReferenceNode;
 import org.elasticsearch.painless.ir.UnaryMathNode;
 import org.elasticsearch.painless.ir.WhileLoopNode;
+import org.elasticsearch.painless.lookup.$this;
 import org.elasticsearch.painless.lookup.PainlessClassBinding;
 import org.elasticsearch.painless.lookup.PainlessConstructor;
 import org.elasticsearch.painless.lookup.PainlessField;
@@ -1229,8 +1230,8 @@ public class DefaultIRTreeToASMBytesPhase implements IRTreeVisitor<WriteScope> {
 
         // TODO(stu): captures here for lambda?
         if (irDefInterfaceReferenceNode.hasCondition(IRCInstanceCapture.class)) {
-            //Variable capturedThis = writeScope.getInternalVariable("this");
-            //methodWriter.visitVarInsn(capturedThis.getAsmType().getOpcode(Opcodes.ILOAD), capturedThis.getSlot());
+            Variable capturedThis = writeScope.getInternalVariable("this");
+            methodWriter.visitVarInsn(CLASS_TYPE.getOpcode(Opcodes.ILOAD), capturedThis.getSlot());
         }
 
         List<String> captureNames = irDefInterfaceReferenceNode.getDecorationValue(IRDCaptureNames.class);
@@ -1254,14 +1255,15 @@ public class DefaultIRTreeToASMBytesPhase implements IRTreeVisitor<WriteScope> {
         MethodWriter methodWriter = writeScope.getMethodWriter();
         methodWriter.writeDebugInfo(irTypedInterfaceReferenceNode.getLocation());
 
-        List<String> captureNames = irTypedInterfaceReferenceNode.getDecorationValue(IRDCaptureNames.class);
-        boolean captureBox = irTypedInterfaceReferenceNode.hasCondition(IRCCaptureBox.class);
-
         // TODO(stu): captures here for lambda?
         if (irTypedInterfaceReferenceNode.hasCondition(IRCInstanceCapture.class)) {
             Variable capturedThis = writeScope.getInternalVariable("this");
-            methodWriter.visitVarInsn(capturedThis.getAsmType().getOpcode(Opcodes.ILOAD), capturedThis.getSlot());
+            methodWriter.visitVarInsn(CLASS_TYPE.getOpcode(Opcodes.ILOAD), capturedThis.getSlot());
         }
+
+        List<String> captureNames = irTypedInterfaceReferenceNode.getDecorationValue(IRDCaptureNames.class);
+        boolean captureBox = irTypedInterfaceReferenceNode.hasCondition(IRCCaptureBox.class);
+
         if (captureNames != null) {
             for (String captureName : captureNames) {
                 Variable captureVariable = writeScope.getVariable(captureName);
@@ -1592,6 +1594,11 @@ public class DefaultIRTreeToASMBytesPhase implements IRTreeVisitor<WriteScope> {
                         defInterfaceReferenceNode.getDecorationValueOrDefault(IRDCaptureNames.class, Collections.emptyList());
                 boostrapArguments.add(defInterfaceReferenceNode.getDecorationValue(IRDDefReferenceEncoding.class));
 
+                if (defInterfaceReferenceNode.hasCondition(IRCInstanceCapture.class)) {
+                    capturedCount++;
+                    typeParameters.add($this.class);
+                }
+
                 // the encoding uses a char to indicate the number of captures
                 // where the value is the number of current arguments plus the
                 // total number of captures for easier capture count tracking
@@ -1610,9 +1617,15 @@ public class DefaultIRTreeToASMBytesPhase implements IRTreeVisitor<WriteScope> {
         Type[] asmParameterTypes = new Type[typeParameters.size()];
 
         for (int index = 0; index < asmParameterTypes.length; ++index) {
-            asmParameterTypes[index] = MethodWriter.getType(typeParameters.get(index));
+            Class<?> typeParameter = typeParameters.get(index);
+            if (typeParameter.equals($this.class)) {
+                asmParameterTypes[index] = CLASS_TYPE;
+            } else {
+                asmParameterTypes[index] = MethodWriter.getType(typeParameters.get(index));
+            }
         }
 
+        // TODO(stu): we need to change
         String methodName = irInvokeCallDefNode.getDecorationValue(IRDName.class);
         Type methodType = Type.getMethodType(MethodWriter.getType(
                 irInvokeCallDefNode.getDecorationValue(IRDExpressionType.class)), asmParameterTypes);

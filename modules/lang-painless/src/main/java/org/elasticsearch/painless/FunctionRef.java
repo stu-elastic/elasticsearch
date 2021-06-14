@@ -183,7 +183,7 @@ public class FunctionRef {
                     if (painlessMethod.methodType.parameterType(0) != Object.class) {
                         throw new IllegalStateException("internal error");
                     }
-                    
+
                     delegateMethodType = delegateMethodType.changeParameterType(0, painlessMethod.javaMethod.getDeclaringClass());
                 }
 
@@ -248,9 +248,9 @@ public class FunctionRef {
     /** injected constants */
     public final Object[] delegateInjections;
     /** factory (CallSite) method signature */
-    public final MethodType factoryMethodType;
-    /** factory (CallSite) method descriptor */
-    public final String factoryMethodDescriptor;
+    private final MethodType factoryMethodType;
+    /** factory (CallSite) method receiver, this modifies the method descriptor for the factory method */
+    public final Type factoryMethodReceiver;
 
     private FunctionRef(
             String interfaceMethodName, MethodType interfaceMethodType,
@@ -268,14 +268,26 @@ public class FunctionRef {
         this.delegateMethodType = delegateMethodType;
         this.delegateInjections = delegateInjections;
         this.factoryMethodType = factoryMethodType;
+        this.factoryMethodReceiver = factoryMethodReceiver;
+    }
+
+    // TODO(stu): these two methods are solving the same problem, injecting the script into the factory method
+    public String getFactoryMethodDescriptor() {
         if (factoryMethodReceiver == null) {
-            this.factoryMethodDescriptor = factoryMethodType.toMethodDescriptorString();
-        } else {
-            List<Type> arguments = factoryMethodType.parameterList().stream().map(Type::getType).collect(Collectors.toList());
-            arguments.add(0, factoryMethodReceiver);
-            Type[] argArray = new Type[arguments.size()];
-            arguments.toArray(argArray);
-            this.factoryMethodDescriptor = Type.getMethodDescriptor(Type.getType(factoryMethodType.returnType()), argArray);
+            return factoryMethodType.toMethodDescriptorString();
         }
+        List<Type> arguments = factoryMethodType.parameterList().stream().map(Type::getType).collect(Collectors.toList());
+        arguments.add(0, factoryMethodReceiver);
+        Type[] argArray = new Type[arguments.size()];
+        arguments.toArray(argArray);
+        return Type.getMethodDescriptor(Type.getType(factoryMethodType.returnType()), argArray);
+    }
+
+    public Class<?>[] factoryMethodParameters(Class<?> factoryMethodReceiverClass) {
+        List<Class<?>> parameters = new ArrayList<>(factoryMethodType.parameterList());
+        if (factoryMethodReceiverClass != null) {
+            parameters.add(0, factoryMethodReceiverClass);
+        }
+        return parameters.toArray(new Class[0]);
     }
 }

@@ -2284,6 +2284,7 @@ public class DefaultSemanticAnalysisPhase extends UserTreeBaseVisitor<SemanticSc
             if (targetType == null) {
                 valueType = String.class;
                 String defReferenceEncoding = "S" + symbol + "." + methodName + ",0";
+                //String defReferenceEncoding = "S" + symbol + "." + methodName + "," + (isInstanceReference ? "1" : "0");
                 semanticScope.putDecoration(userFunctionRefNode, new EncodingDecoration(defReferenceEncoding));
             } else {
                 FunctionRef ref = FunctionRef.create(scriptScope.getPainlessLookup(), scriptScope.getFunctionTable(),
@@ -2371,7 +2372,7 @@ public class DefaultSemanticAnalysisPhase extends UserTreeBaseVisitor<SemanticSc
         semanticScope.putDecoration(userNewArrayFunctionRefNode, new MethodNameDecoration(name));
 
         if (targetType == null) {
-            String defReferenceEncoding = "Sthis." + name + ",0";
+            String defReferenceEncoding = "Sthis." + name + ",1";
             valueType = String.class;
             scriptScope.putDecoration(userNewArrayFunctionRefNode, new EncodingDecoration(defReferenceEncoding));
         } else {

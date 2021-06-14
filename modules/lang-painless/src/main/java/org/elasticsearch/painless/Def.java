@@ -13,6 +13,7 @@ import org.elasticsearch.painless.lookup.PainlessLookupUtility;
 import org.elasticsearch.painless.lookup.PainlessMethod;
 import org.elasticsearch.painless.symbol.FunctionTable;
 import org.elasticsearch.script.JodaCompatibleZonedDateTime;
+import org.objectweb.asm.Type;
 
 import java.lang.invoke.CallSite;
 import java.lang.invoke.MethodHandle;
@@ -225,6 +226,12 @@ public final class Def {
              }
          }
 
+         // TODO(stu): this is now done by captures
+         // If we've added the script class, it's not included in the arity lookup
+         if (callSiteType.parameterList().stream().anyMatch(p -> p.getName().equals(WriterConstants.CLASS_NAME))) {
+             arity--;
+         }
+
          // lookup the method with the proper arity, then we know everything (e.g. interface types of parameters).
          // based on these we can finally link any remaining lambdas that were deferred.
          PainlessMethod method = painlessLookup.lookupRuntimePainlessMethod(receiverClass, name, arity);
@@ -252,10 +259,11 @@ public final class Def {
                  int separator = signature.lastIndexOf('.');
                  int separator2 = signature.indexOf(',');
                  String type = signature.substring(1, separator);
+                 boolean needsScriptInstance = "this".equals(type);
                  String call = signature.substring(separator+1, separator2);
                  int numCaptures = Integer.parseInt(signature.substring(separator2+1));
                  MethodHandle filter;
-                 Class<?> interfaceType = method.typeParameters.get(i - 1 - replaced);
+                 Class<?> interfaceType = method.typeParameters.get(i - 1 - replaced - (needsScriptInstance ? 1 : 0));
                  if (signature.charAt(0) == 'S') {
                      // the implementation is strongly typed, now that we know the interface type,
                      // we have everything.
@@ -292,7 +300,7 @@ public final class Def {
                  }
                  // the filter now ignores the signature (placeholder) on the stack
                  filter = MethodHandles.dropArguments(filter, 0, String.class);
-                 handle = MethodHandles.collectArguments(handle, i, filter);
+                 handle = MethodHandles.collectArguments(handle, i -  (needsScriptInstance ? 1 : 0), filter);
                  i += numCaptures;
                  replaced += numCaptures;
              }
@@ -337,11 +345,14 @@ public final class Def {
             MethodHandles.Lookup methodHandlesLookup, Class<?> clazz, String type, String call, int captures
             ) throws Throwable {
 
-        final FunctionRef ref = FunctionRef.create(painlessLookup, functions, null, clazz, type, call, captures, constants, false);
+        boolean needsThis = "this".equals(type);
+        final FunctionRef ref = FunctionRef.create(painlessLookup, functions, null, clazz, type, call, captures, constants, needsThis);
+        Class<?>[] parameters = ref.factoryMethodParameters(needsThis ? methodHandlesLookup.lookupClass() : null);
+        MethodType factoryMethodType = MethodType.methodType(clazz, parameters);
         final CallSite callSite = LambdaBootstrap.lambdaBootstrap(
                 methodHandlesLookup,
                 ref.interfaceMethodName,
-                ref.factoryMethodType,
+                factoryMethodType,
                 ref.interfaceMethodType,
                 ref.delegateClassName,
                 ref.delegateInvokeType,
@@ -351,7 +362,7 @@ public final class Def {
                 ref.isDelegateAugmented ? 1 : 0,
                 ref.delegateInjections
         );
-        return callSite.dynamicInvoker().asType(MethodType.methodType(clazz, ref.factoryMethodType.parameterArray()));
+        return callSite.dynamicInvoker().asType(MethodType.methodType(clazz, parameters));
      }
 
     /**
