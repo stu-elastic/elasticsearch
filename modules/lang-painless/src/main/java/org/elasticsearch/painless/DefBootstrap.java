@@ -443,7 +443,8 @@ public final class DefBootstrap {
      */
     @SuppressWarnings("unchecked")
     public static CallSite bootstrap(PainlessLookup painlessLookup, FunctionTable functions, Map<String, Object> constants,
-            MethodHandles.Lookup methodHandlesLookup, String name, MethodType type, int initialDepth, int flavor, Object... args) {
+            MethodHandles.Lookup methodHandlesLookup, String name, MethodType type, int initialDepth, int flavor, Object script,
+            Object... args) {
         // validate arguments
         switch(flavor) {
             // "function-call" like things get a polymorphic cache

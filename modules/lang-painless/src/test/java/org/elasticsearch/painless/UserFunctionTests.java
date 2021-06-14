@@ -9,6 +9,7 @@
 package org.elasticsearch.painless;
 
 import java.util.List;
+import java.util.Map;
 
 public class UserFunctionTests extends ScriptTestCase {
     public void testZeroArgumentUserFunction() {
@@ -33,5 +34,20 @@ public class UserFunctionTests extends ScriptTestCase {
         assertBytecodeExists(source, "INVOKESTATIC org/elasticsearch/painless/PainlessScript$Script.&getMulti ()I");
         assertBytecodeExists(source, "public static &myCompare(II)I");
         assertBytecodeExists(source, "INVOKESTATIC org/elasticsearch/painless/PainlessScript$Script.&myCompare (II)I");
+    }
+    public void testUserFunctionCapture() {
+        String source =
+            "int myCompare(Object o, int x, int y) { return o != null ? -1 * ( x - y ) : ( x - y ) }\n" +
+                //"int myCompare(int m, int x, int y) { return m * ( x - y ) }\n" +
+                "List l = [1, 100, -100];\n" +
+                //"int q = -1;\n" +
+                "Object q = '';\n" +
+                "l.sort((a, b) -> myCompare(q, a, b));\n" +
+                "return l;";
+        System.out.println(source);
+        System.out.println(Debugger.toString(source));
+        assertEquals(List.of(100, 1, -100), exec(source, Map.of("a", 1), false));
+        //assertBytecodeExists(source, "public &myCompare(II)I");
+        //assertBytecodeExists(source, "INVOKESTATIC org/elasticsearch/painless/PainlessScript$Script.&myCompare (II)I");
     }
 }

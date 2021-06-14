@@ -13,6 +13,7 @@ import org.elasticsearch.painless.lookup.PainlessMethod;
 import org.elasticsearch.painless.lookup.def;
 import org.elasticsearch.script.JodaCompatibleZonedDateTime;
 import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.Handle;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -474,10 +475,16 @@ public final class MethodWriter extends GeneratorAdapter {
      * @param params flavor-specific parameters
      */
     public void invokeDefCall(String name, Type methodType, int flavor, Object... params) {
-        Object[] args = new Object[params.length + 2];
+        Object[] args = new Object[params.length + 3];
         args[0] = settings.getInitialCallSiteDepth();
         args[1] = flavor;
-        System.arraycopy(params, 0, args, 2, params.length);
+        args[2] = new Handle(
+                Opcodes.H_GETFIELD,
+                WriterConstants.CLASS_TYPE.getInternalName(),
+                "$this",
+                WriterConstants.CLASS_TYPE.getDescriptor(),
+                false);
+        System.arraycopy(params, 0, args, 3, params.length);
         invokeDynamic(name, methodType.getDescriptor(), DEF_BOOTSTRAP_HANDLE, args);
     }
 

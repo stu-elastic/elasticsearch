@@ -300,10 +300,11 @@ public class DefaultUserTreeToIRTreePhase implements UserTreeVisitor<ScriptScope
             irFunctionNode.attachDecoration(new IRDName("$bootstrapDef"));
             irFunctionNode.attachDecoration(new IRDReturnType(CallSite.class));
             irFunctionNode.attachDecoration(new IRDTypeParameters(
-                    Arrays.asList(Lookup.class, String.class, MethodType.class, int.class, int.class, Object[].class)));
+                    Arrays.asList(Lookup.class, String.class, MethodType.class, int.class, int.class, Object.class, Object[].class)));
             irFunctionNode.attachDecoration(new IRDParameterNames(
-                    Arrays.asList("methodHandlesLookup", "name", "type", "initialDepth", "flavor", "args")));
-            irFunctionNode.attachCondition(IRCStatic.class);
+                    Arrays.asList("methodHandlesLookup", "name", "type", "initialDepth", "flavor", "script", "args")));
+            // TODO(stu): bootstrap method is now an instance method
+            // irFunctionNode.attachCondition(IRCStatic.class);
             irFunctionNode.attachCondition(IRCVarArgs.class);
             irFunctionNode.attachCondition(IRCSynthetic.class);
             irFunctionNode.attachDecoration(new IRDMaxLoopCounter(0));
@@ -341,6 +342,7 @@ public class DefaultUserTreeToIRTreePhase implements UserTreeVisitor<ScriptScope
                                     MethodType.class,
                                     int.class,
                                     int.class,
+                                    Object.class,
                                     Object[].class),
                             DefBootstrap.class,
                             CallSite.class,
@@ -353,6 +355,7 @@ public class DefaultUserTreeToIRTreePhase implements UserTreeVisitor<ScriptScope
                                     MethodType.class,
                                     int.class,
                                     int.class,
+                                    Object.class,
                                     Object[].class),
                             null,
                             null,
@@ -415,7 +418,13 @@ public class DefaultUserTreeToIRTreePhase implements UserTreeVisitor<ScriptScope
             invokeCallNode.addArgumentNode(irLoadVariableNode);
 
             irLoadVariableNode = new LoadVariableNode(internalLocation);
-            irLoadVariableNode.attachDecoration(new IRDExpressionType(Object[].class));
+            irLoadVariableNode.attachDecoration(new IRDExpressionType(Object.class));
+            irLoadVariableNode.attachDecoration(new IRDName("#this"));
+
+            invokeCallNode.addArgumentNode(irLoadVariableNode);
+
+            irLoadVariableNode = new LoadVariableNode(internalLocation);
+            irLoadVariableNode.attachDecoration(new IRDExpressionType(Object.class));
             irLoadVariableNode.attachDecoration(new IRDName("args"));
 
             invokeCallNode.addArgumentNode(irLoadVariableNode);

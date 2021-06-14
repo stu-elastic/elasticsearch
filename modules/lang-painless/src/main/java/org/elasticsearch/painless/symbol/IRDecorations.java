@@ -204,6 +204,14 @@ public class IRDecorations {
         }
     }
 
+    /** describes the type for a member field on a class */
+    public static class IRDFieldDescriptorType extends IRDecoration<String> {
+
+        public IRDFieldDescriptorType(String value) {
+            super(value);
+        }
+    }
+
     /** describes a type for a variable access */
     public static class IRDVariableType extends IRDType {
 

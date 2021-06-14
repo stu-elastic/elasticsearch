@@ -74,8 +74,9 @@ public final class WriterConstants {
     public static final Method MATCHER_FIND = getAsmMethod(boolean.class, "find");
 
     public static final Method DEF_BOOTSTRAP_METHOD = getAsmMethod(CallSite.class, "$bootstrapDef", MethodHandles.Lookup.class,
-            String.class, MethodType.class, int.class, int.class, Object[].class);
-    static final Handle DEF_BOOTSTRAP_HANDLE = new Handle(Opcodes.H_INVOKESTATIC, CLASS_TYPE.getInternalName(), "$bootstrapDef",
+            String.class, MethodType.class, int.class, int.class, Object.class, Object[].class);
+    // TODO(stu): bootstrap method is now an instance method
+    static final Handle DEF_BOOTSTRAP_HANDLE = new Handle(Opcodes.H_INVOKEVIRTUAL, CLASS_TYPE.getInternalName(), "$bootstrapDef",
             DEF_BOOTSTRAP_METHOD.getDescriptor(), false);
 
     public static final Type DEF_UTIL_TYPE = Type.getType(Def.class);

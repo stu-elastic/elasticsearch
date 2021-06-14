@@ -118,6 +118,7 @@ import org.elasticsearch.painless.symbol.IRDecorations.IRDDepth;
 import org.elasticsearch.painless.symbol.IRDecorations.IRDExceptionType;
 import org.elasticsearch.painless.symbol.IRDecorations.IRDExpressionType;
 import org.elasticsearch.painless.symbol.IRDecorations.IRDField;
+import org.elasticsearch.painless.symbol.IRDecorations.IRDFieldDescriptorType;
 import org.elasticsearch.painless.symbol.IRDecorations.IRDFieldType;
 import org.elasticsearch.painless.symbol.IRDecorations.IRDFlags;
 import org.elasticsearch.painless.symbol.IRDecorations.IRDFunction;
@@ -221,6 +222,9 @@ public class DefaultIRTreeToASMBytesPhase implements IRTreeVisitor<WriteScope> {
         constructor.loadThis();
         constructor.loadArgs();
         constructor.invokeConstructor(Type.getType(scriptClassInfo.getBaseClass()), init);
+        constructor.loadThis();
+        constructor.loadThis();
+        constructor.putField(CLASS_TYPE, "$this", CLASS_TYPE);
         constructor.returnValue();
         constructor.endMethod();
 
@@ -311,7 +315,14 @@ public class DefaultIRTreeToASMBytesPhase implements IRTreeVisitor<WriteScope> {
     public void visitField(FieldNode irFieldNode, WriteScope writeScope) {
         int access = ClassWriter.buildAccess(irFieldNode.getDecorationValue(IRDModifiers.class), true);
         String name = irFieldNode.getDecorationValue(IRDName.class);
-        String descriptor = Type.getType(irFieldNode.getDecorationValue(IRDFieldType.class)).getDescriptor();
+        String descriptor = null;
+        if (irFieldNode.getDecorationValue(IRDFieldType.class) != null) {
+            descriptor = Type.getType(irFieldNode.getDecorationValue(IRDFieldType.class)).getDescriptor();
+        } else if (irFieldNode.getDecorationValue(IRDFieldDescriptorType.class) != null) {
+            descriptor = irFieldNode.getDecorationValue(IRDFieldDescriptorType.class);
+        } else {
+            throw new IllegalStateException("Field [" + name + "] has no type");
+        }
 
         ClassWriter classWriter = writeScope.getClassWriter();
         classWriter.getClassVisitor().visitField(access, name, descriptor, null, null).visitEnd();

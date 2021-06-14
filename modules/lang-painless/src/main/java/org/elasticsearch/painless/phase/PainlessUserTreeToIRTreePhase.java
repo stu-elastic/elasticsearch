@@ -13,6 +13,7 @@ import org.elasticsearch.painless.PainlessError;
 import org.elasticsearch.painless.PainlessExplainError;
 import org.elasticsearch.painless.ScriptClassInfo;
 import org.elasticsearch.painless.ScriptClassInfo.MethodArgument;
+import org.elasticsearch.painless.WriterConstants;
 import org.elasticsearch.painless.ir.BinaryImplNode;
 import org.elasticsearch.painless.ir.BlockNode;
 import org.elasticsearch.painless.ir.CatchNode;
@@ -41,6 +42,7 @@ import org.elasticsearch.painless.symbol.Decorations.Converter;
 import org.elasticsearch.painless.symbol.Decorations.IRNodeDecoration;
 import org.elasticsearch.painless.symbol.Decorations.MethodEscape;
 import org.elasticsearch.painless.symbol.FunctionTable.LocalFunction;
+import org.elasticsearch.painless.symbol.IRDecorations;
 import org.elasticsearch.painless.symbol.IRDecorations.IRCAllEscape;
 import org.elasticsearch.painless.symbol.IRDecorations.IRCStatic;
 import org.elasticsearch.painless.symbol.IRDecorations.IRCSynthetic;
@@ -144,6 +146,13 @@ public class PainlessUserTreeToIRTreePhase extends DefaultUserTreeToIRTreePhase 
             irFunctionNode.attachDecoration(new IRDMaxLoopCounter(scriptScope.getCompilerSettings().getMaxLoopCounter()));
 
             injectStaticFieldsAndGetters();
+
+            FieldNode irFieldNode = new FieldNode(new Location("$internal$this", 0));
+            irFieldNode.attachDecoration(new IRDModifiers(Opcodes.ACC_PRIVATE | Opcodes.ACC_FINAL));
+            irFieldNode.attachDecoration(new IRDecorations.IRDFieldDescriptorType(WriterConstants.CLASS_TYPE.getDescriptor()));
+            irFieldNode.attachDecoration(new IRDName("$this"));
+            irClassNode.addFieldNode(irFieldNode);
+
             injectGetsDeclarations(irBlockNode, scriptScope);
             injectNeedsMethods(scriptScope);
             injectSandboxExceptions(irFunctionNode);
