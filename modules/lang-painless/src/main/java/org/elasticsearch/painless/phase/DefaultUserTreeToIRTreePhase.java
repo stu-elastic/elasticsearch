@@ -8,6 +8,7 @@
 
 package org.elasticsearch.painless.phase;
 
+import org.elasticsearch.painless.Def;
 import org.elasticsearch.painless.DefBootstrap;
 import org.elasticsearch.painless.FunctionRef;
 import org.elasticsearch.painless.Location;
@@ -1395,7 +1396,7 @@ public class DefaultUserTreeToIRTreePhase implements UserTreeVisitor<ScriptScope
         CapturesDecoration capturesDecoration = scriptScope.getDecoration(userFunctionRefNode, CapturesDecoration.class);
 
         if (targetType == null) {
-            String encoding = scriptScope.getDecoration(userFunctionRefNode, EncodingDecoration.class).getEncoding();
+            Def.Encoding encoding = scriptScope.getDecoration(userFunctionRefNode, EncodingDecoration.class).getEncoding();
             DefInterfaceReferenceNode defInterfaceReferenceNode = new DefInterfaceReferenceNode(userFunctionRefNode.getLocation());
             defInterfaceReferenceNode.attachDecoration(new IRDDefReferenceEncoding(encoding));
             if (scriptScope.getCondition(userFunctionRefNode, InstanceCapturingFunctionRef.class)) {
@@ -1443,7 +1444,7 @@ public class DefaultUserTreeToIRTreePhase implements UserTreeVisitor<ScriptScope
             typedInterfaceReferenceNode.attachDecoration(new IRDReference(reference));
             irReferenceNode = typedInterfaceReferenceNode;
         } else {
-            String encoding = scriptScope.getDecoration(userNewArrayFunctionRefNode, EncodingDecoration.class).getEncoding();
+            Def.Encoding encoding = scriptScope.getDecoration(userNewArrayFunctionRefNode, EncodingDecoration.class).getEncoding();
             DefInterfaceReferenceNode defInterfaceReferenceNode = new DefInterfaceReferenceNode(userNewArrayFunctionRefNode.getLocation());
             defInterfaceReferenceNode.attachDecoration(new IRDDefReferenceEncoding(encoding));
             irReferenceNode = defInterfaceReferenceNode;

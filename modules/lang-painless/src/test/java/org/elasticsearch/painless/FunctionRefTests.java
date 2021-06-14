@@ -165,7 +165,7 @@ public class FunctionRefTests extends ScriptTestCase {
             "def l = [2, 1, 3, -1]; l.sort(this::mycompare); return l.get(0);";
         System.out.println(source);
         System.out.println(Debugger.toString(source));
-        assertEquals(2, exec(source));
+        assertEquals(3, exec(source));
     }
 
     public void testOwnStaticMethodReference() {

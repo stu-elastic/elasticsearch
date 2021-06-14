@@ -47,11 +47,11 @@ public class FunctionRef {
      * @param methodName the right hand side of a method reference expression
      * @param numberOfCaptures number of captured arguments
      * @param constants constants used for injection when necessary
-     * @param needsThis uses an instance method and so receiver must be captured.
+     * @param needsScriptInstance uses an instance method and so receiver must be captured.
      */
     public static FunctionRef create(PainlessLookup painlessLookup, FunctionTable functionTable, Location location,
             Class<?> targetClass, String typeName, String methodName, int numberOfCaptures, Map<String, Object> constants,
-            boolean needsThis) {
+            boolean needsScriptInstance) {
 
         Objects.requireNonNull(painlessLookup);
         Objects.requireNonNull(targetClass);
@@ -103,7 +103,7 @@ public class FunctionRef {
                 delegateClassName = CLASS_NAME;
                 isDelegateInterface = false;
                 isDelegateAugmented = false;
-                delegateInvokeType = needsThis ? H_INVOKEVIRTUAL : H_INVOKESTATIC;
+                delegateInvokeType = needsScriptInstance ? H_INVOKEVIRTUAL : H_INVOKESTATIC;
                 delegateMethodName = localFunction.getMangledName();
                 delegateMethodType = localFunction.getMethodType();
                 delegateInjections = new Object[0];
@@ -218,7 +218,7 @@ public class FunctionRef {
             return new FunctionRef(interfaceMethodName, interfaceMethodType,
                     delegateClassName, isDelegateInterface, isDelegateAugmented,
                     delegateInvokeType, delegateMethodName, delegateMethodType, delegateInjections,
-                    factoryMethodType, needsThis ? WriterConstants.CLASS_TYPE : null
+                    factoryMethodType, needsScriptInstance ? WriterConstants.CLASS_TYPE : null
             );
         } catch (IllegalArgumentException iae) {
             if (location != null) {

@@ -1592,7 +1592,7 @@ public class DefaultIRTreeToASMBytesPhase implements IRTreeVisitor<WriteScope> {
                 // TODO(stu): captures here for lambda?
                 List<String> captureNames =
                         defInterfaceReferenceNode.getDecorationValueOrDefault(IRDCaptureNames.class, Collections.emptyList());
-                boostrapArguments.add(defInterfaceReferenceNode.getDecorationValue(IRDDefReferenceEncoding.class));
+                boostrapArguments.add(defInterfaceReferenceNode.getDecorationValue(IRDDefReferenceEncoding.class).toString());
 
                 if (defInterfaceReferenceNode.hasCondition(IRCInstanceCapture.class)) {
                     capturedCount++;

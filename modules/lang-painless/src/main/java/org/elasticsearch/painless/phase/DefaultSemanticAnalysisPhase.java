@@ -2229,9 +2229,9 @@ public class DefaultSemanticAnalysisPhase extends UserTreeBaseVisitor<SemanticSc
         Class<?> valueType;
         // setup method reference to synthetic method
         if (targetType == null) {
-            String defReferenceEncoding = "Sthis." + name + "," + capturedVariables.size();
             valueType = String.class;
-            semanticScope.putDecoration(userLambdaNode, new EncodingDecoration(defReferenceEncoding));
+            semanticScope.putDecoration(userLambdaNode,
+                    new EncodingDecoration(true, lambdaScope.usesInstanceMethod(), "this", name, capturedVariables.size()));
         } else {
             FunctionRef ref = FunctionRef.create(scriptScope.getPainlessLookup(), scriptScope.getFunctionTable(),
                     location, targetType.getTargetType(), "this", name, capturedVariables.size(),
@@ -2283,9 +2283,7 @@ public class DefaultSemanticAnalysisPhase extends UserTreeBaseVisitor<SemanticSc
             }
             if (targetType == null) {
                 valueType = String.class;
-                String defReferenceEncoding = "S" + symbol + "." + methodName + ",0";
-                //String defReferenceEncoding = "S" + symbol + "." + methodName + "," + (isInstanceReference ? "1" : "0");
-                semanticScope.putDecoration(userFunctionRefNode, new EncodingDecoration(defReferenceEncoding));
+                semanticScope.putDecoration(userFunctionRefNode, new EncodingDecoration(true, isInstanceReference, symbol, methodName, 0));
             } else {
                 FunctionRef ref = FunctionRef.create(scriptScope.getPainlessLookup(), scriptScope.getFunctionTable(),
                         location, targetType.getTargetType(), symbol, methodName, 0,
@@ -2312,16 +2310,16 @@ public class DefaultSemanticAnalysisPhase extends UserTreeBaseVisitor<SemanticSc
             }
 
             if (targetType == null) {
-                String defReferenceEncoding;
+                EncodingDecoration encodingDecoration;
                 if (captured.getType() == def.class) {
                     // dynamic implementation
-                    defReferenceEncoding = "D" + symbol + "." + methodName + ",1";
+                    encodingDecoration = new EncodingDecoration(false, false, symbol, methodName, 1);
                 } else {
                     // typed implementation
-                    defReferenceEncoding = "S" + captured.getCanonicalTypeName() + "." + methodName + ",1";
+                    encodingDecoration = new EncodingDecoration(true, false, captured.getCanonicalTypeName(), methodName, 1);
                 }
                 valueType = String.class;
-                semanticScope.putDecoration(userFunctionRefNode, new EncodingDecoration(defReferenceEncoding));
+                semanticScope.putDecoration(userFunctionRefNode, encodingDecoration);
             } else {
                 valueType = targetType.getTargetType();
                 // static case
@@ -2372,9 +2370,8 @@ public class DefaultSemanticAnalysisPhase extends UserTreeBaseVisitor<SemanticSc
         semanticScope.putDecoration(userNewArrayFunctionRefNode, new MethodNameDecoration(name));
 
         if (targetType == null) {
-            String defReferenceEncoding = "Sthis." + name + ",1";
             valueType = String.class;
-            scriptScope.putDecoration(userNewArrayFunctionRefNode, new EncodingDecoration(defReferenceEncoding));
+            scriptScope.putDecoration(userNewArrayFunctionRefNode, new EncodingDecoration(true, false, "this", name, 0));
         } else {
             FunctionRef ref = FunctionRef.create(scriptScope.getPainlessLookup(), scriptScope.getFunctionTable(),
                     userNewArrayFunctionRefNode.getLocation(), targetType.getTargetType(), "this", name, 0,

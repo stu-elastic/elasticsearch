@@ -8,6 +8,7 @@
 
 package org.elasticsearch.painless.symbol;
 
+import org.elasticsearch.painless.Def;
 import org.elasticsearch.painless.FunctionRef;
 import org.elasticsearch.painless.Operation;
 import org.elasticsearch.painless.ir.IRNode.IRCondition;
@@ -165,9 +166,9 @@ public class IRDecorations {
     }
 
     /** describes an encoding used to resolve references and lambdas at runtime */
-    public static class IRDDefReferenceEncoding extends IRDecoration<String> {
+    public static class IRDDefReferenceEncoding extends IRDecoration<Def.Encoding> {
 
-        public IRDDefReferenceEncoding(String value) {
+        public IRDDefReferenceEncoding(Def.Encoding value) {
             super(value);
         }
     }

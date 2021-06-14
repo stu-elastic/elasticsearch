@@ -223,14 +223,18 @@ public final class Def {
                  String signature = (String) args[upTo++];
                  int numCaptures = Integer.parseInt(signature.substring(signature.indexOf(',')+1));
                  arity -= numCaptures;
+                 if (signature.charAt(1) == 't') {
+                     arity--;
+                 }
              }
          }
 
          // TODO(stu): this is now done by captures
          // If we've added the script class, it's not included in the arity lookup
-         if (callSiteType.parameterList().stream().anyMatch(p -> p.getName().equals(WriterConstants.CLASS_NAME))) {
-             arity--;
-         }
+         //if (callSiteType.parameterList().stream().anyMatch(p -> p.getName().equals(WriterConstants.CLASS_NAME))) {
+         //if (callSiteType.parameterList().stream().anyMatch(p -> p.getName().equals(WriterConstants.CLASS_NAME))) {
+         //     arity--;
+         //}
 
          // lookup the method with the proper arity, then we know everything (e.g. interface types of parameters).
          // based on these we can finally link any remaining lambdas that were deferred.
@@ -258,8 +262,8 @@ public final class Def {
                  String signature = (String) args[upTo++];
                  int separator = signature.lastIndexOf('.');
                  int separator2 = signature.indexOf(',');
-                 String type = signature.substring(1, separator);
-                 boolean needsScriptInstance = "this".equals(type);
+                 String type = signature.substring(2, separator);
+                 boolean needsScriptInstance = signature.charAt(1) == 't';
                  String call = signature.substring(separator+1, separator2);
                  int numCaptures = Integer.parseInt(signature.substring(separator2+1));
                  MethodHandle filter;
@@ -274,7 +278,8 @@ public final class Def {
                                                       interfaceType,
                                                       type,
                                                       call,
-                                                      numCaptures
+                                                      numCaptures,
+                                                      signature.charAt(1) == 't'
                      );
                  } else if (signature.charAt(0) == 'D') {
                      // the interface type is now known, but we need to get the implementation.
@@ -336,18 +341,17 @@ public final class Def {
 
         return lookupReferenceInternal(painlessLookup, functions, constants,
                 methodHandlesLookup, interfaceType, PainlessLookupUtility.typeToCanonicalTypeName(implMethod.targetClass),
-                implMethod.javaMethod.getName(), 1);
+                implMethod.javaMethod.getName(), 1, false);
      }
 
      /** Returns a method handle to an implementation of clazz, given method reference signature. */
     private static MethodHandle lookupReferenceInternal(
             PainlessLookup painlessLookup, FunctionTable functions, Map<String, Object> constants,
-            MethodHandles.Lookup methodHandlesLookup, Class<?> clazz, String type, String call, int captures
-            ) throws Throwable {
+            MethodHandles.Lookup methodHandlesLookup, Class<?> clazz, String type, String call, int captures,
+            boolean needsScriptInstance) throws Throwable {
 
-        boolean needsThis = "this".equals(type);
-        final FunctionRef ref = FunctionRef.create(painlessLookup, functions, null, clazz, type, call, captures, constants, needsThis);
-        Class<?>[] parameters = ref.factoryMethodParameters(needsThis ? methodHandlesLookup.lookupClass() : null);
+        final FunctionRef ref = FunctionRef.create(painlessLookup, functions, null, clazz, type, call, captures, constants, needsScriptInstance);
+        Class<?>[] parameters = ref.factoryMethodParameters(needsScriptInstance ? methodHandlesLookup.lookupClass() : null);
         MethodType factoryMethodType = MethodType.methodType(clazz, parameters);
         final CallSite callSite = LambdaBootstrap.lambdaBootstrap(
                 methodHandlesLookup,
@@ -1278,5 +1282,31 @@ public final class Def {
         }
 
         private ArrayIndexNormalizeHelper() {}
+    }
+
+    public static class Encoding {
+        public final boolean isStatic;
+        public final boolean needsInstance;
+        public final String symbol;
+        public final String methodName;
+        public final int numCaptures;
+        public final String encoding;
+
+        public Encoding(boolean isStatic, boolean needsInstance, String symbol, String methodName, int numCaptures) {
+            this.isStatic = isStatic;
+            this.needsInstance = needsInstance;
+            this.symbol = symbol;
+            this.methodName = methodName;
+            this.numCaptures = numCaptures;
+            this.encoding = (isStatic ? "S" : "D") + (needsInstance ? "t" : "f") +
+                            symbol + "." +
+                            methodName + "," +
+                            numCaptures;
+        }
+
+        @Override
+        public String toString() {
+            return encoding;
+        }
     }
 }

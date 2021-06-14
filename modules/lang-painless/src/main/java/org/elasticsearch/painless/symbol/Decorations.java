@@ -8,6 +8,7 @@
 
 package org.elasticsearch.painless.symbol;
 
+import org.elasticsearch.painless.Def;
 import org.elasticsearch.painless.FunctionRef;
 import org.elasticsearch.painless.ir.IRNode;
 import org.elasticsearch.painless.lookup.PainlessCast;
@@ -513,13 +514,13 @@ public class Decorations {
 
     public static class EncodingDecoration implements Decoration {
 
-        private final String encoding;
+        private final Def.Encoding encoding;
 
-        public EncodingDecoration(String encoding) {
-            this.encoding = Objects.requireNonNull(encoding);
+        public EncodingDecoration(boolean isStatic, boolean needsInstance, String symbol, String methodName, int captures) {
+            this.encoding = new Def.Encoding(isStatic, needsInstance, symbol, methodName, captures);
         }
 
-        public String getEncoding() {
+        public Def.Encoding getEncoding() {
             return encoding;
         }
     }
