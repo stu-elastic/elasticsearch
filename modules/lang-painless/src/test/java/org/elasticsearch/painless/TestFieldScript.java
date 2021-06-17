@@ -8,20 +8,13 @@
 
 package org.elasticsearch.painless;
 
-import org.apache.lucene.index.LeafReaderContext;
-import org.elasticsearch.painless.action.PainlessExecuteAction;
-import org.elasticsearch.script.LongFieldScript;
 import org.elasticsearch.script.ScriptContext;
-import org.elasticsearch.script.ScriptFactory;
-import org.elasticsearch.search.lookup.SearchLookup;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 
 public abstract class TestFieldScript {
-    private List<Long> values = new ArrayList<>();
+    private final List<Long> values = new ArrayList<>();
 
     @SuppressWarnings("unused")
     public static final String[] PARAMETERS = {};
