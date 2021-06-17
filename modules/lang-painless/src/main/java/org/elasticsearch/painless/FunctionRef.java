@@ -19,7 +19,6 @@ import org.objectweb.asm.Type;
 import java.lang.invoke.MethodType;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -288,6 +287,6 @@ public class FunctionRef {
         if (factoryMethodReceiverClass != null) {
             parameters.add(0, factoryMethodReceiverClass);
         }
-        return parameters.toArray(new Class[0]);
+        return parameters.toArray(new Class<?>[0]);
     }
 }

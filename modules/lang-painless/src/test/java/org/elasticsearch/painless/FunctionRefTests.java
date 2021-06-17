@@ -8,8 +8,6 @@
 
 package org.elasticsearch.painless;
 
-import org.elasticsearch.painless.api.Debug;
-
 import java.lang.invoke.LambdaConversionException;
 import java.time.Instant;
 
@@ -66,7 +64,6 @@ public class FunctionRefTests extends ScriptTestCase {
             "DoubleSummaryStatistics::accept, " +
             "DoubleSummaryStatistics::combine); " +
             "return stats.getSum()";
-        //System.out.println(Debugger.toString(source));
         assertEquals(3.0D,
                 exec(source));
     }
@@ -161,19 +158,13 @@ public class FunctionRefTests extends ScriptTestCase {
 
     public void testOwnStaticMethodReferenceDef() {
         String source = "int mycompare(int i, int j) { j - i } " +
-            //"def l = new ArrayList(); l.add(2); l.add(1); l.sort(this::mycompare); return l.get(0);";
             "def l = [2, 1, 3, -1]; l.sort(this::mycompare); return l.get(0);";
-        System.out.println(source);
-        System.out.println(Debugger.toString(source));
         assertEquals(3, exec(source));
     }
 
     public void testOwnStaticMethodReference() {
             String source = "int mycompare(int i, int j) { j - i } " +
-                //"def l = new ArrayList(); l.add(2); l.add(1); l.sort(this::mycompare); return l.get(0);";
                 "List l = [2, 1]; l.sort(this::mycompare); return l.get(0);";
-            System.out.println(source);
-            System.out.println(Debugger.toString(source));
             assertEquals(2, exec(source));
     }
 

@@ -13,7 +13,6 @@ import org.elasticsearch.painless.lookup.PainlessLookupUtility;
 import org.elasticsearch.painless.lookup.PainlessMethod;
 import org.elasticsearch.painless.symbol.FunctionTable;
 import org.elasticsearch.script.JodaCompatibleZonedDateTime;
-import org.objectweb.asm.Type;
 
 import java.lang.invoke.CallSite;
 import java.lang.invoke.MethodHandle;
@@ -350,7 +349,8 @@ public final class Def {
             MethodHandles.Lookup methodHandlesLookup, Class<?> clazz, String type, String call, int captures,
             boolean needsScriptInstance) throws Throwable {
 
-        final FunctionRef ref = FunctionRef.create(painlessLookup, functions, null, clazz, type, call, captures, constants, needsScriptInstance);
+        final FunctionRef ref =
+                FunctionRef.create(painlessLookup, functions, null, clazz, type, call, captures, constants, needsScriptInstance);
         Class<?>[] parameters = ref.factoryMethodParameters(needsScriptInstance ? methodHandlesLookup.lookupClass() : null);
         MethodType factoryMethodType = MethodType.methodType(clazz, parameters);
         final CallSite callSite = LambdaBootstrap.lambdaBootstrap(

@@ -24,7 +24,6 @@ public class UserFunctionTests extends ScriptTestCase {
                         "l.sort(this::myCompare);\n" +
                         "l;\n";
         assertEquals(List.of(100, 1, -100), exec(source, Map.of("a", 1), false));
-        System.out.println(Debugger.toString(source));
     }
 
 
@@ -35,7 +34,6 @@ public class UserFunctionTests extends ScriptTestCase {
                         "l.sort((a, b) -> myCompare(a, b));\n" +
                         "l;\n";
         assertEquals(List.of(100, 1, -100), exec(source, Map.of("a", 1), false));
-        System.out.println(Debugger.toString(source));
     }
 
     public void testChainedUserMethodsDef() {
@@ -45,7 +43,6 @@ public class UserFunctionTests extends ScriptTestCase {
                         "l.sort(this::myCompare);\n" +
                         "l;\n";
         assertEquals(List.of(100, 1, -100), exec(source, Map.of("a", 1), false));
-        System.out.println(Debugger.toString(source));
     }
 
 
@@ -56,7 +53,6 @@ public class UserFunctionTests extends ScriptTestCase {
                         "l.sort((a, b) -> myCompare(a, b));\n" +
                         "l;\n";
         assertEquals(List.of(100, 1, -100), exec(source, Map.of("a", 1), false));
-        System.out.println(Debugger.toString(source));
     }
 
     public void testChainedUserMethodsLambdaCaptureDef() {
@@ -68,7 +64,6 @@ public class UserFunctionTests extends ScriptTestCase {
                         "l.sort((a, b) -> myCompare(a, b, cx, cm));\n" +
                         "l;\n";
         assertEquals(List.of(100, 1, -100), exec(source, Map.of("a", 1), false));
-        System.out.println(Debugger.toString(source));
     }
 
     public void testMethodReferenceInUserFunction() {
@@ -82,14 +77,11 @@ public class UserFunctionTests extends ScriptTestCase {
                         "l.sort((a, b) -> myCompare(a, b, s));\n" +
                         "l;\n";
         assertEquals(List.of(-2, 1, 0), exec(source, Map.of("a", 1), false));
-        System.out.println(Debugger.toString(source));
     }
 
     public void testUserFunctionVirtual() {
         String source = "int myCompare(int x, int y) { return -1 * (x - y)  }\n" +
                         "return myCompare(100, 90);";
-        System.out.println(source);
-        System.out.println(Debugger.toString(source));
         assertEquals(-10, exec(source, Map.of("a", 1), false));
         assertBytecodeExists(source, "INVOKEVIRTUAL org/elasticsearch/painless/PainlessScript$Script.&myCompare (II)I");
     }
@@ -99,8 +91,6 @@ public class UserFunctionTests extends ScriptTestCase {
                         "List l = [1, 100, -100];\n" +
                         "l.sort(this::myCompare);\n" +
                         "return l;";
-        System.out.println(source);
-        System.out.println(Debugger.toString(source));
         assertEquals(List.of(100, 1, -100), exec(source, Map.of("a", 1), false));
         assertBytecodeExists(source, "public &myCompare(II)I");
         //assertBytecodeExists(source, "INVOKESTATIC org/elasticsearch/painless/PainlessScript$Script.&myCompare (II)I");
@@ -109,11 +99,9 @@ public class UserFunctionTests extends ScriptTestCase {
     public void testUserFunctionRefEmpty() {
         String source = "int myCompare(int x, int y) { return -1 * x - y  }\n" +
                         "[].sort((a, b) -> myCompare(a, b));\n";
-        System.out.println(source);
-        System.out.println(Debugger.toString(source));
         assertNull(exec(source, Map.of("a", 1), false));
         assertBytecodeExists(source, "public &myCompare(II)I");
-        //assertBytecodeExists(source, "INVOKESTATIC org/elasticsearch/painless/PainlessScript$Script.&myCompare (II)I");
+        assertBytecodeExists(source, "INVOKEVIRTUAL org/elasticsearch/painless/PainlessScript$Script.&myCompare (II)I");
     }
 
     public void testUserFunctionCallInLambda() {
@@ -121,11 +109,9 @@ public class UserFunctionTests extends ScriptTestCase {
                         "List l = [1, 100, -100];\n" +
                         "l.sort((a, b) -> myCompare(a, b));\n" +
                         "return l;";
-        System.out.println(source);
-        System.out.println(Debugger.toString(source));
         assertEquals(List.of(100, 1, -100), exec(source, Map.of("a", 1), false));
-        //assertBytecodeExists(source, "public &myCompare(II)I");
-        //assertBytecodeExists(source, "INVOKESTATIC org/elasticsearch/painless/PainlessScript$Script.&myCompare (II)I");
+        assertBytecodeExists(source, "public &myCompare(II)I");
+        assertBytecodeExists(source, "INVOKEVIRTUAL org/elasticsearch/painless/PainlessScript$Script.&myCompare (II)I");
     }
 
     public void testUserFunctionCapture() {
@@ -134,11 +120,9 @@ public class UserFunctionTests extends ScriptTestCase {
                         "Object q = '';\n" +
                         "l.sort((a, b) -> myCompare(q, a, b));\n" +
                         "return l;";
-        System.out.println(source);
-        System.out.println(Debugger.toString(source));
         assertEquals(List.of(100, 1, -100), exec(source, Map.of("a", 1), false));
-        //assertBytecodeExists(source, "public &myCompare(II)I");
-        //assertBytecodeExists(source, "INVOKESTATIC org/elasticsearch/painless/PainlessScript$Script.&myCompare (II)I");
+        assertBytecodeExists(source, "public &myCompare(Ljava/lang/Object;II)I");
+        assertBytecodeExists(source, "INVOKEVIRTUAL org/elasticsearch/painless/PainlessScript$Script.&myCompare (Ljava/lang/Object;II)I");
     }
 
     public void testCapture() {
@@ -146,10 +130,7 @@ public class UserFunctionTests extends ScriptTestCase {
                         "int q = -1;\n" +
                         "l.sort((a, b) -> q * ( a - b ));\n" +
                         "return l;";
-        System.out.println(source);
-        System.out.println(Debugger.toString(source));
         assertEquals(List.of(100, 1, -100), exec(source, Map.of("a", 1), false));
-        assertBytecodeExists(source, "public &myCompare(II)I");
-        assertBytecodeExists(source, "INVOKEVIRTUAL org/elasticsearch/painless/PainlessScript$Script.&myCompare (II)I");
+        assertBytecodeExists(source, "public static synthetic lambda$synthetic$0(ILjava/lang/Object;Ljava/lang/Object;)I");
     }
 }

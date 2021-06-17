@@ -29,7 +29,6 @@ public class InstanceCapturingMethodRef {
         l.add(100);
         InstanceCapturingMethodRef icmf = new InstanceCapturingMethodRef(-1);
         icmf.myListCompare(l);
-        System.out.println(l.get(0));
     }
 
     int myCompare(int x, int y) {
