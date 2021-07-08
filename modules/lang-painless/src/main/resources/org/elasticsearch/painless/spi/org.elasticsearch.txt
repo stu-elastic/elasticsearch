@@ -235,3 +235,21 @@ class org.elasticsearch.index.query.IntervalFilterScript$Interval {
 class org.elasticsearch.script.ScoreScript$ExplanationHolder {
   void set(String)
 }
+
+class org.elasticsearch.script.FieldScript @no_import {
+}
+
+class org.elasticsearch.script.FieldScript$Factory @no_import {
+}
+
+class org.elasticsearch.script.Field {
+  String getName()
+  boolean isEmpty()
+  def getValue(def)
+  List getValues()
+}
+
+
+static_import {
+    org.elasticsearch.script.Field field(org.elasticsearch.script.FieldScript, String) bound_to org.elasticsearch.script.FieldScript$FieldAccess
+}

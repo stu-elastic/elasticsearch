@@ -13,10 +13,12 @@ import org.apache.lucene.expressions.SimpleBindings;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.DoubleValues;
 import org.apache.lucene.search.DoubleValuesSource;
+import org.elasticsearch.script.Field;
 import org.elasticsearch.script.FieldScript;
 import org.elasticsearch.script.GeneralScriptException;
 
 import java.io.IOException;
+import java.util.stream.Stream;
 
 public class ExpressionFieldScript implements FieldScript.LeafFactory {
     private final Expression exprScript;
@@ -30,6 +32,16 @@ public class ExpressionFieldScript implements FieldScript.LeafFactory {
     @Override
     public FieldScript newInstance(final LeafReaderContext leaf) throws IOException {
         return new FieldScript() {
+
+            @Override
+            public Field<?> field(String fieldName) {
+                return null;
+            }
+
+            @Override
+            public Stream<Field<?>> fields(String fieldGlob) {
+                return null;
+            }
 
             // Fake the scorer until setScorer is called.
             DoubleValues values = source.getValues(leaf, null);

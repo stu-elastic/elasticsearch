@@ -20,11 +20,12 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 /**
  * A script to produce dynamic values for return fields.
  */
-public abstract class FieldScript {
+public abstract class FieldScript implements DocBasedScript {
 
     public static final String[] PARAMETERS = {};
 
@@ -51,17 +52,21 @@ public abstract class FieldScript {
     /** A leaf lookup for the bound segment this script will operate on. */
     private final LeafSearchLookup leafLookup;
 
+    private final FieldProxy fieldProxy;
+
     public FieldScript(Map<String, Object> params, SearchLookup lookup, LeafReaderContext leafContext) {
         this.leafLookup = lookup.getLeafSearchLookup(leafContext);
         params = new HashMap<>(params);
         params.putAll(leafLookup.asMap());
         this.params = new DynamicMap(params, PARAMS_FUNCTIONS);
+        this.fieldProxy = new ReadDocValuesFieldProxy(this.leafLookup);
     }
 
     // for expression engine
     protected FieldScript() {
         params = null;
         leafLookup = null;
+        fieldProxy = null;
     }
 
     public abstract Object execute();
@@ -81,9 +86,31 @@ public abstract class FieldScript {
         return leafLookup.doc();
     }
 
+    @Override
+    public Field<?> field(String fieldName) {
+        return fieldProxy.field(fieldName);
+    }
+
+    @Override
+    public Stream<Field<?>> fields(String fieldGlob) {
+        return fieldProxy.fields(fieldGlob);
+    }
+
+    public static class FieldAccess {
+        private final FieldScript script;
+
+        public FieldAccess(FieldScript script) {
+            this.script = script;
+        }
+
+        public Field<?> field(String fieldName) {
+            return script.field(fieldName);
+        }
+    }
+
     /** Set the current document to run the script on next. */
     public void setDocument(int docid) {
-        leafLookup.setDocument(docid);
+        fieldProxy.setDocument(docid);
     }
 
     /** A factory to construct {@link FieldScript} instances. */

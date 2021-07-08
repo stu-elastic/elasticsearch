@@ -946,7 +946,7 @@ public final class PainlessLookupBuilder {
 
         for (Constructor<?> eachJavaConstructor : javaConstructors) {
             if (eachJavaConstructor.getDeclaringClass() == targetClass) {
-                if (javaConstructor != null) {
+                if (javaConstructor != null) { // TODO(stu): why can't we have multiple constructors?
                     throw new IllegalArgumentException(
                             "class binding [" + targetCanonicalClassName + "] cannot have multiple constructors");
                 }
@@ -997,7 +997,7 @@ public final class PainlessLookupBuilder {
 
         for (Method eachJavaMethod : javaMethods) {
             if (eachJavaMethod.getDeclaringClass() == targetClass) {
-                if (javaMethod != null) {
+                if (javaMethod != null) { // TODO(stu): why not?
                     throw new IllegalArgumentException("class binding [" + targetCanonicalClassName + "] cannot have multiple methods");
                 }
 
